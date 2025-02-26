@@ -1,0 +1,9 @@
+Cara Aktifin virtual environment
+1. cd tervist\tervist-app>
+2. run di teriman myworld\Scripts\activate.bat
+3. Kalo dah ada ada tanda (myworld) di terminal cd balik project backend_basedir (untuk Backend) 
+
+Kalo baru clone jangan lupa download ini biar tidak error
+1. pip install djangorestframework-simplejwt
+2. pip install requests
+3. pip install Pillow
