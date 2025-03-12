@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
 
@@ -23,30 +23,33 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
 
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
         return self.create_user(email, password, **extra_fields)
 
 
-class CustomUser(AbstractBaseUser):
+class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)  # Email sebagai username utama
-    username = models.CharField(max_length=30, unique=True)
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
+    username = models.CharField(max_length=30, unique=True)  # Username pengguna
     gender = models.CharField(
         max_length=10, choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')]
     )
-    weight = models.DecimalField(max_digits=5, decimal_places=2)  # Berat badan
-    height = models.DecimalField(max_digits=5, decimal_places=2)  # Tinggi badan
-    age = models.PositiveIntegerField()  # Usia
-
-    # Fields untuk autentikasi
+    weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True )  # Berat badan
+    height = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)  # Tinggi badan
+    age = models.PositiveIntegerField(null=True, blank=True)  # Usia
+    date_joined = models.DateTimeField(default=timezone.now)  # Waktu bergabung
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
 
     # Menggunakan CustomUserManager untuk manajer
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'  # Gunakan email sebagai field utama
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ['username']  # Hanya membutuhkan 'username' saat pembuatan superuser
 
     def __str__(self):
         return self.email
