@@ -2,28 +2,29 @@ from rest_framework import serializers
 from .models import CalorieBudget, DailySteps, Food, CaloriesBurned
 
 class CalorieBudgetSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')  # Menampilkan username
+
     class Meta:
         model = CalorieBudget
-        fields = ['calorie_budget']  # Kalori budget yang dihitung
-
-    def create(self, validated_data):
-        user = validated_data.get('user')
-        calorie_budget = CalorieBudget(user=user)
-        calorie_budget.calculate_calories()  # Menghitung kalori budget berdasarkan user
-        return calorie_budget
+        fields = ['id', 'user', 'calorie_budget']  # Menambahkan 'id'
 
 class DailyStepsSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+
     class Meta:
         model = DailySteps
-        fields = ['steps']  # Langkah yang diambil oleh pengguna
+        fields = ['id', 'user', 'steps', 'date']  # Menambahkan 'id'
 
 class CaloriesBurnedSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+
     class Meta:
         model = CaloriesBurned
-        fields = ['exercise_calories', 'bmr_calories', 'total_calories']  # Kalori yang terbakar
-
+        fields = ['id', 'user', 'exercise_calories', 'bmr_calories', 'total_calories', 'date']  # Menambahkan 'id'
 
 class FoodSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+
     class Meta:
         model = Food
-        fields = ['meal_type', 'calories']
+        fields = ['id', 'user', 'name', 'meal_type', 'calories', 'date']  # Menambahkan 'id'

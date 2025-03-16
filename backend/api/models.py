@@ -3,7 +3,7 @@ from authentication.models import CustomUser
 from django.utils import timezone
 
 class CalorieBudget(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
     calorie_budget = models.FloatField(default=0.0)  # Total kalori yang perlu dikonsumsi per hari
 
     def calculate_calories(self):
@@ -39,19 +39,22 @@ class CalorieBudget(models.Model):
         return f"Calorie budget for {self.user.username}"
     
 class Food(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100)
     calories = models.IntegerField()  # Kalori per makanan
     meal_type = models.CharField(max_length=20, choices=[('Breakfast', 'Breakfast'), ('Lunch', 'Lunch'), ('Dinner', 'Dinner'), ('Snack', 'Snack')])
     date = models.DateField(default=timezone.now)  # Tanggal makan
 
+    def __str__(self):
+        return f"{self.meal_type} - {self.calories} kcal"
+    
 class DailySteps(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,null=True, blank=True)
     steps = models.IntegerField()
     date = models.DateField(default=timezone.now)
 
 class CaloriesBurned(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
     exercise_calories = models.IntegerField()  # Kalori terbakar dari olahraga
     bmr_calories = models.IntegerField()  # Kalori terbakar dari BMR
     total_calories = models.IntegerField()  # Total kalori yang terbakar

@@ -55,11 +55,9 @@ INSTALLED_APPS = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': [],  # Hapus JWTAuthentication agar bisa diakses tanpa token
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.AllowAny',  # Izinkan akses untuk siapa saja
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
@@ -144,7 +142,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Jakarta'
 
 USE_I18N = True
 
