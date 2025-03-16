@@ -1,30 +1,36 @@
 from django.contrib import admin
-from .models import CalorieBudget, DailySteps, Food, CaloriesBurned
+from .models import FoodDatabase, DailySteps, CaloriesBurned, FoodIntake, NutritionalTarget
 
-# Registrasi model CalorieBudget
-@admin.register(CalorieBudget)
-class CalorieBudgetAdmin(admin.ModelAdmin):
-    list_display = ('user', 'calorie_budget')  # Menampilkan user dan calorie_budget di daftar admin
-    search_fields = ('user__username',)  # Mencari berdasarkan username pengguna
-    list_filter = ('user',)  # Filter berdasarkan user
+# Registrasi model FoodDatabase
+@admin.register(FoodDatabase)
+class FoodDatabaseAdmin(admin.ModelAdmin):
+    list_display = ['name', 'measurement', 'calories', 'protein', 'carbs', 'fat']
+    search_fields = ['name']
+    list_filter = ['measurement']
+
+@admin.register(FoodIntake)
+class FoodIntakeAdmin(admin.ModelAdmin):
+    list_display = ['user', 'food_data', 'meal_type', 'serving_size', 'date', 'time']
+    search_fields = ['user__username', 'food_data__name']
+    list_filter = ['meal_type', 'date', 'user']
+
+@admin.register(NutritionalTarget)
+class NutritionalTargetAdmin(admin.ModelAdmin):
+    list_display = ['user', 'calorie_target', 'protein_target', 'carbs_target', 'fats_target']
+    search_fields = ['user__username']
+    fields = ['user', 'calorie_target', 'protein_target', 'carbs_target', 'fats_target']
+
 
 # Registrasi model DailySteps
 @admin.register(DailySteps)
 class DailyStepsAdmin(admin.ModelAdmin):
-    list_display = ('user', 'steps', 'date')  # Menampilkan user, steps, dan tanggal di daftar admin
-    search_fields = ('user__username',)  # Mencari berdasarkan username pengguna
-    list_filter = ('date', 'user')  # Filter berdasarkan tanggal dan user
-
-# Registrasi model Food
-@admin.register(Food)
-class FoodAdmin(admin.ModelAdmin):
-    list_display = ('user', 'name', 'meal_type', 'calories', 'date')  # Menampilkan data makanan di admin
-    search_fields = ('user__username', 'name')  # Mencari berdasarkan username pengguna dan nama makanan
-    list_filter = ('meal_type', 'date', 'user')  # Filter berdasarkan meal_type, tanggal, dan user
+    list_display = ('user', 'steps', 'date')
+    search_fields = ('user__username',)
+    list_filter = ('date', 'user')
 
 # Registrasi model CaloriesBurned
 @admin.register(CaloriesBurned)
 class CaloriesBurnedAdmin(admin.ModelAdmin):
-    list_display = ('user', 'exercise_calories', 'bmr_calories', 'total_calories', 'date')  # Menampilkan kalori yang terbakar
-    search_fields = ('user__username',)  # Mencari berdasarkan username pengguna
-    list_filter = ('date', 'user')  # Filter berdasarkan tanggal dan user
+    list_display = ('user', 'exercise_calories', 'bmr_calories', 'total_calories', 'date')
+    search_fields = ('user__username',)
+    list_filter = ('date', 'user')

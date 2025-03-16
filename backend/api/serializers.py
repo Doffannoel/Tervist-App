@@ -1,12 +1,12 @@
 from rest_framework import serializers
-from .models import CalorieBudget, DailySteps, Food, CaloriesBurned
+from .models import  DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget
 
-class CalorieBudgetSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')  # Menampilkan username
+class NutritionalTargetSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
 
     class Meta:
-        model = CalorieBudget
-        fields = ['id', 'user', 'calorie_budget']  # Menambahkan 'id'
+        model = NutritionalTarget
+        fields = ['id', 'user', 'calorie_target', 'protein_target', 'carbs_target', 'fats_target']
 
 class DailyStepsSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
@@ -22,9 +22,14 @@ class CaloriesBurnedSerializer(serializers.ModelSerializer):
         model = CaloriesBurned
         fields = ['id', 'user', 'exercise_calories', 'bmr_calories', 'total_calories', 'date']  # Menambahkan 'id'
 
-class FoodSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')
+class FoodDatabaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FoodDatabase
+        fields = '__all__'
+
+class FoodIntakeSerializer(serializers.ModelSerializer):
+    food_data = FoodDatabaseSerializer()  # Menampilkan detail makanan dari FoodDatabase
 
     class Meta:
-        model = Food
-        fields = ['id', 'user', 'name', 'meal_type', 'calories', 'date']  # Menambahkan 'id'
+        model = FoodIntake
+        fields = ['id','user', 'food_data', 'meal_type', 'serving_size', 'date', 'time']
