@@ -55,6 +55,16 @@ class FoodDatabase(models.Model):
         ('Large', 'Large'),
         ('Extra Large', 'Extra Large'),
         ('Jumbo', 'Jumbo'),
+        ('Per serving (150 g)', 'Per serving (150 g)'),
+        ('Per serving (300 g)', 'Per serving (300 g)'),
+        ('Per slice (100 g)', 'Per slice (100 g)'),
+        ('Per slice (98.0 g)', 'Per slice (98.0 g)'),
+        ('Per serving (82.3 g)', 'Per serving (82.3 g)'),
+        ('Per slice (83.1 g)', 'Per slice (83.1 g)'),
+        ('Per slice (76.8 g)', 'Per slice (76.8 g)'),
+        ('Per slice (102 g)', 'Per slice (102 g)'),
+        ('Per serving (135 g)', 'Per serving (135 g)'),
+        ('Per piece (20 g)', 'Per piece (20 g)'),
     ]
     
     name = models.CharField(max_length=100)
@@ -64,24 +74,23 @@ class FoodDatabase(models.Model):
     carbs = models.FloatField()
     fat = models.FloatField()
     saturated_fat = models.FloatField()
-    trans_fat = models.FloatField()
-    monounsaturated_fat = models.FloatField()
-    polyunsaturated_fat = models.FloatField()
-    dietary_fiber = models.FloatField()
-    total_sugars = models.FloatField()
-    net_carbs = models.FloatField()
-    cholesterol = models.FloatField()
-    sodium = models.FloatField()
-    potassium = models.FloatField()
-    vitamin_a = models.FloatField()
-    vitamin_c = models.FloatField()
-    calcium = models.FloatField()
-    iron = models.FloatField()
+    trans_fat = models.FloatField(default=0.0)  # Menambahkan nilai default 0.0
+    monounsaturated_fat = models.FloatField(default=0.0)  # Menambahkan nilai default
+    polyunsaturated_fat = models.FloatField(default=0.0)  # Menambahkan nilai default
+    dietary_fiber = models.FloatField(default=0.0)  # Menambahkan nilai default
+    total_sugars = models.FloatField(default=0.0)  # Menambahkan nilai default
+    net_carbs = models.FloatField(default=0.0)  # Menambahkan nilai default
+    cholesterol = models.FloatField(default=0.0)  # Menambahkan nilai default
+    sodium = models.FloatField(default=0.0)  # Menambahkan nilai default
+    potassium = models.FloatField(default=0.0)  # Menambahkan nilai default
+    vitamin_a = models.FloatField(default=0.0)  # Menambahkan nilai default
+    vitamin_c = models.FloatField(default=0.0)  # Menambahkan nilai default
+    calcium = models.FloatField(default=0.0)  # Menambahkan nilai default
+    iron = models.FloatField(default=0.0)  # Menambahkan nilai default
 
     def __str__(self):
         return self.name
-   
-    
+
 class FoodIntake(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     food_data = models.ForeignKey(FoodDatabase, on_delete=models.CASCADE)  # Menghubungkan ke FoodDatabase
