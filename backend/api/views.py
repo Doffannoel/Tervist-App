@@ -46,13 +46,19 @@ class FoodIntakeView(viewsets.ModelViewSet):
             
             meal.save()  # Simpan perubahan meal_type ke database
 
-            # Update Calories left, Protein left, Carbs left, Fats left
+            # Update NutritionalTarget (kalori, protein, carbs, fats)
             user = self.request.user
-            calorie_budget = CalorieBudget.objects.get(user=user)
-            calorie_budget.calorie_budget -= food_data.calories  # Mengurangi kalori yang dimakan
-            calorie_budget.save()
+            nutritional_target = NutritionalTarget.objects.get(user=user)
+            
+            # Mengurangi kalori yang dimakan dari target
+            nutritional_target.calorie_target -= food_data.calories
+            nutritional_target.protein_target -= food_data.protein
+            nutritional_target.carbs_target -= food_data.carbs
+            nutritional_target.fats_target -= food_data.fat
 
-            # Update other macronutrients similarly (protein, carbs, fat)
+            nutritional_target.save()
+
+            # Update macronutrients di profil pengguna (jika perlu)
             user_profile = user.profile
             user_profile.protein_left -= food_data.protein
             user_profile.carbs_left -= food_data.carbs
@@ -101,13 +107,13 @@ class DashboardView(viewsets.ViewSet):
     def list(self, request):
         user = request.user if request.user.is_authenticated else None
         
-        # Mengambil data langsung dari model
-        calorie_budget = CalorieBudget.objects.filter(user=user).first()
-        calorie_budget_data = CalorieBudgetSerializer(calorie_budget).data if calorie_budget else {}
+        # Mengambil data langsung dari model NutritionalTarget
+        nutritional_target = NutritionalTarget.objects.filter(user=user).first()
+        nutritional_target_data = NutritionalTargetSerializer(nutritional_target).data if nutritional_target else {}
 
         # Mengambil data makanan yang dikonsumsi hari ini
-        food_intake = Food.objects.filter(user=user, date=timezone.now().date())
-        food_intake_data = FoodSerializer(food_intake, many=True).data
+        food_intake = FoodIntake.objects.filter(user=user, date=timezone.now().date())
+        food_intake_data = FoodIntakeSerializer(food_intake, many=True).data
 
         # Menambahkan pengkategorian makan untuk Breakfast, Lunch, Dinner, Snack
         categorized_food = {
@@ -122,7 +128,7 @@ class DashboardView(viewsets.ViewSet):
             categorized_food[meal_type].append(food)
 
         response_data = {
-            "calorie_budget": calorie_budget_data,
+            "nutritional_target": nutritional_target_data,
             "categorized_food": categorized_food,
         }
         
