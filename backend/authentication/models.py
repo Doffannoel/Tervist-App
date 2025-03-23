@@ -44,7 +44,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         choices=[('Sedentary', 'Sedentary'), ('Low Active', 'Low Active'), ('Active', 'Active'), ('Very Active', 'Very Active')],
         default='Sedentary'
     )
-    goal = models.CharField(
+    goal = models.CharField(    
         max_length=20, 
         choices=[('Weight Gain', 'Weight Gain'), ('Maintain Weight', 'Maintain Weight'), ('Weight Loss', 'Weight Loss')],
         default='Maintain Weight'

@@ -4,48 +4,61 @@ from django.utils import timezone
 
 class NutritionalTarget(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-    calorie_target = models.FloatField(default=0.0)  # Total kalori yang perlu dikonsumsi per hari
-    protein_target = models.FloatField(default=0.0)  # Target protein harian dalam gram
-    carbs_target = models.FloatField(default=0.0)  # Target karbohidrat harian dalam gram
-    fats_target = models.FloatField(default=0.0)  # Target lemak harian dalam gram
+    calorie_target = models.FloatField(default=0.0)  # Total calories to consume per day
+    protein_target = models.FloatField(default=0.0)  # Protein target per day in grams
+    carbs_target = models.FloatField(default=0.0)  # Carbs target per day in grams
+    fats_target = models.FloatField(default=0.0)  # Fats target per day in grams
+    steps_goal = models.IntegerField(default=0)  # Step goal per day based on activity level
+    calories_burned_goal = models.FloatField(default=0.0)  # Calories burned goal based on TDEE
 
     def calculate_targets(self):
-        """Menghitung dan mengupdate target kalori, protein, karbohidrat, dan lemak pengguna berdasarkan data pengguna."""
+        """Calculate and update the daily calorie, protein, carbs, fats, and steps goals based on user data."""
         user = self.user
         bmr = 10 * user.weight + 6.25 * user.height - 5 * user.age
         if user.gender == 'Male':
-            bmr += 5  # Penyesuaian untuk laki-laki
+            bmr += 5  # Adjustment for males
         else:
-            bmr -= 161  # Penyesuaian untuk perempuan
+            bmr -= 161  # Adjustment for females
 
-        # Faktor activity level
+        # Factor in the activity level for TDEE calculation
         activity_multipliers = {
             'Sedentary': 1.2,
             'Low Active': 1.375,
             'Active': 1.55,
             'Very Active': 1.725,
         }
-        
+
         tdee = bmr * activity_multipliers.get(user.activity_level, 1.2)  # Total Daily Energy Expenditure
 
-        # Menyesuaikan dengan goal
+        # Adjust based on goal (Weight Gain, Weight Loss, Maintain Weight)
         if user.goal == 'Weight Gain':
-            self.calorie_target = tdee + 500  # Menambah 500 kalori untuk kenaikan berat badan
+            self.calorie_target = tdee + 500  # Add 500 calories for weight gain
         elif user.goal == 'Weight Loss':
-            self.calorie_target = tdee - 500  # Mengurangi 500 kalori untuk penurunan berat badan
+            self.calorie_target = tdee - 500  # Subtract 500 calories for weight loss
         else:
-            self.calorie_target = tdee  # Menjaga berat badan tetap stabil
+            self.calorie_target = tdee  # Maintain current weight
 
-        # Menghitung target nutrisi berdasarkan rasio makronutrien
-        self.protein_target = tdee * 0.15 / 4  # 15% dari total kalori untuk protein (dalam gram, 1 gram protein = 4 kalori)
-        self.carbs_target = tdee * 0.55 / 4  # 55% dari total kalori untuk karbohidrat (dalam gram, 1 gram carbs = 4 kalori)
-        self.fats_target = tdee * 0.30 / 9  # 30% dari total kalori untuk lemak (dalam gram, 1 gram fat = 9 kalori)
+        # Calculate the nutritional targets based on the TDEE
+        self.protein_target = tdee * 0.15 / 4  # 15% of TDEE for protein (in grams, 1g protein = 4 calories)
+        self.carbs_target = tdee * 0.55 / 4  # 55% of TDEE for carbohydrates (in grams, 1g carbs = 4 calories)
+        self.fats_target = tdee * 0.30 / 9  # 30% of TDEE for fats (in grams, 1g fat = 9 calories)
+
+        # Set the daily step goal based on activity level
+        step_goals = {
+            'Sedentary': 5000,
+            'Low Active': 7500,
+            'Active': 10000,
+            'Very Active': 12000,
+        }
+        self.steps_goal = step_goals.get(user.activity_level, 10000)  # Default to 10,000 steps if undefined
+
+        # Set the daily calories burned goal based on TDEE (calories burned through activity)
+        self.calories_burned_goal = tdee * 0.75  # Assume the goal is 75% of TDEE for active users (you can adjust this logic)
 
         self.save()
 
     def __str__(self):
-        return f"{self.user.username} - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g"
-
+        return f"{self.user.username} - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
     
 class FoodDatabase(models.Model):
     MEASUREMENT_CHOICES = [
@@ -107,9 +120,36 @@ class DailySteps(models.Model):
     steps = models.IntegerField()
     date = models.DateField(default=timezone.now)
 
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.steps} steps on {self.date}"
+
 class CaloriesBurned(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
     exercise_calories = models.IntegerField()  # Kalori terbakar dari olahraga
     bmr_calories = models.IntegerField()  # Kalori terbakar dari BMR
     total_calories = models.IntegerField()  # Total kalori yang terbakar
     date = models.DateField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.total_calories} kcal on {self.date}"
+
+class RunningActivity(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    distance_km = models.FloatField()  # Distance covered in kilometers
+    time_seconds = models.IntegerField()  # Time taken in seconds
+    pace = models.FloatField()  # Pace (time per km in minutes)
+    calories_burned = models.IntegerField()  # Calories burned during the activity
+    steps = models.IntegerField()  # Total steps during the activity
+    date = models.DateField(default=timezone.now)  # Date of the activity
+
+    def calculate_pace(self):
+        """ Calculate the pace in minutes per kilometer """
+        if self.distance_km > 0:
+            self.pace = (self.time_seconds / 60) / self.distance_km
+        else:
+            self.pace = 0
+        self.save()
+
+    def __str__(self):
+        return f"{self.user.username} - {self.distance_km} km on {self.date}"

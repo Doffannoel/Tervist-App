@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import FoodDatabase, DailySteps, CaloriesBurned, FoodIntake, NutritionalTarget
+from .models import FoodDatabase, DailySteps, CaloriesBurned, FoodIntake, NutritionalTarget, RunningActivity
 
 # Registrasi model FoodDatabase
 @admin.register(FoodDatabase)
@@ -34,3 +34,9 @@ class CaloriesBurnedAdmin(admin.ModelAdmin):
     list_display = ('user', 'exercise_calories', 'bmr_calories', 'total_calories', 'date')
     search_fields = ('user__username',)
     list_filter = ('date', 'user')
+
+@admin.register(RunningActivity)
+class RunningActivityAdmin(admin.ModelAdmin):
+    list_display = ['user', 'distance_km', 'time_seconds', 'pace', 'calories_burned', 'steps', 'date']
+    search_fields = ['user__username']
+    list_filter = ['date', 'user']

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import  DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget
+from .models import  DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
 
 class NutritionalTargetSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
@@ -33,3 +33,10 @@ class FoodIntakeSerializer(serializers.ModelSerializer):
     class Meta:
         model = FoodIntake
         fields = ['id','user', 'food_data', 'meal_type', 'serving_size', 'date', 'time']
+
+class RunningActivitySerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')  # Get username instead of user ID
+
+    class Meta:
+        model = RunningActivity
+        fields = ['id', 'user', 'distance_km', 'time_seconds', 'pace', 'calories_burned', 'steps', 'date']

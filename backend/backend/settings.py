@@ -174,3 +174,9 @@ EMAIL_HOST_USER = 'noelsihotang2004@gmail.com'
 EMAIL_HOST_PASSWORD = 'upagtiibwgpzutjg'
 
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'), )
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
