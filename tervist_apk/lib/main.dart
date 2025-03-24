@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:tervist_apk/screens/login/signin_screen.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
 
 void main() {
@@ -19,7 +18,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         primarySwatch: Colors.blue
       ),
-      home: SignUpPage(),
+      home: OnboardingScreen(),
     );
   }
 }
