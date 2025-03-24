@@ -1,29 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:tervist_apk/widgets/calendar_popup.dart';
+import 'package:intl/intl.dart';
 
-class NutritionMainPage extends StatelessWidget {
+class NutritionMainPage extends StatefulWidget {
   const NutritionMainPage({super.key});
 
-  void _showCalendarDialog(BuildContext context) {
+  @override
+  State<NutritionMainPage> createState() => _NutritionMainPageState();
+}
+
+class _NutritionMainPageState extends State<NutritionMainPage> {
+  DateTime _startDate = DateTime(2025, 2, 16);
+
+  void _showCalendarDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Calendar Dialog'),
-          content: const Text('Coming soon...'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        );
+        return const CalendarPopup();
       },
     );
   }
 
+  void _changeWeek(int direction) {
+    setState(() {
+      _startDate = _startDate.add(Duration(days: direction * 7));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final List<String> days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    final List<DateTime> currentWeek =
+        List.generate(7, (i) => _startDate.add(Duration(days: i)));
+    final DateTime today = DateTime(2025, 2, 20);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF1F7F6),
       body: SafeArea(
@@ -32,11 +43,9 @@ class NutritionMainPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with logo and points
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Logo tervist - tetap SVG
                   SvgPicture.asset(
                     'assets/svgs/logotervist.svg',
                     height: 24,
@@ -63,35 +72,35 @@ class NutritionMainPage extends StatelessWidget {
               ),
               const SizedBox(height: 30),
 
-              // Calendar section
               GestureDetector(
-                onTap: () => _showCalendarDialog(context),
+                onTap: _showCalendarDialog,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(Icons.calendar_today, size: 18),
                     const SizedBox(width: 6),
-                    const Text("February 2025",
-                        style: TextStyle(
+                    Text(DateFormat("MMMM yyyy").format(_startDate),
+                        style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 16)),
                   ],
                 ),
               ),
               const SizedBox(height: 15),
 
-              // Day selector
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(Icons.chevron_left, size: 24),
+                  GestureDetector(
+                    onTap: () => _changeWeek(-1),
+                    child: const Icon(Icons.chevron_left, size: 24),
+                  ),
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: List.generate(7, (index) {
-                        final days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-                        final dates = [16, 17, 18, 19, 20, 21, 22];
-                        final isSelected = index == 2; // Tuesday is selected
-                        final isToday = index == 4; // Thursday is current day
+                        final date = currentWeek[index];
+                        final isSelected = date.day == 18;
+                        final isToday = date == today;
 
                         return Column(
                           children: [
@@ -109,16 +118,14 @@ class NutritionMainPage extends StatelessWidget {
                                     ? Border.all(color: Colors.red, width: 2)
                                     : isToday
                                         ? Border.all(
-                                            color: Colors.black,
-                                            width: 1,
-                                            style: BorderStyle.solid)
+                                            color: Colors.black, width: 1)
                                         : Border.all(color: Colors.transparent),
                                 borderRadius: BorderRadius.circular(18),
                                 color: Colors.transparent,
                               ),
                               child: Center(
                                 child: Text(
-                                  dates[index].toString(),
+                                  date.day.toString(),
                                   style: TextStyle(
                                     fontWeight: isSelected
                                         ? FontWeight.bold
@@ -132,7 +139,10 @@ class NutritionMainPage extends StatelessWidget {
                       }),
                     ),
                   ),
-                  const Icon(Icons.chevron_right, size: 24),
+                  GestureDetector(
+                    onTap: () => _changeWeek(1),
+                    child: const Icon(Icons.chevron_right, size: 24),
+                  ),
                 ],
               ),
               const SizedBox(height: 30),
