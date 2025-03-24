@@ -64,3 +64,24 @@ class ForgotPasswordSerializer(serializers.Serializer):
 class ResetPasswordSerializer(serializers.Serializer):
     otp = serializers.CharField(max_length=6)
     new_password = serializers.CharField(write_only=True)
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'email', 'gender', 'bio', 'city', 'state', 'birthday', 'weight', 'height', 'age', 'activity_level', 'goal', 'target_weight', 'timeline']
+
+    def update(self, instance, validated_data):
+        """Override to update only the user profile fields."""
+        instance.bio = validated_data.get('bio', instance.bio)
+        instance.city = validated_data.get('city', instance.city)
+        instance.state = validated_data.get('state', instance.state)
+        instance.birthday = validated_data.get('birthday', instance.birthday)
+        instance.weight = validated_data.get('weight', instance.weight)
+        instance.height = validated_data.get('height', instance.height)
+        instance.age = validated_data.get('age', instance.age)
+        instance.activity_level = validated_data.get('activity_level', instance.activity_level)
+        instance.goal = validated_data.get('goal', instance.goal)
+        instance.target_weight = validated_data.get('target_weight', instance.target_weight)
+        instance.timeline = validated_data.get('timeline', instance.timeline)
+        instance.save()
+        return instance

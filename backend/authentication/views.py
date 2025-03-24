@@ -1,7 +1,7 @@
 from datetime import timedelta
 from django.utils import timezone
 import random
-from rest_framework import status
+from rest_framework import status, permissions, generics
 from rest_framework.generics import CreateAPIView, GenericAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -11,7 +11,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
 
 from .models import CustomUser, PasswordResetOTP
-from .serializers import ForgotPasswordSerializer, ResetPasswordSerializer, SignUpSerializer, LoginSerializer
+from .serializers import ForgotPasswordSerializer, ResetPasswordSerializer, SignUpSerializer, LoginSerializer, ProfileSerializer
 from authentication import serializers
 
 class SignUpView(CreateAPIView):
@@ -122,3 +122,12 @@ class ResetPasswordView(GenericAPIView):
                 return Response({"detail": "Invalid OTP!"}, status=status.HTTP_400_BAD_REQUEST)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    permission_classes = [permissions.IsAuthenticated]  # Only authenticated users can view/update their profile
+    serializer_class = ProfileSerializer
+    queryset = CustomUser.objects.all()  # Retrieve all CustomUser objects
+
+    def get_object(self):
+        # Ensure we return the currently authenticated user
+        return self.request.user

@@ -37,6 +37,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     height = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     age = models.PositiveIntegerField(null=True, blank=True)
+    bio = models.TextField(null=True, blank=True)
+    city = models.CharField(max_length=100, null= True, blank=True)
+    state = models.CharField(max_length=100, null=True, blank=True) 
+    birthday = models.DateField(null=True, blank=True)
     
     # New fields
     activity_level = models.CharField(
