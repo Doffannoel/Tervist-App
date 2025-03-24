@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:tervist_apk/screens/login/set_target.dart';
-import 'set_target.dart';
 
 class EnterDetailsScreen extends StatefulWidget {
   const EnterDetailsScreen({super.key});

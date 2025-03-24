@@ -1,0 +1,337 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+class NutritionMainPage extends StatelessWidget {
+  const NutritionMainPage({super.key});
+
+  void _showCalendarDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Calendar Dialog'),
+          content: const Text('Coming soon...'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF1F7F6),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with logo and points
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Logo tervist - tetap SVG
+                  SvgPicture.asset(
+                    'assets/svgs/logotervist.svg',
+                    height: 24,
+                    placeholderBuilder: (context) =>
+                        const Icon(Icons.favorite, size: 24),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Image.asset('assets/images/fire.png', height: 20),
+                        const SizedBox(width: 5),
+                        const Text('0',
+                            style: TextStyle(fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+
+              // Calendar section
+              GestureDetector(
+                onTap: () => _showCalendarDialog(context),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.calendar_today, size: 18),
+                    const SizedBox(width: 6),
+                    const Text("February 2025",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 15),
+
+              // Day selector
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Icon(Icons.chevron_left, size: 24),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: List.generate(7, (index) {
+                        final days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+                        final dates = [16, 17, 18, 19, 20, 21, 22];
+                        final isSelected = index == 2; // Tuesday is selected
+                        final isToday = index == 4; // Thursday is current day
+
+                        return Column(
+                          children: [
+                            Text(days[index],
+                                style: TextStyle(
+                                  color: isSelected ? Colors.red : Colors.black,
+                                  fontWeight: FontWeight.w500,
+                                )),
+                            const SizedBox(height: 4),
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                border: isSelected
+                                    ? Border.all(color: Colors.red, width: 2)
+                                    : isToday
+                                        ? Border.all(
+                                            color: Colors.black,
+                                            width: 1,
+                                            style: BorderStyle.solid)
+                                        : Border.all(color: Colors.transparent),
+                                borderRadius: BorderRadius.circular(18),
+                                color: Colors.transparent,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  dates[index].toString(),
+                                  style: TextStyle(
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, size: 24),
+                ],
+              ),
+              const SizedBox(height: 30),
+
+              // Calories left card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('1236',
+                            style: TextStyle(
+                                fontSize: 36, fontWeight: FontWeight.bold)),
+                        Text('Calories left', style: TextStyle(fontSize: 16)),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.grey.withOpacity(0.2),
+                          width: 8,
+                        ),
+                      ),
+                      child: Image.asset('assets/images/fire.png', height: 24),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Macronutrients row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildMacroCard(
+                      '75g', 'Proteins left', 'assets/images/protein.png'),
+                  _buildMacroCard(
+                      '156g', 'Carbs left', 'assets/images/carb.png'),
+                  _buildMacroCard('34g', 'Fats left', 'assets/images/fat.png'),
+                ],
+              ),
+              const SizedBox(height: 40),
+
+              // Recently logged section
+              const Text('Recently logged',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+
+              // Empty state message
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE2EAF0),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("You haven't uploaded any food",
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 16)),
+                            SizedBox(height: 6),
+                            Text(
+                                "Start tracking today's meals by taking a\nquick picture",
+                                style: TextStyle(fontSize: 14, height: 1.3)),
+                          ],
+                        ),
+                        Transform.rotate(
+                          angle: 0.5,
+                          child: const Icon(Icons.arrow_forward, size: 24),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        backgroundColor: Colors.black,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+          child: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            currentIndex: 1,
+            selectedItemColor: Colors.black,
+            unselectedItemColor: Colors.grey,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+            items: [
+              BottomNavigationBarItem(
+                icon: Image.asset('assets/images/home.png', height: 24),
+                label: 'Home',
+              ),
+              const BottomNavigationBarItem(
+                icon: Text("🍽️", style: TextStyle(fontSize: 24)),
+                activeIcon: Text("🍽️", style: TextStyle(fontSize: 24)),
+                label: 'Nutritions',
+              ),
+              BottomNavigationBarItem(
+                icon: Image.asset('assets/images/activity.png', height: 24),
+                label: 'Activity',
+              ),
+              BottomNavigationBarItem(
+                icon: Image.asset('assets/images/profile.png', height: 24),
+                label: 'Profile',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMacroCard(String value, String label, String imagePath) {
+    return Container(
+      width: 105,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(value,
+              style:
+                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 12)),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.grey.withOpacity(0.2),
+                width: 6,
+              ),
+            ),
+            child: Image.asset(imagePath, height: 18),
+          ),
+        ],
+      ),
+    );
+  }
+}
