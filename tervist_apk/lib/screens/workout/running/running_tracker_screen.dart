@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'running_timestamp.dart';
 import 'running_summary.dart';
 import 'map_service.dart';
@@ -19,7 +20,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> {
   bool isWorkoutActive = false;
   bool isPaused = false;
   Timer? _timer;
-  final Completer<GoogleMapController> _mapController = Completer();
+  final MapController _mapController = MapController();
 
   // Workout metrics
   double distance = 4.89; // Initial value
@@ -30,8 +31,8 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> {
   
   // For route tracking
   late List<LatLng> routePoints;
-  late Set<Marker> markers;
-  late Set<Polyline> polylines;
+  late List<Marker> markers;
+  late List<Polyline> polylines;
 
   final Color primaryGreen = const Color(0xFF2AAF7F);
   double celsiusTemp = 27.5; // Temperature value
@@ -191,22 +192,32 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Google Map as the background
+          // Flutter Map as the background
           if (routePoints != null && markers != null && polylines != null)
-            GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: routePoints.isNotEmpty ? routePoints.first : const LatLng(-7.767, 110.378),
-                zoom: 15,
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: routePoints.isNotEmpty ? routePoints.first : const LatLng(-7.767, 110.378),
+                initialZoom: 15,
+                interactionOptions: const InteractionOptions(
+                  // enableScrollWheel: true,
+                  enableMultiFingerGestureRace: true,
+                ),
               ),
-              markers: markers,
-              polylines: polylines,
-              mapType: MapType.normal,
-              myLocationEnabled: true,
-              myLocationButtonEnabled: true,
-              compassEnabled: true,
-              onMapCreated: (GoogleMapController controller) {
-                _mapController.complete(controller);
-              },
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.running_app',
+                ),
+                PolylineLayer(
+                  polylines: polylines,
+                ),
+                MarkerLayer(
+                  markers: markers,
+                ),
+                // Location layer
+                // const CurrentLocationLayer(),
+              ],
             )
           else
             Container(color: Colors.grey[200]), // Placeholder while loading
@@ -408,49 +419,49 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> {
     );
   }
 
-Widget _buildWorkoutType(String label, IconData icon, {bool isSelected = false}) {
-  bool isRunning = label.contains('running');
-  bool isTreadmill = label.contains('Treadmill');
-  
-  return InkWell(
-    onTap: () {
-      if (isTreadmill && !isSelected) {
-        // Navigasi ke TreadmillTrackerScreen jika tombol treadmill ditekan
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const TreadmillTrackerScreen()),
-        );
-      } else if (!isRunning && !isSelected) {
-        // Handle tipe workout lainnya di sini
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$label coming soon!')),
-        );
-      }
-    },
-    child: Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isSelected ? primaryGreen : Colors.grey[200],
-            borderRadius: BorderRadius.circular(12),
+  Widget _buildWorkoutType(String label, IconData icon, {bool isSelected = false}) {
+    bool isRunning = label.contains('running');
+    bool isTreadmill = label.contains('Treadmill');
+    
+    return InkWell(
+      onTap: () {
+        if (isTreadmill && !isSelected) {
+          // Navigasi ke TreadmillTrackerScreen jika tombol treadmill ditekan
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const TreadmillTrackerScreen()),
+          );
+        } else if (!isRunning && !isSelected) {
+          // Handle tipe workout lainnya di sini
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$label coming soon!')),
+          );
+        }
+      },
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isSelected ? primaryGreen : Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.black,
+              size: 20,
+            ),
           ),
-          child: Icon(
-            icon,
-            color: isSelected ? Colors.white : Colors.black,
-            size: 20,
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? primaryGreen : Colors.black,
+              fontSize: 12,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isSelected ? primaryGreen : Colors.black,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 }
