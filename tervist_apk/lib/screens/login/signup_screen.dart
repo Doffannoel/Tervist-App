@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'enter_details.dart'; // Import the EnterDetails page
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -389,7 +390,15 @@ class _AuthPageState extends State<AuthPage> {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () {
-                            // TODO: Handle sign in/sign up logic
+                            if (!_isSignIn) {
+                              // Ensure this only triggers when signing up
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        EnterDetails()), // Navigate to EnterDetails page
+                              );
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
