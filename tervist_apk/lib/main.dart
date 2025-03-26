@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tervist_apk/screens/login/signin_screen.dart';
-import 'package:tervist_apk/screens/onboarding_screen.dart';
+import 'screens/workout/workout_module.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,13 +12,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
+      title: 'Tervist App',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2AAF7F)),
         useMaterial3: true,
-        primarySwatch: Colors.blue
       ),
-      home: SignUpPage(),
+      home: const WorkoutModule(), // Directly show the treadmill tracker
     );
   }
 }
