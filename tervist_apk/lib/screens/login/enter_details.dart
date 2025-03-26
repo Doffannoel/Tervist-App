@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
+=======
+import 'package:tervist_apk/screens/login/set_target.dart';
+>>>>>>> 632a2bb0f35fd57f82369a7b71f1c837834cc111
 
 class EnterDetailsPage extends StatefulWidget {
   const EnterDetailsPage({super.key});

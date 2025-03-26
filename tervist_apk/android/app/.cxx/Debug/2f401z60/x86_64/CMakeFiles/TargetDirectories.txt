@@ -1,0 +1,2 @@
+C:/Users/Phloe/FLUTTER/Tervist-App/tervist_apk/android/app/.cxx/Debug/2f401z60/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/Phloe/FLUTTER/Tervist-App/tervist_apk/android/app/.cxx/Debug/2f401z60/x86_64/CMakeFiles/rebuild_cache.dir

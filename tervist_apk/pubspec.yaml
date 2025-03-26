@@ -29,7 +29,17 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
+<<<<<<< HEAD
     sdk: flutter # Added flutter_svg dependency for SVG support
+=======
+    sdk: flutter
+<<<<<<< HEAD
+  google_maps_flutter: ^2.5.0
+  fl_chart: ^0.65.0
+  cupertino_icons: ^1.0.6
+=======
+  flutter_svg: ^1.0.3  # Added flutter_svg dependency for SVG support
+>>>>>>> 632a2bb0f35fd57f82369a7b71f1c837834cc111
 
   intl: ^0.18.0 
 
@@ -40,10 +50,13 @@ dependencies:
   google_fonts: ^6.2.1
   smooth_page_indicator: ^1.2.1
   flutter_svg: ^2.0.17
+>>>>>>> a18811088ccb4dd93afd3aa4ba94e03407573d63
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
