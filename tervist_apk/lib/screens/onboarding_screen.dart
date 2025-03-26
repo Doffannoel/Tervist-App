@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 import 'dart:async';
+=======
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'login/signup_screen.dart'; // Import the SignUpPage
+>>>>>>> a18811088ccb4dd93afd3aa4ba94e03407573d63
 
 class TreadmillTrackerScreen extends StatefulWidget {
   const TreadmillTrackerScreen({super.key});
@@ -10,6 +15,7 @@ class TreadmillTrackerScreen extends StatefulWidget {
 
 class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
   final PageController _pageController = PageController();
+<<<<<<< HEAD
   int currentStep = 0; // 0: initial, 1: phone placement, 2: workout tracking
   bool isWorkoutActive = false;
   bool isPaused = false;
@@ -22,6 +28,44 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
   int steps = 0;
   int stepsPerMinute = 0;
   List<double> performanceData = [];
+=======
+  Timer? _timer;
+  int _currentPage = 0;
+  bool _isManualScrolling = false;
+  final int _pageCount = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoScroll();
+  }
+
+  void _startAutoScroll() {
+    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (_isManualScrolling) return;
+
+      if (_currentPage < _pageCount - 1) {
+        _currentPage++;
+      } else {
+        _currentPage = 0;
+        _pageController.jumpToPage(0);
+      }
+
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          _currentPage,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.ease,
+        );
+      }
+    });
+  }
+
+  void _restartTimer() {
+    _timer?.cancel();
+    _startAutoScroll();
+  }
+>>>>>>> a18811088ccb4dd93afd3aa4ba94e03407573d63
 
   @override
   void dispose() {
@@ -123,6 +167,7 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
       body: SafeArea(
         child: Stack(
           children: [
@@ -166,7 +211,72 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
+=======
+      body: Stack(
+        children: [
+          Listener(
+            onPointerDown: (_) {
+              setState(() {
+                _isManualScrolling = true;
+              });
+              _timer?.cancel();
+            },
+            onPointerUp: (_) {
+              setState(() {
+                _isManualScrolling = false;
+              });
+              _restartTimer();
+            },
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: null,
+              physics: const BouncingScrollPhysics(),
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPage = index % _pageCount;
+                });
+              },
+              itemBuilder: (context, index) {
+                final normalizedIndex = index % _pageCount;
+                final imagePaths = [
+                  'assets/images/onboard1.png',
+                  'assets/images/onboard2.png',
+                  'assets/images/onboard3.png',
+                ];
+                return OnboardingPage(imagePath: imagePaths[normalizedIndex]);
+              },
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Container(
+                color: Colors.black.withOpacity(0.1),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 150,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SmoothPageIndicator(
+                controller: _pageController,
+                count: _pageCount,
+                effect: WormEffect(
+                  dotColor: Colors.white.withOpacity(0.5),
+                  activeDotColor: Colors.black,
+                  dotHeight: 10,
+                  dotWidth: 10,
+                  spacing: 16,
+>>>>>>> a18811088ccb4dd93afd3aa4ba94e03407573d63
                 ),
+                onDotClicked: (index) {
+                  _pageController.animateToPage(
+                    index,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.ease,
+                  );
+                },
               ),
               CircleAvatar(
                 backgroundColor: Colors.grey[300],
@@ -191,6 +301,7 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
               height: 300,
             ),
           ),
+<<<<<<< HEAD
           const Spacer(),
           SizedBox(
             width: double.infinity,
@@ -213,6 +324,56 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
                 'GO',
                 style: TextStyle(fontSize: 18),
               ),
+=======
+          Positioned(
+            bottom: 50,
+            left: 20,
+            right: 20,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              const AuthPage()), // Navigate to SignUpPage
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB9FAFC),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 60, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text("Sign Up",
+                      style: TextStyle(color: Colors.black)),
+                ),
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              const AuthPage()), // Navigate to SignUpPage
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.white),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 60, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text("Sign In",
+                      style: TextStyle(color: Colors.white)),
+                ),
+              ],
+>>>>>>> a18811088ccb4dd93afd3aa4ba94e03407573d63
             ),
           ),
         ],
