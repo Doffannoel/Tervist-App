@@ -47,6 +47,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(15),
                   ),
+                  padding: EdgeInsets.symmetric(vertical: 10),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -56,7 +57,6 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                           style: TextStyle(color: Colors.black, fontSize: 16)),
                     ],
                   ),
-                  padding: EdgeInsets.symmetric(vertical: 10),
                 ),
               ),
               SizedBox(width: 10),
@@ -73,6 +73,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(15),
                     ),
+                    padding: EdgeInsets.symmetric(vertical: 10),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -83,7 +84,6 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                                 TextStyle(color: Colors.black, fontSize: 16)),
                       ],
                     ),
-                    padding: EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ),
