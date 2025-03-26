@@ -29,8 +29,7 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
-    sdk: flutter
-  flutter_svg: ^1.0.3  # Added flutter_svg dependency for SVG support
+    sdk: flutter # Added flutter_svg dependency for SVG support
 
   intl: ^0.18.0 
 
