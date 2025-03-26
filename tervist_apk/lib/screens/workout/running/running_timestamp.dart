@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'dart:async';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class RunningTimestamp extends StatefulWidget {
   final double distance;
@@ -8,8 +8,8 @@ class RunningTimestamp extends StatefulWidget {
   final String formattedPace;
   final int calories;
   final List<LatLng> routePoints;
-  final Set<Marker> markers;
-  final Set<Polyline> polylines;
+  final List<Marker> markers;
+  final List<Polyline> polylines;
   final bool isPaused;
   final Color primaryGreen;
   final VoidCallback onPause;
@@ -37,7 +37,7 @@ class RunningTimestamp extends StatefulWidget {
 }
 
 class _RunningTimestampState extends State<RunningTimestamp> {
-  final Completer<GoogleMapController> _mapController = Completer();
+  final MapController _mapController = MapController();
 
   @override
   Widget build(BuildContext context) {
@@ -45,22 +45,32 @@ class _RunningTimestampState extends State<RunningTimestamp> {
       body: Stack(
         children: [
           // Map display
-          GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: widget.routePoints.isNotEmpty 
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: widget.routePoints.isNotEmpty 
                   ? widget.routePoints.first 
                   : const LatLng(-7.767, 110.378),
-              zoom: 15,
+              initialZoom: 15,
+              interactionOptions: const InteractionOptions(
+                // enableScrollWheel: true,
+                enableMultiFingerGestureRace: true,
+              ),
             ),
-            markers: widget.markers,
-            polylines: widget.polylines,
-            mapType: MapType.normal,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            compassEnabled: true,
-            onMapCreated: (GoogleMapController controller) {
-              _mapController.complete(controller);
-            },
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.running_app',
+              ),
+              PolylineLayer(
+                polylines: widget.polylines,
+              ),
+              MarkerLayer(
+                markers: widget.markers,
+              ),
+              // Add a current location marker
+              // const CurrentLocationLayer(),
+            ],
           ),
           
           // Bottom overlay with metrics

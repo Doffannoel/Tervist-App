@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'dart:async';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'dart:math' as math;
 
 class RunningSummary extends StatefulWidget {
@@ -10,8 +10,8 @@ class RunningSummary extends StatefulWidget {
   final int calories;
   final int steps;
   final List<LatLng> routePoints;
-  final Set<Marker> markers;
-  final Set<Polyline> polylines;
+  final List<Marker> markers;
+  final List<Polyline> polylines;
   final Color primaryGreen;
   final VoidCallback onBackToHome;
 
@@ -34,7 +34,7 @@ class RunningSummary extends StatefulWidget {
 }
 
 class _RunningSummaryState extends State<RunningSummary> {
-  final Completer<GoogleMapController> _mapController = Completer();
+  final MapController _mapController = MapController();
 
   LatLng _calculateMapCenter() {
     if (widget.routePoints.isEmpty) {
@@ -61,19 +61,28 @@ class _RunningSummaryState extends State<RunningSummary> {
       body: Stack(
         children: [
           // Map with completed route
-          GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: _calculateMapCenter(),
-              zoom: 14,
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _calculateMapCenter(),
+              initialZoom: 14,
+              interactionOptions: const InteractionOptions(
+                // enableScrollWheel: true,
+                enableMultiFingerGestureRace: true,
+              ),
             ),
-            markers: widget.markers,
-            polylines: widget.polylines,
-            mapType: MapType.normal,
-            compassEnabled: true,
-            zoomControlsEnabled: false,
-            onMapCreated: (GoogleMapController controller) {
-              _mapController.complete(controller);
-            },
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.running_app',
+              ),
+              PolylineLayer(
+                polylines: widget.polylines,
+              ),
+              MarkerLayer(
+                markers: widget.markers,
+              ),
+            ],
           ),
           
           // Header overlay
