@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tervist_apk/widgets/calendar_popup.dart';
 import 'package:intl/intl.dart';
+import 'scanfood.dart'; // Make sure to import the scanfood.dart file
 
 class NutritionMainPage extends StatefulWidget {
   const NutritionMainPage({super.key});
@@ -26,6 +27,71 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
     setState(() {
       _startDate = _startDate.add(Duration(days: direction * 7));
     });
+  }
+
+  void _showFoodSelection(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Row(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset('assets/images/fooddtbs.png', height: 24),
+                      SizedBox(height: 5),
+                      Text('Food Database',
+                          style: TextStyle(color: Colors.black, fontSize: 16)),
+                    ],
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ScanFoodPage()),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset('assets/images/scanfood.png', height: 24),
+                        SizedBox(height: 5),
+                        Text('Scan Food',
+                            style:
+                                TextStyle(color: Colors.black, fontSize: 16)),
+                      ],
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -249,64 +315,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            builder: (context) {
-              return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset('assets/images/fooddtbs.png',
-                                height: 24),
-                            SizedBox(height: 5),
-                            Text('Food Database',
-                                style: TextStyle(
-                                    color: Colors.black, fontSize: 16)),
-                          ],
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset('assets/images/scanfood.png',
-                                height: 24),
-                            SizedBox(height: 5),
-                            Text('Scan Food',
-                                style: TextStyle(
-                                    color: Colors.black, fontSize: 16)),
-                          ],
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
+          _showFoodSelection(context);
         },
         backgroundColor: Colors.black,
         shape: const CircleBorder(),
