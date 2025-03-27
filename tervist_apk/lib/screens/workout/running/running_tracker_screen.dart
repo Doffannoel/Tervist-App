@@ -193,7 +193,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> {
       body: Stack(
         children: [
           // Flutter Map as the background
-          if (routePoints != null && markers != null && polylines != null)
+          if (markers != null)
             FlutterMap(
               mapController: _mapController,
               options: MapOptions(

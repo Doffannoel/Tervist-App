@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:google_fonts/google_fonts.dart';
 import 'treadmill_timestamp.dart';
 import 'treadmill_summary.dart';
-import '../running/running_tracker_screen.dart';
 
 class TreadmillTrackerScreen extends StatefulWidget {
   const TreadmillTrackerScreen({super.key});
@@ -19,11 +19,11 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
   Timer? _timer;
 
   // Workout metrics
-  double distance = 4.89; // Initial value from Figma
-  Duration duration = const Duration(hours: 1, minutes: 18, seconds: 2); // Initial value from Figma
-  int calories = 286; // Initial value from Figma
-  int steps = 3560; // Initial value from Figma
-  int stepsPerMinute = 78; // Initial value from Figma
+  double distance = 4.89; // Initial value
+  Duration duration = const Duration(hours: 1, minutes: 18, seconds: 2); // Initial value
+  int calories = 286; // Initial value
+  int steps = 3560; // Initial value
+  int stepsPerMinute = 78; // Initial value
   List<double> performanceData = List.generate(7, (index) => math.Random().nextDouble() * 3 + 5);
 
   final Color primaryGreen = const Color(0xFF2AAF7F);
@@ -172,158 +172,230 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
 
   Widget _buildInitialScreen() {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: const Color.fromARGB(255, 243, 243, 243),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Row(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Hi, Yesaya!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                CircleAvatar(
-                  backgroundColor: Colors.grey[300],
-                  child: const Icon(Icons.person),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            // Distance display
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Distance',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Text(
-                          '4.89',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Km',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                
-                // weather display
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.amber[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.wb_sunny, color: Colors.amber[800], size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${celsiusTemp.toStringAsFixed(1)}°C',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.amber[800],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            // Workout type selection
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildWorkoutType('Outdoor\nrunning', Icons.directions_run),
-                _buildWorkoutType('Walking', Icons.directions_walk),
-                _buildWorkoutType('Treadmill', Icons.fitness_center, isSelected: true),
-                _buildWorkoutType('Outdoor\ncycling', Icons.directions_bike),
-              ],
-            ),
-            // Progress indicator
-            const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              height: 6,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.2,
-                    decoration: BoxDecoration(
-                      color: primaryGreen,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            // Treadmill image
-            GestureDetector(
-              onTap: () {
-                _showPhonePlacementDialog(context);
-              },
-              child: Center(
-                child: Image.asset(
-                  'assets/images/treadmill.png',
-                  height: 250,
-                ),
-              ),
-            ),
-            const Spacer(),
-            // GO button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: startWorkout,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryGreen,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                ),
-                child: const Text(
-                  'GO',
-                  style: TextStyle(fontSize: 18),
-                ),
+            Text(
+              'Hi, Yesaya!',
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
               ),
             ),
           ],
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: CircleAvatar(
+              backgroundColor: Colors.grey[300],
+              child: const Icon(Icons.person),
+              radius: 20,
+            ),
+          ),
+        ],
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(0),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(13.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Distance section
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Distance label with icon
+                    InkWell(
+                      onTap: () {
+                        // Navigate to distance detail page
+                      },
+                      child: Row(
+                        children: [
+                          Text(
+                            'Distance >',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Distance value
+                    Padding(
+                      padding: const EdgeInsets.only(left: 0),
+                      child: Text(
+                        '${distance.toStringAsFixed(2)} KM',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.normal,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Icon(Icons.wb_sunny, color: Colors.amber[600]),
+                    Text(
+                      '${celsiusTemp.toStringAsFixed(1)}°C Sunny',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Menu Container - Workout Types (Treadmill is selected)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildWorkoutTypeButton('Outdoor\nrunning', Icons.directions_run),
+                _buildWorkoutTypeButton('Walking', Icons.directions_walk),
+                _buildWorkoutTypeButton('Treadmill', Icons.fitness_center, isSelected: true),
+                _buildWorkoutTypeButton('Outdoor\ncycling', Icons.directions_bike),
+              ],
+            ),
+          ),
+          // Where should you put your phone? - TextButton
+          Padding(
+            padding: const EdgeInsets.only(left: 15),
+            child: TextButton(
+              onPressed: () {
+                _showPhonePlacementDialog(context);
+              },
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                alignment: Alignment.centerLeft,
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    'Where should you put your phone?',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.normal,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 12,
+                    color: Colors.black,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Treadmill Image Container
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Image.asset(
+                  'assets/images/treadmill.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // GO Button - Circular button
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Center(
+              child: InkWell(
+                onTap: () {
+                  _showPhonePlacementDialog(context);
+                },
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: primaryGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      'GO',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      extendBody: true, // Important for floating navigation bar
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        height: 70,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildFloatingNavItem(Icons.home, 'Home', 0),
+            _buildFloatingNavItem(Icons.restaurant_menu, 'Menu', 1),
+            _buildFloatingNavItem(Icons.directions_run, 'Workout', 2, isActive: true),
+            _buildFloatingNavItem(Icons.person, 'Profile', 3),
+          ],
+        ),
+      ),
     );
   }
 
@@ -355,9 +427,9 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Text(
+                    Text(
                       'Where should you put your phone?',
-                      style: TextStyle(
+                      style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -376,9 +448,9 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Recommended',
-                    style: TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -413,14 +485,14 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Text(
+                      Text(
                         'Treadmill',
-                        style: TextStyle(fontSize: 16),
+                        style: GoogleFonts.poppins(fontSize: 16),
                       ),
                       const Spacer(),
-                      const Text(
+                      Text(
                         "Don't",
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Colors.red,
                           fontWeight: FontWeight.w500,
                           fontSize: 14,
@@ -435,6 +507,7 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.of(context).pop();
+                      startWorkout();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryGreen,
@@ -443,7 +516,13 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
                         borderRadius: BorderRadius.circular(25),
                       ),
                     ),
-                    child: const Text('Got it'),
+                    child: Text(
+                      'Got it',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -481,12 +560,12 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
           const SizedBox(width: 12),
           Text(
             label,
-            style: const TextStyle(fontSize: 16),
+            style: GoogleFonts.poppins(fontSize: 16),
           ),
           const Spacer(),
           Text(
             'Recommended',
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               color: primaryGreen,
               fontWeight: FontWeight.w500,
               fontSize: 14,
@@ -497,92 +576,44 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
     );
   }
 
-  Widget _buildBottomNavigationBar(int selectedIndex) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 0,
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(Icons.home, 'Home', 0, selectedIndex),
-            _buildNavItem(Icons.menu, 'Menu', 1, selectedIndex),
-            _buildNavItem(Icons.directions_run, 'Workout', 2, selectedIndex),
-            _buildNavItem(Icons.person, 'Profile', 3, selectedIndex),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, int index, int selectedIndex) {
-    final bool isSelected = index == selectedIndex;
-    final color = isSelected ? primaryGreen : Colors.grey;
-
+  Widget _buildFloatingNavItem(IconData icon, String label, int index, {bool isActive = false}) {
     return InkWell(
       onTap: () {
-        // Handle navigation tab tap
+        // Navigate to corresponding page
       },
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             icon,
-            color: color,
+            color: isActive ? primaryGreen : Colors.black,
             size: 24,
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              color: color,
+            style: GoogleFonts.poppins(
+              color: isActive ? primaryGreen : Colors.black,
               fontSize: 12,
             ),
           ),
-          const SizedBox(height: 4),
-          Container(
-            height: 4,
-            width: 30,
-            decoration: BoxDecoration(
-              color: isSelected ? primaryGreen : Colors.transparent,
-              borderRadius: BorderRadius.circular(2),
+          if (isActive)
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              width: 5,
+              height: 5,
+              decoration: BoxDecoration(
+                color: primaryGreen,
+                shape: BoxShape.circle,
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildWorkoutType(String label, IconData icon, {bool isSelected = false}) {
-  bool isRunning = label.contains('running');
-  bool isTreadmill = label.contains('Treadmill');
-  
-  return InkWell(
-    onTap: () {
-      if (isRunning && !isSelected) {
-        // Navigasi ke RunningTrackerScreen jika tombol running ditekan
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const RunningTrackerScreen()),
-        );
-      } else if (!isTreadmill && !isSelected) {
-        // Handle tipe workout lainnya di sini
-        // Misalnya tunjukkan snackbar "Coming soon"
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$label coming soon!')),
-        );
-      }
-    },
-    child: Column(
+  Widget _buildWorkoutTypeButton(String label, IconData icon, {bool isSelected = false}) {
+    return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(12),
@@ -600,13 +631,12 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> {
         Text(
           label,
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             color: isSelected ? primaryGreen : Colors.black,
             fontSize: 12,
           ),
         ),
       ],
-    ),
-  );
-}
+    );
+  }
 }

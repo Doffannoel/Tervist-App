@@ -105,7 +105,7 @@ class _RunningTimestampState extends State<RunningTimestamp> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             // Distance
-                            _buildMetricColumn("${widget.distance.toStringAsFixed(2)}", "Km"),
+                            _buildMetricColumn(widget.distance.toStringAsFixed(2), "Km"),
                             
                             // Time
                             _buildMetricColumn(widget.formattedDuration, "Time"),
