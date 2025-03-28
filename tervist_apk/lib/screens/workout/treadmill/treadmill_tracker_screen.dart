@@ -6,6 +6,7 @@ import 'treadmill_timestamp.dart';
 import 'treadmill_summary.dart';
 import '../workout_countdown.dart';
 import 'package:flutter/scheduler.dart'; // Import for Ticker
+import '../running/running_tracker_screen.dart'; 
 
 class TreadmillTrackerScreen extends StatefulWidget {
   const TreadmillTrackerScreen({super.key});
@@ -115,9 +116,8 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
     // Update duration - now 1 second at a time
     final newDuration = duration + const Duration(seconds: 1);
     
-    // Update steps (adjusted for 1-second intervals)
-    final stepsPerSecond = 160.0 / 60.0; // ~2.67 steps per second
-    final newStepsCount = steps + stepsPerSecond.round(); // Steps in 1 second
+    // Update steps - exactly 1 step per second
+    final newStepsCount = steps + 1;
     
     // Calculate distance based on steps (1300 steps = 1 km)
     final newDistance = newStepsCount / 1300;
@@ -126,8 +126,8 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
     final caloriesPerSecond = 400.0 / 3600.0; // calories burned per second
     final newCalories = (newDuration.inSeconds * caloriesPerSecond).round();
     
-    // Update steps per minute
-    stepsPerMinute = (stepsPerSecond * 60).round();
+    // Update steps per minute - 60 steps per minute (1 per second)
+    stepsPerMinute = 60;
     
     // Apply updates all at once
     duration = newDuration;
@@ -135,7 +135,6 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
     distance = newDistance;
     calories = newCalories;
   }
-
   String get formattedDuration {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     String hours = twoDigits(duration.inHours);
@@ -461,7 +460,20 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
   }
 
   Widget _buildWorkoutTypeButton(String label, bool isSelected) {
-    return Container(
+  bool isRunning = label.contains('running');
+  bool isTreadmill = label.contains('Treadmill');
+  
+  return InkWell(
+    onTap: () {
+      if (isRunning && !isSelected) {
+        // Navigate to RunningTrackerScreen if running is selected
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const RunningTrackerScreen()),
+        );
+      }
+      // If already on treadmill screen, no need to navigate
+    },
+    child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Column(
         children: [
@@ -486,8 +498,9 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
             ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildRecommendationItem(String text, Color color) {
     return Container(

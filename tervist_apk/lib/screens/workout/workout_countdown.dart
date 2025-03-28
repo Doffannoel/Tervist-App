@@ -74,12 +74,7 @@ class _WorkoutCountdownState extends State<WorkoutCountdown> with SingleTickerPr
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-
-        centerTitle: true,
-      ),
+      // Removed the AppBar completely to eliminate the back button
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
