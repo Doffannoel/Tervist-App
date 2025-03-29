@@ -30,6 +30,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  google_maps_flutter: ^2.2.0  
+
   flutter_svg: ^1.0.3  # Added flutter_svg dependency for SVG support
 
   intl: ^0.18.0 
@@ -70,7 +73,6 @@ flutter:
   assets:
     - assets/images/
     - assets/svg/
-  #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 
 class TreadmillSummary extends StatelessWidget {
@@ -24,292 +25,385 @@ class TreadmillSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: onBackToHome,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.share_outlined),
-                    onPressed: () {
-                      // Share functionality
-                    },
-                  ),
-                  CircleAvatar(
-                    backgroundColor: Colors.grey[300],
-                    child: const Icon(Icons.person),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Treadmill',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Image.asset(
-                'assets/images/treadmill.png',
-                height: 160,
-              ),
-              const SizedBox(height: 20),
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '${distance.toStringAsFixed(2)} ',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'km',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Column(
-                      children: [
-                        Text(
-                          formattedDuration,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Time',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      height: 30,
-                      width: 1,
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      color: Colors.grey[400],
-                    ),
-                    Column(
-                      children: [
-                        Text(
-                          formattedPace,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Pace',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.local_fire_department,
-                                size: 16,
-                                color: Colors.orange[400],
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Calories Burned',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.orange[400],
-                                ),
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top navigation
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Back button
+                      GestureDetector(
+                        onTap: onBackToHome,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          Row(
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.black,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                      
+                      // Share button
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward,
+                          color: Colors.black,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // 3D Treadmill image
+                SizedBox(
+                  width: double.infinity,
+                  height: 240,
+                  child: Image.asset(
+                    'assets/images/treadmill.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                
+                // Tervist | Treadmill text
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
+                  child: Text(
+                    'Tervist | Treadmill',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+                
+                // Primary workout stats card
+                Container(
+                  margin: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Distance
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            distance.toStringAsFixed(2),
+                            style: GoogleFonts.poppins(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4.0),
+                            child: Text(
+                              'Km',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          // User info
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                '$calories',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                                'Yesaya',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              const SizedBox(width: 4),
                               Text(
-                                'kcal',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
+                                '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateTime.now().hour}:${DateTime.now().minute}',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  color: Colors.grey,
                                 ),
                               ),
                             ],
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child:
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 16),
+                      // Time and Pace
+                      Row(
                         children: [
-                          Row(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.directions_walk,
-                                size: 16,
-                                color: primaryGreen,
-                              ),
-                              const SizedBox(width: 4),
                               Text(
-                                'Steps',
-                                style: TextStyle(
+                                formattedDuration,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                'Time',
+                                style: GoogleFonts.poppins(
                                   fontSize: 12,
-                                  color: primaryGreen,
+                                  color: Colors.grey,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(width: 60),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                formattedPace,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                'Pace',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Calories card
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16.0),
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.local_fire_department,
+                        color: Colors.orange[400],
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Calories Burned',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.orange[400],
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '$calories',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange[400],
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'kcal',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Steps card
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16.0),
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.directions_walk,
+                        color: Colors.blue[400],
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Steps',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.blue[400],
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '5,234',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[400],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Performance chart
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16.0),
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: 200,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: List.generate(
+                            5,
+                            (index) {
+                              final double height = 80 + (math.Random().nextDouble() * 80);
+                              return Container(
+                                width: 20,
+                                height: height,
+                                decoration: BoxDecoration(
+                                  color: primaryGreen,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Icon(
+                            Icons.directions_run,
+                            color: primaryGreen,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 4),
                           Text(
-                            '${steps.toString()}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                            'Pace',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.black,
                             ),
                           ),
                         ],
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Container(
-                height: 200,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: List.generate(
-                          5,
-                          (index) {
-                            final double height = 50 + (math.Random().nextDouble() * 80);
-                            return Container(
-                              width: 20,
-                              height: height,
-                              decoration: BoxDecoration(
-                                color: primaryGreen.withOpacity(0.7),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            );
-                          },
+                
+                // Share workout button
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 30.0),
+                  child: Center(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // Share workout functionality
+                      },
+                      icon: const Icon(Icons.share),
+                      label: const Text('Share Workout'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryGreen,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
                         ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Icon(
-                          Icons.directions_run,
-                          size: 14,
-                          color: primaryGreen,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Pace',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      // Share workout functionality
-                    },
-                    icon: const Icon(Icons.share),
-                    label: const Text('Share Workout'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryGreen,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    ),
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
