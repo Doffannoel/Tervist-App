@@ -31,9 +31,10 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_svg: ^1.0.3 # Added flutter_svg dependency for SVG support
+  flutter_svg: ^2.0.17 # Added flutter_svg dependency for SVG support
 
-  intl: ^0.18.0
+  intl: ^0.20.2
+
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -43,6 +44,9 @@ dependencies:
   smooth_page_indicator: ^1.2.1
   google_maps_flutter: ^2.12.0
   flutter_map: ^8.1.1
+ 
+  location: ^8.0.0
+  latlong2: ^0.9.0
   # flutter_svg: ^2.0.17
 
 dev_dependencies:
