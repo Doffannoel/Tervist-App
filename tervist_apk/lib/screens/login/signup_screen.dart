@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'enter_details.dart'; // Import the EnterDetails page
+import '/../api/signup_data.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -9,16 +10,70 @@ class AuthPage extends StatefulWidget {
 }
 
 class _AuthPageState extends State<AuthPage> {
-  bool _isSignIn = true; // Controls which tab is active
+  bool _isSignIn = true;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _rememberMe = false;
   bool _termsAccepted = false;
 
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
+  bool _isEmailValid = true;
+  bool _isPasswordValid = true;
+  bool _isConfirmPasswordValid = true;
+
+  void _validateFields() {
+    setState(() {
+      _isEmailValid = _emailController.text.isNotEmpty;
+      _isPasswordValid = _passwordController.text.isNotEmpty;
+
+      if (!_isSignIn) {
+        _isConfirmPasswordValid = _confirmPasswordController.text.isNotEmpty;
+
+        if (_isEmailValid && _isPasswordValid && _isConfirmPasswordValid) {
+          if (_passwordController.text != _confirmPasswordController.text) {
+            _isConfirmPasswordValid = false;
+          }
+        }
+      }
+    });
+  }
+
+  void _handleSignUpOrSignIn() {
+    _validateFields();
+
+    if (_isSignIn) {
+      if (_isEmailValid && _isPasswordValid) {
+        print('Sign In Successful');
+        // Add your sign in logic here
+      }
+    } else {
+      if (_isEmailValid &&
+          _isPasswordValid &&
+          _isConfirmPasswordValid &&
+          _termsAccepted) {
+        SignupData signupData = SignupData()
+          ..email = _emailController.text
+          ..password = _passwordController.text
+          ..confirmPassword = _confirmPasswordController.text;
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EnterDetails(signupData: signupData),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEBFDFA), // Light mint background
+      backgroundColor: const Color(0xFFEBFDFA),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -54,7 +109,7 @@ class _AuthPageState extends State<AuthPage> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Sign up/Sign in Tabs
+                      // Tabs
                       Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFFEEF1F8),
@@ -153,126 +208,188 @@ class _AuthPageState extends State<AuthPage> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Email address
-                      const Text(
+                      // Email Field
+                      Text(
                         'Email address',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
+                          color: !_isEmailValid ? Colors.red : Colors.black,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
+                          border: Border.all(
+                            color: _isEmailValid
+                                ? Colors.grey.shade300
+                                : Colors.red,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const TextField(
+                        child: TextField(
+                          controller: _emailController,
                           decoration: InputDecoration(
                             hintText: 'example@gmail.com',
-                            hintStyle:
-                                TextStyle(color: Colors.grey, fontSize: 14),
-                            contentPadding: EdgeInsets.symmetric(
+                            hintStyle: TextStyle(
+                                color: _isEmailValid ? Colors.grey : Colors.red,
+                                fontSize: 14),
+                            contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 14),
                             border: InputBorder.none,
+                            suffixIcon: !_isEmailValid
+                                ? const Icon(Icons.warning_amber_rounded,
+                                    color: Colors.red)
+                                : null,
                           ),
+                          onChanged: (value) {
+                            setState(() {
+                              _isEmailValid = value.isNotEmpty;
+                            });
+                          },
                         ),
                       ),
+
                       const SizedBox(height: 16),
 
-                      // Password
-                      const Text(
+                      // Password Field
+                      Text(
                         'Password',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
+                          color: !_isPasswordValid ? Colors.red : Colors.black,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
+                          border: Border.all(
+                            color: _isPasswordValid
+                                ? Colors.grey.shade300
+                                : Colors.red,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: TextField(
+                          controller: _passwordController,
                           obscureText: !_isPasswordVisible,
                           decoration: InputDecoration(
                             hintText: 'Password',
-                            hintStyle: const TextStyle(
-                                color: Colors.grey, fontSize: 14),
+                            hintStyle: TextStyle(
+                                color:
+                                    _isPasswordValid ? Colors.grey : Colors.red,
+                                fontSize: 14),
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 14),
                             border: InputBorder.none,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _isPasswordVisible
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                color: Colors.grey,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _isPasswordVisible = !_isPasswordVisible;
-                                });
-                              },
+                            suffixIcon: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (!_isPasswordValid)
+                                  const Icon(Icons.warning_amber_rounded,
+                                      color: Colors.red),
+                                IconButton(
+                                  icon: Icon(
+                                    _isPasswordVisible
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color: Colors.grey,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isPasswordVisible = !_isPasswordVisible;
+                                    });
+                                  },
+                                ),
+                              ],
                             ),
                           ),
+                          onChanged: (value) {
+                            setState(() {
+                              _isPasswordValid = value.isNotEmpty;
+                            });
+                          },
                         ),
                       ),
 
-                      // Confirm password - Only for sign up
+                      // Confirm Password - Only for Sign Up
                       if (!_isSignIn) ...[
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           'Confirm password',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
+                            color: !_isConfirmPasswordValid
+                                ? Colors.red
+                                : Colors.black,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Container(
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
+                            border: Border.all(
+                              color: _isConfirmPasswordValid
+                                  ? Colors.grey.shade300
+                                  : Colors.red,
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: TextField(
+                            controller: _confirmPasswordController,
                             obscureText: !_isConfirmPasswordVisible,
                             decoration: InputDecoration(
                               hintText: 'Repeat Password',
-                              hintStyle: const TextStyle(
-                                  color: Colors.grey, fontSize: 14),
+                              hintStyle: TextStyle(
+                                  color: _isConfirmPasswordValid
+                                      ? Colors.grey
+                                      : Colors.red,
+                                  fontSize: 14),
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 14),
                               border: InputBorder.none,
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _isConfirmPasswordVisible
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                  color: Colors.grey,
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _isConfirmPasswordVisible =
-                                        !_isConfirmPasswordVisible;
-                                  });
-                                },
+                              suffixIcon: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (!_isConfirmPasswordValid)
+                                    const Icon(Icons.warning_amber_rounded,
+                                        color: Colors.red),
+                                  IconButton(
+                                    icon: Icon(
+                                      _isConfirmPasswordVisible
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                      color: Colors.grey,
+                                      size: 20,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _isConfirmPasswordVisible =
+                                            !_isConfirmPasswordVisible;
+                                      });
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
+                            onChanged: (value) {
+                              setState(() {
+                                _isConfirmPasswordValid = value.isNotEmpty;
+                                if (_passwordController.text != value) {
+                                  _isConfirmPasswordValid = false;
+                                }
+                              });
+                            },
                           ),
                         ),
                       ],
 
-                      const SizedBox(height: 16),
-
-                      // Remember me & Forgot password - Only for sign in
+                      // Remember Me & Forgot Password (Sign In)
                       if (_isSignIn)
                         Row(
                           children: [
-                            // Remember Me
                             Row(
                               children: [
                                 Transform.scale(
@@ -288,8 +405,6 @@ class _AuthPageState extends State<AuthPage> {
                                         });
                                       },
                                       shape: const CircleBorder(),
-                                      materialTapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
                                   ),
                                 ),
@@ -303,13 +418,10 @@ class _AuthPageState extends State<AuthPage> {
                                 ),
                               ],
                             ),
-
                             const Spacer(),
-
-                            // Forgot password
                             GestureDetector(
                               onTap: () {
-                                // TODO: Handle forgot password
+                                // TODO: Implement forgot password
                               },
                               child: const Text(
                                 'Forgot password?',
@@ -322,7 +434,7 @@ class _AuthPageState extends State<AuthPage> {
                           ],
                         ),
 
-                      // Terms and conditions - Only for sign up
+                      // Terms and Conditions (Sign Up)
                       if (!_isSignIn) ...[
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,8 +452,6 @@ class _AuthPageState extends State<AuthPage> {
                                     });
                                   },
                                   shape: const CircleBorder(),
-                                  materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                               ),
                             ),
@@ -385,21 +495,11 @@ class _AuthPageState extends State<AuthPage> {
 
                       const SizedBox(height: 24),
 
-                      // Sign up/Sign in button
+                      // Sign Up/Sign In Button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (!_isSignIn) {
-                              // Ensure this only triggers when signing up
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        EnterDetails()), // Navigate to EnterDetails page
-                              );
-                            }
-                          },
+                          onPressed: _handleSignUpOrSignIn,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
                             foregroundColor: Colors.white,
@@ -424,7 +524,7 @@ class _AuthPageState extends State<AuthPage> {
 
                 const SizedBox(height: 20),
 
-                // Divider and social sign in/up section
+                // Divider and Social Sign In/Up
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -452,7 +552,7 @@ class _AuthPageState extends State<AuthPage> {
 
                 const SizedBox(height: 20),
 
-                // Social buttons
+                // Social Buttons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -466,7 +566,7 @@ class _AuthPageState extends State<AuthPage> {
 
                 const SizedBox(height: 20),
 
-                // Sign up/Sign in link
+                // Sign Up/Sign In Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -521,5 +621,13 @@ class _AuthPageState extends State<AuthPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 }

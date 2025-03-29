@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'set_target.dart'; // Ensure this import is present
+import 'set_target.dart';
+import '/../api/signup_data.dart'; // pastikan path-nya sesuai struktur project kamu
 
 class EnterDetails extends StatefulWidget {
-  const EnterDetails({super.key});
+  final SignupData signupData;
+  const EnterDetails({super.key, required this.signupData});
 
   @override
   State<EnterDetails> createState() => _EnterDetailsState();
@@ -18,15 +20,21 @@ class _EnterDetailsState extends State<EnterDetails> {
   String gender = '';
   String? _errorMessage;
 
+  // Validation state variables
+  bool _isUsernameValid = true;
+  bool _isWeightValid = true;
+  bool _isHeightValid = true;
+  bool _isAgeValid = true;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFEBFDFA),
       appBar: AppBar(
         backgroundColor: const Color(0xFFEBFDFA),
-        title: Text(''),
+        title: const Text(''),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -48,50 +56,21 @@ class _EnterDetailsState extends State<EnterDetails> {
                     children: [
                       Row(
                         children: [
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Image.asset('assets/images/logotervist.png',
                               height: 40, width: 129, fit: BoxFit.contain),
                         ],
                       ),
-                      SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _stepCircle('1', Color(0xFFe2e8ef)),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Flex(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  direction: Axis.horizontal,
-                                  children: List.generate(
-                                    (constraints.constrainWidth() / 10).floor(),
-                                    (index) => SizedBox(
-                                      width: 5,
-                                      height: 1,
-                                      child: DecoratedBox(
-                                        decoration:
-                                            BoxDecoration(color: Colors.grey),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          _stepCircle('2', Colors.white),
-                        ],
-                      ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
+                      _buildProgressIndicator(),
+                      const SizedBox(height: 20),
                       Text('Enter Details',
                           style: GoogleFonts.poppins(
                               fontSize: 20, fontWeight: FontWeight.bold)),
-                      SizedBox(height: 10),
-                      _customField("Username", usernameController),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
+                      _customField("Username", usernameController,
+                          isValid: _isUsernameValid),
+                      const SizedBox(height: 10),
                       Text('Gender',
                           style: GoogleFonts.montserrat(
                               fontSize: 14,
@@ -99,67 +78,47 @@ class _EnterDetailsState extends State<EnterDetails> {
                               fontWeight: FontWeight.w600)),
                       Row(
                         children: [
-                          Expanded(child: _genderButton('MALE', Icons.male)),
-                          SizedBox(width: 10),
+                          Expanded(child: _genderButton('Male', Icons.male)),
+                          const SizedBox(width: 10),
                           Expanded(
-                              child: _genderButton('FEMALE', Icons.female)),
+                              child: _genderButton('Female', Icons.female)),
                         ],
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
-                              child:
-                                  _labelWithField("Weight", weightController)),
-                          SizedBox(width: 10),
+                              child: _labelWithField("Weight", weightController,
+                                  isValid: _isWeightValid)),
+                          const SizedBox(width: 10),
                           Expanded(
-                              child:
-                                  _labelWithField("Height", heightController)),
+                              child: _labelWithField("Height", heightController,
+                                  isValid: _isHeightValid)),
                         ],
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       SizedBox(
                         width: MediaQuery.of(context).size.width * 0.35,
-                        child: _labelWithField("Age", ageController),
+                        child: _labelWithField("Age", ageController,
+                            isValid: _isAgeValid),
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       if (_errorMessage != null)
                         Row(
                           children: [
-                            Icon(Icons.error, color: Colors.red, size: 16),
-                            SizedBox(width: 4),
+                            const Icon(Icons.error,
+                                color: Colors.red, size: 16),
+                            const SizedBox(width: 4),
                             Text(_errorMessage!,
                                 style: GoogleFonts.poppins(color: Colors.red)),
                           ],
                         ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: () {
-                          // Validate fields
-                          if (usernameController.text.isEmpty ||
-                              weightController.text.isEmpty ||
-                              heightController.text.isEmpty ||
-                              ageController.text.isEmpty) {
-                            setState(() {
-                              _errorMessage =
-                                  'Fill in your data'; // Set error message
-                            });
-                          } else {
-                            setState(() {
-                              _errorMessage =
-                                  null; // Clear error message if all fields are filled
-                            });
-                            // Navigate to Set Target page
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => SetTargetPage()),
-                            );
-                          }
-                        },
+                        onPressed: _handleNext,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
-                          minimumSize: Size(double.infinity, 50),
+                          minimumSize: const Size(double.infinity, 50),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                         ),
@@ -182,6 +141,38 @@ class _EnterDetailsState extends State<EnterDetails> {
     );
   }
 
+  Widget _buildProgressIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _stepCircle('1', Color(0xFFe2e8ef)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Flex(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                direction: Axis.horizontal,
+                children: List.generate(
+                  (constraints.constrainWidth() / 10).floor(),
+                  (index) => const SizedBox(
+                    width: 5,
+                    height: 1,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(color: Colors.grey),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 10),
+        _stepCircle('2', Colors.white),
+      ],
+    );
+  }
+
   Widget _stepCircle(String number, Color color) => Container(
         width: 54,
         height: 54,
@@ -192,44 +183,80 @@ class _EnterDetailsState extends State<EnterDetails> {
         ),
         child: Center(
           child: Text(number,
-              style: GoogleFonts.poppins(color: Colors.black, fontSize: 13)),
+              style: GoogleFonts.poppins(
+                  color: color == Colors.black ? Colors.white : Colors.black,
+                  fontSize: 13)),
         ),
       );
 
-  Widget _customField(String hint, TextEditingController controller) => Column(
+  Widget _customField(String hint, TextEditingController controller,
+          {bool isValid = true}) =>
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(hint,
               style: GoogleFonts.montserrat(
                   fontSize: 14,
-                  color: Colors.black,
+                  color: isValid ? Colors.black : Colors.red,
                   fontWeight: FontWeight.w600)),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           TextField(
             controller: controller,
             decoration: InputDecoration(
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                    color: isValid ? Colors.grey : Colors.red,
+                    width: isValid ? 1 : 2),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                    color: isValid ? Colors.grey : Colors.red,
+                    width: isValid ? 1 : 2),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                    color: isValid ? Colors.black : Colors.red, width: 2),
+              ),
             ),
           ),
         ],
       );
 
-  Widget _labelWithField(String label, TextEditingController controller) =>
+  Widget _labelWithField(String label, TextEditingController controller,
+          {bool isValid = true}) =>
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
               style: GoogleFonts.montserrat(
                   fontSize: 14,
-                  color: Colors.black,
+                  color: isValid ? Colors.black : Colors.red,
                   fontWeight: FontWeight.w600)),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           TextField(
             controller: controller,
+            keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                    color: isValid ? Colors.grey : Colors.red,
+                    width: isValid ? 1 : 2),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                    color: isValid ? Colors.grey : Colors.red,
+                    width: isValid ? 1 : 2),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                    color: isValid ? Colors.black : Colors.red, width: 2),
+              ),
             ),
           ),
         ],
@@ -248,8 +275,44 @@ class _EnterDetailsState extends State<EnterDetails> {
               gender == title ? Colors.grey.shade300 : Colors.white,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          side: BorderSide(color: Colors.grey),
+          side: const BorderSide(color: Colors.grey),
         ),
         onPressed: () => setState(() => gender = title),
       );
+
+  void _handleNext() {
+    setState(() {
+      _isUsernameValid = usernameController.text.isNotEmpty;
+      _isWeightValid = weightController.text.isNotEmpty;
+      _isHeightValid = heightController.text.isNotEmpty;
+      _isAgeValid = ageController.text.isNotEmpty;
+
+      if (!_isUsernameValid ||
+          !_isWeightValid ||
+          !_isHeightValid ||
+          !_isAgeValid ||
+          gender.isEmpty) {
+        _errorMessage = 'Please fill in all fields';
+        return;
+      }
+
+      _errorMessage = null;
+
+      // Simpan ke SignupData
+      final signupData = widget.signupData;
+      signupData.username = usernameController.text;
+      signupData.gender = gender;
+      signupData.weight = double.tryParse(weightController.text);
+      signupData.height = double.tryParse(heightController.text);
+      signupData.age = int.tryParse(ageController.text);
+
+      // Navigasi ke halaman berikut
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SetTargetPage(signupData: signupData),
+        ),
+      );
+    });
+  }
 }

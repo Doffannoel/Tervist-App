@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tervist_apk/api/signup_data.dart';
 
 class SetTargetPage extends StatefulWidget {
-  const SetTargetPage({super.key});
+  final SignupData signupData;
+  const SetTargetPage({super.key, required this.signupData});
 
   @override
   State<SetTargetPage> createState() => _SetTargetPageState();
@@ -202,8 +204,8 @@ class _SetTargetPageState extends State<SetTargetPage> {
           ),
           dropdownColor: Colors.white,
           isExpanded: true,
-          isDense: true, // Tambahkan ini untuk memperkecil tinggi dropdown item
-          menuMaxHeight: 250, // Tambahkan ini untuk batasi tinggi dropdown
+          isDense: true,
+          menuMaxHeight: 250,
           icon: Icon(Icons.arrow_drop_down),
           items: [
             DropdownMenuItem<String>(
@@ -214,21 +216,30 @@ class _SetTargetPageState extends State<SetTargetPage> {
             DropdownMenuItem<String>(
               value: 'Low Active',
               child: _activityLevelItem('Low Active',
-                  'Daily activities require some effort such as period of standing, housework or some light exercise'),
+                  'Daily activities require some effort such as standing, housework or light exercise'),
             ),
             DropdownMenuItem<String>(
               value: 'Active',
               child: _activityLevelItem('Active',
-                  'Daily activities require reasonable effort such as standing, physical work or regular moderate exercise'),
+                  'Daily activities require effort such as standing, physical work or regular moderate exercise'),
             ),
             DropdownMenuItem<String>(
               value: 'Very Active',
               child: _activityLevelItem('Very Active',
-                  'Daily activities require intense physical effort such as construction work or regular vigorous exercise'),
+                  'Daily activities require intense physical effort such as construction or regular vigorous exercise'),
             ),
           ],
+          selectedItemBuilder: (context) => _activityLevels.map((level) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                level,
+                style: GoogleFonts.poppins(fontSize: 14, color: Colors.black),
+              ),
+            );
+          }).toList(),
           onChanged: onChanged,
-        ),
+        )
       ],
     );
   }
@@ -270,9 +281,20 @@ class _SetTargetPageState extends State<SetTargetPage> {
               _selectedGoal == title ? Colors.grey.shade300 : Colors.white,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          side: BorderSide(color: Colors.grey),
+          side: const BorderSide(color: Colors.grey),
         ),
-        onPressed: () => setState(() => _selectedGoal = title),
+        onPressed: () {
+          if (title == 'Weight gain' || title == 'Weight loss') {
+            _showTargetPopup(title: title);
+          } else {
+            setState(() {
+              _selectedGoal = title;
+              widget.signupData.goal = 'Maintain Weight';
+              widget.signupData.targetWeight = null;
+              widget.signupData.timeline = null;
+            });
+          }
+        },
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Center(
@@ -284,4 +306,129 @@ class _SetTargetPageState extends State<SetTargetPage> {
           ),
         ),
       );
+
+  void _showTargetPopup({required String title}) {
+    final TextEditingController weightController = TextEditingController();
+    String timelineValue = 'Weeks';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Set your Target',
+                        style: GoogleFonts.poppins(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'How much you want to ${title == "Weight gain" ? "gain" : "lose"}?',
+                    style: GoogleFonts.poppins(fontSize: 13),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: weightController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Enter weight',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('kg',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Timeline',
+                      style: GoogleFonts.poppins(fontSize: 13)),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Enter time',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    DropdownButton<String>(
+                      value: timelineValue,
+                      dropdownColor: Colors.white,
+                      items: ['Weeks', 'Months'].map((e) {
+                        return DropdownMenuItem<String>(
+                          value: e,
+                          child: Text(e),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => timelineValue = val);
+                        }
+                      },
+                    )
+                  ],
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    final signupData = widget.signupData;
+                    signupData.goal =
+                        title == "Weight gain" ? "Weight Gain" : "Weight Loss";
+                    signupData.targetWeight =
+                        double.tryParse(weightController.text);
+                    signupData.timeline = timelineValue;
+
+                    Navigator.pop(context);
+                    setState(() => _selectedGoal = title);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey.shade200,
+                    minimumSize: const Size(double.infinity, 45),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text('Set Goal',
+                      style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600, color: Colors.black)),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
