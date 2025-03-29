@@ -11,10 +11,11 @@ import '../workout_countdown.dart';
 import '../treadmill/treadmill_tracker_screen.dart';
 import 'package:flutter/scheduler.dart'; // Import for Ticker
 import 'location_permission_handler.dart'; // Import the permission handler
+import '/widgets/navigation_bar.dart'; // Import the navigation bar widget
 
 class RunningTrackerScreen extends StatefulWidget {
   const RunningTrackerScreen({super.key});
-
+  
   @override
   State<RunningTrackerScreen> createState() => _RunningTrackerScreenState();
 }
@@ -40,7 +41,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
   int calories = 0; // Start with 0
   int steps = 0; // Start with 0
   int stepsPerMinute = 0; // Start with 0
-  List<double> performanceData = List.generate(7, (index) => math.Random().nextDouble() * 3 + 5);
+  List<double> performanceData = List.generate(5, (index) => 0.0); // Initialize with zeros
 
   // For route tracking
   List<LatLng> routePoints = [];
@@ -97,8 +98,10 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
   // Method to subscribe to location updates
   void _subscribeToLocationUpdates() {
     MapService.getLiveLocationStream().listen((newLocation) {
-      // Update map data with the new location
-      _updateMapWithNewLocation();
+      // Update map data with the new location, only if workout is active
+      if (isWorkoutActive && !isPaused) {
+        _updateMapWithNewLocation();
+      }
       
       // Signal that we need an update
       _needsUpdate = true;
@@ -166,22 +169,19 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
     }
     
     if (!isWorkoutActive) {
-      // Reset route history when starting a new workout
-      _resetRouteHistory();
+      // PERBAIKAN MASALAH #1: Reset route history and start session when GO is pressed
+      MapService.startSession();
       
       setState(() {
         isWorkoutActive = true;
         isPaused = false;
         currentStep = 1; // Move to workout tracking screen
+        
+        // Reset performance data
+        performanceData = List.generate(5, (index) => 0.0);
       });
       _startTimer();
     }
-  }
-
-  // Method to reset route history
-  void _resetRouteHistory() {
-    // This will be handled by the MapService when getting a new stream
-    _subscribeToLocationUpdates();
   }
 
   void pauseWorkout() {
@@ -204,6 +204,10 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
 
   void stopWorkout() {
     _timer?.cancel();
+    
+    // PERBAIKAN MASALAH #3: Stop session when workout is stopped
+    MapService.stopSession();
+    
     setState(() {
       isWorkoutActive = false;
       isPaused = false;
@@ -255,6 +259,26 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
     
     // Update steps per minute
     stepsPerMinute = 160; // Common running cadence
+    
+    // PERBAIKAN MASALAH #3: Update performance data for pace graph
+    // Only update if workout is active
+    if (isWorkoutActive && currentStep == 1) {
+      // Calculate current pace
+      double currentPace = 0;
+      if (totalDistance > 0) {
+        // Pace in minutes per km
+        currentPace = newDuration.inSeconds / 60 / totalDistance;
+        
+        // Normalize for the graph (between 0-1)
+        currentPace = math.min(currentPace / 10, 1.0);
+      }
+      
+      // Shift performance data array and add new value
+      for (int i = 0; i < performanceData.length - 1; i++) {
+        performanceData[i] = performanceData[i + 1];
+      }
+      performanceData[performanceData.length - 1] = currentPace;
+    }
     
     // Apply updates all at once
     duration = newDuration;
@@ -360,6 +384,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
               calories = 0;
               steps = 0;
               stepsPerMinute = 0;
+              performanceData = List.generate(5, (index) => 0.0);
             });
           },
         );
@@ -427,7 +452,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
                             ),
                             // Distance value
                             Text(
-                              '${distance.toStringAsFixed(2)} KM',
+                              '0.00 KM', // Always start with 0.00 in initial screen
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -526,40 +551,47 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
                         ],
                       ),
                       padding: const EdgeInsets.all(4),
-                      child: routePoints.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: FlutterMap(
-                              mapController: _mapController,
-                              options: MapOptions(
-                                initialCenter: routePoints.first,
-                                initialZoom: 15,
-                              ),
-                              children: [
-                                TileLayer(
-                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                  userAgentPackageName: 'com.example.app',
-                                ),
-                                MarkerLayer(markers: markers),
-                                PolylineLayer(polylines: polylines),
-                              ],
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: FlutterMap(
+                          mapController: _mapController,
+                          options: MapOptions(
+                            initialCenter: MapService.getCurrentLocation(),
+                            initialZoom: 15,
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              userAgentPackageName: 'com.example.app',
                             ),
-                          )
-                        : Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircularProgressIndicator(color: primaryGreen),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Loading map...',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.grey,
+                            MarkerLayer(markers: markers),
+                            PolylineLayer(polylines: polylines), // This will be empty before GO
+                            // Add marker for current position without trace
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: MapService.getCurrentLocation(),
+                                  width: 60,
+                                  height: 60,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.3),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.location_on,
+                                        color: Colors.blue,
+                                        size: 30,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -627,63 +659,16 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
             ),
           ),
           
-          // Bottom navigation bar
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildNavItem(Icons.home, 'Home', false),
-                _buildNavItem(Icons.restaurant_menu, 'Menu', false),
-                _buildNavItem(Icons.directions_run, 'Workout', true),
-                _buildNavItem(Icons.person, 'Profile', false),
-              ],
-            ),
+          // Bottom navigation bar - Replaced with AppNavigationBar
+          AppNavigationBar(
+            currentIndex: 2, // Workout tab is selected
+            onTap: (index) {
+              // Handle navigation
+              // Navigation logic would go here
+            },
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          color: Colors.black54,
-          size: 24,
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            color: Colors.black54,
-          ),
-        ),
-        if (isActive)
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            width: 4,
-            height: 4,
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              shape: BoxShape.circle,
-            ),
-          ),
-      ],
     );
   }
 

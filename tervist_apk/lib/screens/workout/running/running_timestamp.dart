@@ -58,22 +58,25 @@ class _RunningTimestampState extends State<RunningTimestamp> {
   }
   
   void _subscribeToLocationUpdates() {
+    // PERBAIKAN MASALAH #2: Hanya update jika tidak paused
     MapService.getLiveLocationStream().listen((newLocation) {
-      // Update UI with the new location
-      setState(() {
-        currentLocation = newLocation;
-        
-        // Get updated map data
-        final mapData = MapService.getCurrentMapData();
-        currentRoutePoints = mapData.routePoints;
-        currentMarkers = mapData.markers;
-        currentPolylines = mapData.polylines;
-        
-        // Move map to current location
-        if (_mapController.camera != null) {
-          _mapController.move(newLocation, _mapController.camera.zoom);
-        }
-      });
+      // Update UI with the new location only if not paused
+      if (!widget.isPaused) {
+        setState(() {
+          currentLocation = newLocation;
+          
+          // Get updated map data
+          final mapData = MapService.getCurrentMapData();
+          currentRoutePoints = mapData.routePoints;
+          currentMarkers = mapData.markers;
+          currentPolylines = mapData.polylines;
+          
+          // Move map to current location
+          if (_mapController.camera != null) {
+            _mapController.move(newLocation, _mapController.camera.zoom);
+          }
+        });
+      }
     });
   }
   

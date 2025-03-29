@@ -7,6 +7,7 @@ import 'treadmill_summary.dart';
 import '../workout_countdown.dart';
 import 'package:flutter/scheduler.dart'; // Import for Ticker
 import '../running/running_tracker_screen.dart'; 
+import '/widgets/navigation_bar.dart'; // Import the navigation bar widget
 
 class TreadmillTrackerScreen extends StatefulWidget {
   const TreadmillTrackerScreen({super.key});
@@ -402,29 +403,12 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildNavItem(Icons.home, 'Home', false),
-            _buildNavItem(Icons.restaurant_menu, 'Menu', false),
-            _buildNavItem(Icons.directions_run, 'Workout', true),
-            _buildNavItem(Icons.person, 'Profile', false),
-          ],
-        ),
+      bottomNavigationBar: AppNavigationBar(
+        currentIndex: 2, // Workout tab is selected
+        onTap: (index) {
+          // Handle navigation
+          // Navigation logic would go here
+        },
       ),
     );
   }

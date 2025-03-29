@@ -35,6 +35,8 @@ class RunningSummary extends StatefulWidget {
 
 class _RunningSummaryState extends State<RunningSummary> {
   final MapController _mapController = MapController();
+  // PERBAIKAN MASALAH #3: Fix membuat array perf data konstan
+  final List<double> paceData = [0.5, 0.7, 0.4, 0.6, 0.5]; // Fixed pace data for summary
 
   LatLng _calculateMapCenter() {
     if (widget.routePoints.isEmpty) {
@@ -332,7 +334,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                     ),
                     const SizedBox(height: 20),
                     
-                    // Pace Graph
+                    // PERBAIKAN MASALAH #3: Pace Graph dengan data statis
                     Container(
                       height: 120,
                       padding: const EdgeInsets.all(16),
@@ -348,9 +350,10 @@ class _RunningSummaryState extends State<RunningSummary> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: List.generate(
-                                5,
+                                paceData.length,
                                 (index) {
-                                  final double height = 30 + (math.Random().nextDouble() * 60);
+                                  // Use fixed pace data instead of random
+                                  final double height = 30 + (paceData[index] * 60);
                                   return Container(
                                     width: 20,
                                     height: height,
