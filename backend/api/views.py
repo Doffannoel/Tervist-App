@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from django.utils import timezone
 from .models import CaloriesBurned, DailySteps, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
 from .serializers import DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, RunningActivitySerializer
+from rest_framework.views import APIView
+
 
 class NutritionalTargetView(viewsets.ModelViewSet):
     queryset = NutritionalTarget.objects.all()
@@ -21,62 +23,66 @@ class NutritionalTargetView(viewsets.ModelViewSet):
             serializer.save()
 
 class FoodIntakeView(viewsets.ModelViewSet):
-    queryset = FoodIntake.objects.all()  # Menggunakan FoodIntake sebagai queryset
+    queryset = FoodIntake.objects.all()
     serializer_class = FoodIntakeSerializer
-    permission_classes = [permissions.AllowAny]
-    
+    permission_classes = [permissions.IsAuthenticated]
+
     def perform_create(self, serializer):
-        if self.request.user.is_authenticated:
-            food_data = serializer.validated_data.get('food_data')  # Ambil data dari FoodDatabase yang dipilih
-            
-            if not food_data:
-                return Response({"error": "Food data is required."}, status=status.HTTP_400_BAD_REQUEST)
-            
-            meal = serializer.save(user=self.request.user)
+        user = self.request.user
+        data = self.request.data
+        instance = serializer.save(user=user)
 
-            # Menentukan kategori waktu makan berdasarkan jam
-            current_time = datetime.now().time()  # Mendapatkan waktu sekarang
-            if current_time >= datetime.strptime("06:00", "%H:%M").time() and current_time < datetime.strptime("10:00", "%H:%M").time():
-                meal.meal_type = "Breakfast"
-            elif current_time >= datetime.strptime("10:00", "%H:%M").time() and current_time < datetime.strptime("15:00", "%H:%M").time():
-                meal.meal_type = "Lunch"
-            elif current_time >= datetime.strptime("15:00", "%H:%M").time() and current_time < datetime.strptime("20:00", "%H:%M").time():
-                meal.meal_type = "Dinner"
-            else:
-                meal.meal_type = "Snack"
-            
-            meal.save()  # Simpan perubahan meal_type ke database
+        # === SCENARIO 1: Input dari FoodDatabase ===
+        if instance.food_data:
+            if not instance.meal_type:
+                current_time = datetime.now().time()
+                if current_time >= datetime.strptime("06:00", "%H:%M").time() and current_time < datetime.strptime("10:00", "%H:%M").time():
+                    instance.meal_type = "Breakfast"
+                elif current_time >= datetime.strptime("10:00", "%H:%M").time() and current_time < datetime.strptime("15:00", "%H:%M").time():
+                    instance.meal_type = "Lunch"
+                elif current_time >= datetime.strptime("15:00", "%H:%M").time() and current_time < datetime.strptime("20:00", "%H:%M").time():
+                    instance.meal_type = "Dinner"
+                else:
+                    instance.meal_type = "Snack"
+            instance.save()
 
-            # Update NutritionalTarget (kalori, protein, carbs, fats)
-            user = self.request.user
-            nutritional_target = NutritionalTarget.objects.get(user=user)
-            
-            # Mengurangi kalori yang dimakan dari target
-            nutritional_target.calorie_target -= food_data.calories
-            nutritional_target.protein_target -= food_data.protein
-            nutritional_target.carbs_target -= food_data.carbs
-            nutritional_target.fats_target -= food_data.fat
+            try:
+                nt = NutritionalTarget.objects.get(user=user)
+                nt.calorie_target -= instance.food_data.calories
+                nt.protein_target -= instance.food_data.protein
+                nt.carbs_target -= instance.food_data.carbs
+                nt.fats_target -= instance.food_data.fat
+                nt.save()
+            except NutritionalTarget.DoesNotExist:
+                pass
 
-            nutritional_target.save()
+        # === SCENARIO 2: Input Manual (Log Empty Meal) ===
+        elif instance.manual_calories is not None:
+            if not instance.meal_type:
+                return Response({"error": "Meal type is required for manual input."}, status=status.HTTP_400_BAD_REQUEST)
+            instance.save()
 
-            # Update macronutrients di profil pengguna (jika perlu)
-            user_profile = user.profile
-            user_profile.protein_left -= food_data.protein
-            user_profile.carbs_left -= food_data.carbs
-            user_profile.fats_left -= food_data.fat
-            user_profile.save()
+            try:
+                nt = NutritionalTarget.objects.get(user=user)
+                nt.calorie_target -= instance.manual_calories or 0
+                nt.protein_target -= instance.manual_protein or 0
+                nt.carbs_target -= instance.manual_carbs or 0
+                nt.fats_target -= instance.manual_fats or 0
+                nt.save()
+            except NutritionalTarget.DoesNotExist:
+                pass
 
         else:
-            serializer.save()
+            return Response({"error": "Either food_data or manual nutritional values are required."}, status=status.HTTP_400_BAD_REQUEST)
 
     def list(self, request):
-        # Mendukung pencarian makanan berdasarkan query parameter 'search'
         search_query = request.GET.get('search', None)
         if search_query:
-            food_items = FoodDatabase.objects.filter(name__icontains=search_query)  # Pencarian berdasarkan nama makanan
-            return Response(FoodDatabaseSerializer(food_items, many=True).data)  # Menampilkan hasil pencarian
+            food_items = FoodDatabase.objects.filter(name__icontains=search_query)
+            return Response(FoodDatabaseSerializer(food_items, many=True).data)
         else:
             return Response({"message": "No search query provided"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class DailyStepsView(viewsets.ModelViewSet):
     queryset = DailySteps.objects.all()
@@ -207,3 +213,44 @@ class RunningActivityView(viewsets.ModelViewSet):
         weight = self.request.user.weight  # Ensure the user profile has weight data
         calories = (weight * MET * time) / 60  # Basic estimation based on weight and time
         return round(calories)
+
+class WeeklyNutritionSummaryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        today = timezone.now().date()
+        week_ago = today - timezone.timedelta(days=6)  # 7 hari terakhir
+
+        # Ambil semua makanan dalam 7 hari terakhir
+        food_logs = FoodIntake.objects.filter(user=user, date__range=[week_ago, today])
+
+        # Siapkan struktur: Senin - Minggu (default 0)
+        daily_totals = { (week_ago + timezone.timedelta(days=i)): 0 for i in range(7) }
+
+        for entry in food_logs:
+            calories = entry.manual_calories or (entry.food_data.calories if entry.food_data else 0)
+            daily_totals[entry.date] += calories
+
+        # Buat array data siap frontend
+        data = []
+        for day, cal in daily_totals.items():
+            data.append({
+                "date": day.strftime("%a"),  # contoh: 'Mon'
+                "calories": round(cal)
+            })
+
+        # Ambil goal harian
+        target = NutritionalTarget.objects.filter(user=user).first()
+        calorie_goal = target.calorie_target if target else 0
+        total_eaten = sum(d['calories'] for d in data)
+        weekly_goal = calorie_goal * 7
+        net = total_eaten - weekly_goal
+
+        return Response({
+            "week_data": data,
+            "goal": round(calorie_goal),
+            "total_eaten": round(total_eaten),
+            "net_difference": round(net),
+            "net_average": round(net / 7) if calorie_goal else 0,
+        })

@@ -105,15 +105,27 @@ class FoodDatabase(models.Model):
         return self.name
 
 class FoodIntake(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    food_data = models.ForeignKey(FoodDatabase, on_delete=models.CASCADE)  # Menghubungkan ke FoodDatabase
-    serving_size = models.CharField(max_length=50)  # Ukuran porsi yang dimakan
-    meal_type = models.CharField(max_length=20, choices=[('Breakfast', 'Breakfast'), ('Lunch', 'Lunch'), ('Dinner', 'Dinner'), ('Snack', 'Snack')])
-    date = models.DateField(default=timezone.now)  # Tanggal makan
-    time = models.TimeField(default=timezone.now)  # Waktu makan
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    food_data = models.ForeignKey(FoodDatabase, on_delete=models.CASCADE, null=True, blank=True)
+    serving_size = models.CharField(max_length=50, null=True, blank=True)
+
+    meal_type = models.CharField(
+        max_length=20,
+        choices=[('Breakfast', 'Breakfast'), ('Lunch', 'Lunch'), ('Dinner', 'Dinner'), ('Snack', 'Snack')],
+        default='Lunch'
+    )
+    date = models.DateField(default=timezone.now)
+    time = models.TimeField(default=timezone.now)
+
+    # Manual input fields (Log Empty Meal)
+    manual_calories = models.FloatField(null=True, blank=True)
+    manual_protein = models.FloatField(null=True, blank=True)
+    manual_carbs = models.FloatField(null=True, blank=True)
+    manual_fats = models.FloatField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.food_data.name} ({self.meal_type}) - {self.serving_size} servings"
+        return f"{self.user.username} - {self.meal_type} - {self.date}"
+
 
 class DailySteps(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,null=True, blank=True)

@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import NutritionalTargetView, FoodIntakeView, DailyStepsView, CaloriesBurnedView, DashboardView, RunningActivityView
+from .views import NutritionalTargetView, FoodIntakeView, DailyStepsView, CaloriesBurnedView, DashboardView, RunningActivityView, WeeklyNutritionSummaryView
 
 # Membuat router untuk viewsets
 router = DefaultRouter()
@@ -15,4 +15,5 @@ router.register(r'dashboard', DashboardView, basename='dashboard')
 # Menambahkan URL untuk mendaftarkan semua viewsets
 urlpatterns = [
     path('', include(router.urls)),  # Mendaftarkan semua viewsets ke router
+    path('nutrition-weekly-summary/', WeeklyNutritionSummaryView.as_view(), name='nutrition-weekly-summary'),
 ]
