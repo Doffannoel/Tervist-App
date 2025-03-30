@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'map_service.dart';
+import '../follow_me_button.dart'; // Import the follow me button
 
 class RunningTimestamp extends StatefulWidget {
   final double distance;
@@ -44,7 +45,20 @@ class _RunningTimestampState extends State<RunningTimestamp> {
   List<Marker> currentMarkers = [];
   List<Polyline> currentPolylines = [];
   LatLng? currentLocation;
+  bool _isFollowingUser = true; // Start with follow mode enabled
   
+  // Toggle follow mode
+  void _toggleFollowMode() {
+    setState(() {
+      _isFollowingUser = !_isFollowingUser;
+      
+      // If enabling follow mode, immediately center on user
+      if (_isFollowingUser && currentLocation != null) {
+        _mapController.move(currentLocation!, _mapController.camera.zoom);
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -53,12 +67,20 @@ class _RunningTimestampState extends State<RunningTimestamp> {
     currentMarkers = List.from(widget.markers);
     currentPolylines = List.from(widget.polylines);
     
+    // Set default location if routePoints is empty
+    if (currentRoutePoints.isEmpty) {
+      currentRoutePoints = [MapService.defaultCenter];
+    }
+    
+    if (currentLocation == null && currentRoutePoints.isNotEmpty) {
+      currentLocation = currentRoutePoints.last;
+    }
+    
     // Start listening to location updates
     _subscribeToLocationUpdates();
   }
   
   void _subscribeToLocationUpdates() {
-    // PERBAIKAN MASALAH #2: Hanya update jika tidak paused
     MapService.getLiveLocationStream().listen((newLocation) {
       // Update UI with the new location only if not paused
       if (!widget.isPaused) {
@@ -71,10 +93,16 @@ class _RunningTimestampState extends State<RunningTimestamp> {
           currentMarkers = mapData.markers;
           currentPolylines = mapData.polylines;
           
-          // Move map to current location
-          if (_mapController.camera != null) {
+          // Move map to current location only if follow mode is enabled
+          if (_isFollowingUser && _mapController.camera != null) {
             _mapController.move(newLocation, _mapController.camera.zoom);
           }
+        });
+      } else {
+        // When paused, just update current location without adding to route
+        setState(() {
+          currentLocation = newLocation;
+          // Don't update route points, markers, or polylines
         });
       }
     });
@@ -88,6 +116,36 @@ class _RunningTimestampState extends State<RunningTimestamp> {
 
   @override
   Widget build(BuildContext context) {
+    // Ensure we always have a current location
+    final displayLocation = currentLocation ?? MapService.defaultCenter;
+    
+    // Ensure we always have at least one point in polylines
+    final displayPolylines = currentPolylines.isEmpty ? 
+      [Polyline(points: [displayLocation], color: Colors.transparent, strokeWidth: 0)] : 
+      currentPolylines;
+      
+    // Ensure we always have markers
+    final displayMarkers = currentMarkers.isEmpty ?
+      [Marker(
+        point: displayLocation,
+        width: 80,
+        height: 80,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.3),
+            shape: BoxShape.circle,
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.location_on,
+              color: Colors.blue,
+              size: 30,
+            ),
+          ),
+        ),
+      )] : 
+      currentMarkers;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -95,9 +153,7 @@ class _RunningTimestampState extends State<RunningTimestamp> {
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: currentRoutePoints.isNotEmpty 
-                  ? currentRoutePoints.last  // Use the most recent point
-                  : const LatLng(-7.767, 110.378),
+              initialCenter: displayLocation,
               initialZoom: 17, // Zoom in more for running
               interactionOptions: const InteractionOptions(
                 enableMultiFingerGestureRace: true,
@@ -109,10 +165,10 @@ class _RunningTimestampState extends State<RunningTimestamp> {
                 userAgentPackageName: 'com.example.running_app',
               ),
               PolylineLayer(
-                polylines: currentPolylines,
+                polylines: displayPolylines,
               ),
               MarkerLayer(
-                markers: currentMarkers,
+                markers: displayMarkers,
               ),
               // Add custom user location marker
               if (currentLocation != null)
@@ -146,6 +202,17 @@ class _RunningTimestampState extends State<RunningTimestamp> {
                   ],
                 ),
             ],
+          ),
+          
+          // Follow Me Button using the custom widget
+          Positioned(
+            right: 16,
+            bottom: 200, // Position above your bottom panel
+            child: FollowMeButton(
+              isFollowing: _isFollowingUser,
+              onPressed: _toggleFollowMode,
+              activeColor: widget.primaryGreen,
+            ),
           ),
           
           // Top overlay with basic info
@@ -264,7 +331,7 @@ class _RunningTimestampState extends State<RunningTimestamp> {
                             ],
                           ),
                           const SizedBox(height: 20),
-                          // Controls
+                          // Controls with image assets
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -292,35 +359,19 @@ class _RunningTimestampState extends State<RunningTimestamp> {
                                   children: [
                                     InkWell(
                                       onTap: widget.onResume,
-                                      child: Container(
+                                      child: Image.asset(
+                                        'assets/images/buttonplay.png',
                                         width: 60,
                                         height: 60,
-                                        decoration: BoxDecoration(
-                                          color: widget.primaryGreen,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.play_arrow,
-                                          color: Colors.white,
-                                          size: 30,
-                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 20),
                                     InkWell(
                                       onTap: widget.onStop,
-                                      child: Container(
+                                      child: Image.asset(
+                                        'assets/images/buttonstop.png',
                                         width: 60,
                                         height: 60,
-                                        decoration: BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.stop,
-                                          color: Colors.white,
-                                          size: 30,
-                                        ),
                                       ),
                                     ),
                                   ],

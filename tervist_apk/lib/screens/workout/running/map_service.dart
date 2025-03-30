@@ -30,6 +30,7 @@ class MapService {
   static StreamController<LatLng>? _locationController;
   static bool _isTracking = false;
   static bool _isSessionActive = false; // Flag to track if session is active (after GO)
+  static bool _isPaused = false; // Flag to track if tracking is paused
   static StreamSubscription<LocationData>? _locationSubscription;
   
   /// Inisialisasi location service
@@ -49,6 +50,9 @@ class MapService {
   /// Get initial map data untuk layar running
   static Future<MapData> getInitialMapData() async {
     try {
+      // Inisialisasi location service terlebih dahulu
+      await initLocationService();
+      
       // Coba dapatkan lokasi saat ini
       final locationData = await _location.getLocation();
       final currentLocation = LatLng(
@@ -59,9 +63,8 @@ class MapService {
       // Gunakan lokasi saat ini atau fallback ke default
       _currentLocation = currentLocation;
       
-      // PERBAIKAN MASALAH #1: Route history tidak diisi sebelum GO button ditekan
-      // _routeHistory.clear();
-      // _routeHistory.add(_currentLocation); // Hilangkan line ini
+      // Buat list dengan minimal satu point untuk menghindari empty bounds error
+      final List<LatLng> initialPoints = [_currentLocation];
       
       // Create markers
       final List<Marker> markers = [
@@ -85,17 +88,17 @@ class MapService {
         ),
       ];
       
-      // PERBAIKAN MASALAH #1: Polyline kosong sebelum GO button ditekan
+      // Polyline kosong sebelum GO button ditekan
       final List<Polyline> polylines = [
         Polyline(
-          points: [], // Empty points array until GO is pressed
-          color: const Color(0xFF2AAF7F), // primaryGreen
-          strokeWidth: 5,
+          points: initialPoints, // Gunakan initialPoints untuk menghindari bounds error
+          color: Colors.transparent, // Buat transparan untuk sementara
+          strokeWidth: 0,
         ),
       ];
       
       return MapData(
-        routePoints: [], // Empty route points
+        routePoints: initialPoints, // Gunakan initialPoints dengan current location
         markers: markers,
         polylines: polylines,
       );
@@ -108,9 +111,11 @@ class MapService {
   
   /// Fallback ke map data default
   static MapData _getDefaultMapData() {
-    // PERBAIKAN MASALAH #1: Route history tidak diisi sebelum GO button ditekan
     _routeHistory.clear();
     _currentLocation = defaultCenter;
+    
+    // Buat list dengan minimal satu point untuk menghindari empty bounds error
+    final List<LatLng> initialPoints = [defaultCenter];
     
     // Create markers
     final List<Marker> markers = [
@@ -134,17 +139,17 @@ class MapService {
       ),
     ];
     
-    // PERBAIKAN MASALAH #1: Polyline kosong sebelum GO button ditekan
+    // Polyline dengan satu point untuk menghindari bounds error
     final List<Polyline> polylines = [
       Polyline(
-        points: [], // Empty points until GO is pressed
-        color: const Color(0xFF2AAF7F), // primaryGreen
-        strokeWidth: 5,
+        points: initialPoints, // Gunakan initialPoints untuk menghindari bounds error
+        color: Colors.transparent, // Buat transparan untuk sementara
+        strokeWidth: 0,
       ),
     ];
     
     return MapData(
-      routePoints: [],
+      routePoints: initialPoints,
       markers: markers,
       polylines: polylines,
     );
@@ -155,9 +160,6 @@ class MapService {
     // Jika controller tidak ada atau tertutup, buat yang baru
     if (_locationController == null || _locationController!.isClosed) {
       _locationController = StreamController<LatLng>.broadcast();
-      
-      // PERBAIKAN MASALAH #1: Route history tidak diisi sebelum GO button ditekan
-      // Tidak menginisialisasi route history di sini, hanya set current location
       
       // Kirim lokasi awal
       _locationController!.add(_currentLocation);
@@ -184,10 +186,9 @@ class MapService {
         // Update current location
         _currentLocation = LatLng(locationData.latitude!, locationData.longitude!);
         
-        // PERBAIKAN MASALAH #1 & #3: Hanya update route jika session active
-        if (_isSessionActive) {
-          // PERBAIKAN MASALAH #2: Meningkatkan akurasi dengan filter
-          // Hanya tambahkan point baru jika jaraknya cukup signifikan
+        // Only add point to route if session is active AND not paused
+        if (_isSessionActive && !_isPaused) {
+          // Meningkatkan akurasi dengan filter
           bool shouldAddPoint = true;
           
           if (_routeHistory.isNotEmpty) {
@@ -204,7 +205,7 @@ class MapService {
           }
         }
         
-        // Send to stream
+        // Send to stream (always update current location even when paused)
         _locationController?.add(_currentLocation);
       }
     });
@@ -232,7 +233,7 @@ class MapService {
     return distance;
   }
   
-  // Math helpers - FIXED with math. prefix
+  // Math helpers
   static double _sin(double x) => math.sin(x);
   static double _cos(double x) => math.cos(x);
   static double _sqrt(double x) => math.sqrt(x);
@@ -251,13 +252,19 @@ class MapService {
   /// Stop location updates
   static void stopLocationUpdates() {
     _isTracking = false;
-    _isSessionActive = false; // PERBAIKAN MASALAH #3: Reset session active flag
+    _isSessionActive = false;
+    _isPaused = false; // Reset pause state
     _locationSubscription?.cancel();
     _locationController?.close();
   }
   
   /// Create a MapData object dari state saat ini
   static MapData getCurrentMapData() {
+    // Pastikan selalu ada minimal satu point
+    List<LatLng> currentPoints = _isSessionActive && _routeHistory.isNotEmpty 
+        ? List.from(_routeHistory) 
+        : [_currentLocation];
+    
     final List<Marker> markers = [
       Marker(
         point: _currentLocation,
@@ -281,35 +288,47 @@ class MapService {
     
     final List<Polyline> polylines = [
       Polyline(
-        // PERBAIKAN MASALAH #1 & #3: Polyline kosong jika session tidak aktif
-        points: _isSessionActive ? _routeHistory : [],
-        color: const Color(0xFF2AAF7F), // primaryGreen
-        strokeWidth: 5,
+        // Gunakan currentPoints untuk menghindari empty list
+        points: currentPoints,
+        color: _isSessionActive ? const Color(0xFF2AAF7F) : Colors.transparent,
+        strokeWidth: _isSessionActive ? 5 : 0,
       ),
     ];
     
     return MapData(
-      routePoints: _isSessionActive ? List.from(_routeHistory) : [],
+      routePoints: currentPoints,
       markers: markers,
       polylines: polylines,
     );
   }
   
-  // PERBAIKAN MASALAH #1: Method baru untuk memulai session (dipanggil saat GO ditekan)
+  /// Set pause state
+  static void setPaused(bool paused) {
+    _isPaused = paused;
+  }
+  
+  /// Method untuk memulai session (dipanggil saat GO ditekan)
   static void startSession() {
     _isSessionActive = true;
+    _isPaused = false; // Ensure not paused when starting
     _routeHistory.clear();
     _routeHistory.add(_currentLocation); // Add current location as first point
   }
   
-  // PERBAIKAN MASALAH #3: Method baru untuk menghentikan session
+  /// Method untuk menghentikan session
   static void stopSession() {
     _isSessionActive = false;
+    _isPaused = false; // Reset pause state
     // Route history dipertahankan untuk summary screen
   }
   
-  // PERBAIKAN MASALAH #3: Metode baru untuk memeriksa status session
+  /// Metode untuk memeriksa status session
   static bool isSessionActive() {
     return _isSessionActive;
+  }
+  
+  /// Method untuk memeriksa status pause
+  static bool isPaused() {
+    return _isPaused;
   }
 }
