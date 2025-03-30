@@ -6,9 +6,9 @@ class WorkoutCountdown extends StatefulWidget {
   final VoidCallback onCountdownComplete;
   
   const WorkoutCountdown({
-    Key? key,
+    super.key,
     required this.onCountdownComplete,
-  }) : super(key: key);
+  });
 
   @override
   State<WorkoutCountdown> createState() => _WorkoutCountdownState();

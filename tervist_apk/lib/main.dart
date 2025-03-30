@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-// import 'package:tervist_apk/screens/onboarding_screen.dart';
-// import 'package:flutter/material.dart';
-import 'package:tervist_apk/screens/workout/workout_module.dart'; // Update import
+import 'package:tervist_apk/screens/onboarding_screen.dart';
+// Update import
 
 void main() {
   runApp(const MyApp());
@@ -19,7 +18,8 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
           primarySwatch: Colors.blue),
-      home: const WorkoutModule(), // Changed from OnboardingScreen to WorkoutModule
+      home:
+          OnboardingScreen(), // Changed from OnboardingScreen to WorkoutModule
     );
   }
 }

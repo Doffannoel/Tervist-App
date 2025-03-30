@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:tervist_apk/screens/forgetpassword/reset_password.dart';
 import 'enter_details.dart'; // Import the EnterDetails page
 import '/../api/signup_data.dart';
+// Import the ResetPasswordPage
+
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -421,7 +424,12 @@ class _AuthPageState extends State<AuthPage> {
                             const Spacer(),
                             GestureDetector(
                               onTap: () {
-                                // TODO: Implement forgot password
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ResetPasswordPage(),
+                                  ),
+                                );
                               },
                               child: const Text(
                                 'Forgot password?',
