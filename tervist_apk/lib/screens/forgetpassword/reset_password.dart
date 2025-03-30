@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import './checkemail.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '/../api/api_config.dart';
 
 class ResetPasswordPage extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
@@ -99,11 +102,26 @@ class ResetPasswordPage extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => CheckEmailPage()),
+              onPressed: () async {
+                final email = emailController.text.trim();
+                final response = await http.post(
+                  ApiConfig.forgotPassword,
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode({'email': email}),
                 );
+
+                if (response.statusCode == 200) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => CheckEmailPage(email: email)),
+                  );
+                } else {
+                  final detail = jsonDecode(response.body)['detail'];
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(detail ?? 'Failed to send OTP')),
+                  );
+                }
               },
               style: _buttonStyle(),
               child: const Text(

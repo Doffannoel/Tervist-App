@@ -1,13 +1,55 @@
 // check_email_page.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import './changepassword.dart';
 
-class CheckEmailPage extends StatelessWidget {
+class CheckEmailPage extends StatefulWidget {
+  final String email;
+  const CheckEmailPage({super.key, required this.email});
+
+  @override
+  State<CheckEmailPage> createState() => _CheckEmailPageState();
+}
+
+class _CheckEmailPageState extends State<CheckEmailPage> {
   final List<TextEditingController> otpControllers =
       List.generate(4, (_) => TextEditingController());
 
-  CheckEmailPage({super.key});
+  Duration remaining = const Duration(minutes: 30);
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (remaining.inSeconds > 0) {
+        setState(() {
+          remaining = remaining - const Duration(seconds: 1);
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    return "${twoDigits(duration.inMinutes)}:${twoDigits(duration.inSeconds % 60)}";
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    for (var controller in otpControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   ButtonStyle _buttonStyle() {
     return ElevatedButton.styleFrom(
@@ -17,6 +59,10 @@ class CheckEmailPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
     );
+  }
+
+  String getFullOTP() {
+    return otpControllers.map((c) => c.text).join();
   }
 
   Widget _scaffoldCardTemplate({required Widget child}) {
@@ -99,7 +145,7 @@ class CheckEmailPage extends StatelessWidget {
                 .toList(),
           ),
           const SizedBox(height: 40),
-          Text('Codes expires in 00:00',
+          Text('Code expires in ${_formatDuration(remaining)}',
               style: GoogleFonts.montserrat(
                   fontSize: 12, fontWeight: FontWeight.w500)),
           const SizedBox(height: 50),
@@ -108,7 +154,9 @@ class CheckEmailPage extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    // TODO: Implement resend OTP logic here
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     side: const BorderSide(color: Colors.grey),
@@ -130,9 +178,12 @@ class CheckEmailPage extends StatelessWidget {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
+                    final otp = getFullOTP();
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => ChangePasswordPage()),
+                      MaterialPageRoute(
+                        builder: (_) => ChangePasswordPage(otp: otp),
+                      ),
                     );
                   },
                   style: _buttonStyle(),

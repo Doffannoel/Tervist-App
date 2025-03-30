@@ -1,13 +1,25 @@
 // change_password_page.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'success_page.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import './success_page.dart';
+import '/../api/api_config.dart';
 
-class ChangePasswordPage extends StatelessWidget {
+class ChangePasswordPage extends StatefulWidget {
+  final String otp;
+  const ChangePasswordPage({super.key, required this.otp});
+
+  @override
+  State<ChangePasswordPage> createState() => _ChangePasswordPageState();
+}
+
+class _ChangePasswordPageState extends State<ChangePasswordPage> {
   final TextEditingController newPassword = TextEditingController();
   final TextEditingController confirmPassword = TextEditingController();
-
-  ChangePasswordPage({super.key});
+  bool isLoading = false;
+  bool _obscureNewPassword = true;
+  final bool _obscureConfirmPassword = true;
 
   ButtonStyle _buttonStyle() {
     return ElevatedButton.styleFrom(
@@ -51,6 +63,43 @@ class ChangePasswordPage extends StatelessWidget {
     );
   }
 
+  Future<void> _resetPassword() async {
+    final newPass = newPassword.text.trim();
+    final confirmPass = confirmPassword.text.trim();
+
+    if (newPass != confirmPass) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    final response = await http.post(
+      ApiConfig.resetPassword,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'otp': widget.otp,
+        'new_password': newPass,
+      }),
+    );
+
+    setState(() => isLoading = false);
+
+    if (response.statusCode == 200) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SuccessPage()),
+      );
+    } else {
+      final detail = jsonDecode(response.body)['detail'];
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(detail ?? 'Failed to reset password')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return _scaffoldCardTemplate(
@@ -77,73 +126,78 @@ class ChangePasswordPage extends StatelessWidget {
             style: GoogleFonts.montserrat(fontSize: 15),
           ),
           const SizedBox(height: 24),
-
-          // Label for New Password
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
               'New password',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-              ),
+              style: GoogleFonts.poppins(fontSize: 14),
             ),
           ),
           const SizedBox(height: 8),
           TextField(
             controller: newPassword,
-            obscureText: true,
+            obscureText: _obscureNewPassword,
             decoration: InputDecoration(
-              suffixIcon: const Icon(Icons.visibility),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureNewPassword ? Icons.visibility_off : Icons.visibility,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscureNewPassword = !_obscureNewPassword;
+                  });
+                },
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Label for Confirm Password
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
               'Confirm password',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-              ),
+              style: GoogleFonts.poppins(fontSize: 14),
             ),
           ),
           const SizedBox(height: 8),
           TextField(
-            controller: confirmPassword,
-            obscureText: true,
+            controller: newPassword,
+            obscureText: _obscureNewPassword,
             decoration: InputDecoration(
-              suffixIcon: const Icon(Icons.visibility),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureNewPassword ? Icons.visibility_off : Icons.visibility,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscureNewPassword = !_obscureNewPassword;
+                  });
+                },
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
-
           const SizedBox(height: 70),
           SizedBox(
             width: 270,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SuccessPage()),
-                );
-              },
+              onPressed: isLoading ? null : _resetPassword,
               style: _buttonStyle(),
-              child: const Text(
-                'Save',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600),
-              ),
+              child: isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                      'Save',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600),
+                    ),
             ),
-          )
+          ),
         ],
       ),
     );

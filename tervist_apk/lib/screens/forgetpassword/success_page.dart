@@ -1,6 +1,7 @@
 // success_page.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tervist_apk/screens/login/signup_screen.dart';
 
 class SuccessPage extends StatelessWidget {
   const SuccessPage({super.key});
@@ -72,7 +73,10 @@ class SuccessPage extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AuthPage()),
+                );
               },
               style: _buttonStyle(),
               child: Text(
