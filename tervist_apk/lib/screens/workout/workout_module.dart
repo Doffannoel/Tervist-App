@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'treadmill/treadmill_tracker_screen.dart';
 import 'running/running_tracker_screen.dart';
+import '../../widgets/navigation_bar.dart';
 
 enum WorkoutType {
   treadmill,
@@ -14,10 +15,10 @@ class WorkoutModule extends StatefulWidget {
   final Color? customPrimaryColor;
   
   const WorkoutModule({
-    super.key, 
+    Key? key, 
     this.initialWorkoutType = WorkoutType.treadmill,
     this.customPrimaryColor,
-  });
+  }) : super(key: key);
 
   @override
   State<WorkoutModule> createState() => _WorkoutModuleState();
