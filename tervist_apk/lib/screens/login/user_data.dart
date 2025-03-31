@@ -84,7 +84,7 @@ class UserDataPage extends StatelessWidget {
                   if (response.statusCode == 201) {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (_) => const HomePage()),
+                      MaterialPageRoute(builder: (_) => HomePage()),
                     );
                   } else {
                     final error = jsonDecode(response.body);
