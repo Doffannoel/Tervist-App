@@ -20,10 +20,26 @@ class SignupData {
         "height": height,
         "age": age,
         "activity_level": activityLevel,
-        "goal": goal,
-        "target_weight": goal != 'Maintain Weight' ? targetWeight : null,
-        "timeline": goal != 'Maintain Weight' ? timeline : null,
+        "goal": formatGoal(goal),
+        "target_weight":
+            formatGoal(goal) != 'Maintain Weight' ? targetWeight : null,
+        "timeline": formatGoal(goal) != 'Maintain Weight'
+            ? (timeline?.split(' ').last ?? 'Weeks') // Fix di sini
+            : null,
         "password": password,
         "confirm_password": confirmPassword,
       };
+
+  String? formatGoal(String? goal) {
+    switch (goal) {
+      case 'Weight gain':
+        return 'Weight Gain';
+      case 'Maintain my current weight':
+        return 'Maintain Weight';
+      case 'Weight loss':
+        return 'Weight Loss';
+      default:
+        return goal;
+    }
+  }
 }

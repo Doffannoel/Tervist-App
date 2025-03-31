@@ -6,14 +6,25 @@ from django.contrib.auth import authenticate
 
 class SignUpSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True, label="Confirm Password")
-    target_weight = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, label="Target Weight")
-    timeline = serializers.ChoiceField(choices=[('Weeks', 'Weeks'), ('Months', 'Months')], required=False, label="Timeline")
+    target_weight = serializers.DecimalField(
+        max_digits=5, decimal_places=2, required=False, allow_null=True, label="Target Weight"
+    )
+    timeline = serializers.ChoiceField(
+        choices=[('Weeks', 'Weeks'), ('Months', 'Months')],
+        required=False,
+        allow_null=True,
+        label="Timeline"
+    )
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'username', 'gender', 'weight', 'height', 'age', 'activity_level', 'goal', 'target_weight', 'timeline', 'password', 'confirm_password']
+        fields = [
+            'email', 'username', 'gender', 'weight', 'height', 'age',
+            'activity_level', 'goal', 'target_weight', 'timeline',
+            'password', 'confirm_password'
+        ]
         extra_kwargs = {
-            'password': {'write_only': True, 'label': "Password"},
+            'password': {'write_only': True},
             'email': {'label': "Email Address"},
             'username': {'label': "Username"},
             'gender': {'label': "Gender"},
@@ -25,9 +36,6 @@ class SignUpSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-        """
-        Validasi bahwa password dan confirm_password cocok.
-        """
         if data['password'] != data['confirm_password']:
             raise serializers.ValidationError("Passwords do not match.")
         try:
@@ -37,9 +45,9 @@ class SignUpSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        validated_data.pop('confirm_password')  # Menghapus confirm_password karena tidak disimpan
-        user = CustomUser.objects.create_user(**validated_data)
-        return user
+        validated_data.pop('confirm_password')
+        return CustomUser.objects.create_user(**validated_data)
+
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
