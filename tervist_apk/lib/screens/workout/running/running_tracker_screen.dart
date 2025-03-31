@@ -12,6 +12,7 @@ import '../treadmill/treadmill_tracker_screen.dart';
 import 'package:flutter/scheduler.dart'; // Import for Ticker
 import 'location_permission_handler.dart'; // Import the permission handler
 import '/widgets/navigation_bar.dart'; // Import the navigation bar widget
+import '../follow_me_button.dart'; // Import the follow me button widget
 
 class RunningTrackerScreen extends StatefulWidget {
   const RunningTrackerScreen({super.key});
@@ -27,6 +28,9 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
   Timer? _timer;
   Ticker? _ticker; // Ticker for more efficient updates
   final MapController _mapController = MapController();
+  
+  // Follow me button state
+  bool _isFollowingUser = true; // Enable follow mode by default
   
   // Cache for UI updates to prevent rebuilds
   bool _needsUpdate = false;
@@ -95,12 +99,32 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
     return hasPermission;
   }
 
+  // Toggle follow mode
+  void _toggleFollowMode() {
+    setState(() {
+      _isFollowingUser = !_isFollowingUser;
+      
+      // If enabling follow mode, immediately center the map on current location
+      if (_isFollowingUser) {
+        LatLng currentLocation = MapService.getCurrentLocation();
+        if (_mapController.camera != null) {
+          _mapController.move(currentLocation, _mapController.camera.zoom);
+        }
+      }
+    });
+  }
+
   // Method to subscribe to location updates
   void _subscribeToLocationUpdates() {
     MapService.getLiveLocationStream().listen((newLocation) {
       // Update map data with the new location, only if workout is active
       if (isWorkoutActive && !isPaused) {
         _updateMapWithNewLocation();
+      }
+      
+      // If follow mode is enabled, center the map on the current location
+      if (_isFollowingUser && _mapController.camera != null) {
+        _mapController.move(newLocation, _mapController.camera.zoom);
       }
       
       // Signal that we need an update
@@ -120,8 +144,8 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
       polylines = mapData.polylines;
     });
     
-    // If in active tracking mode, center the map on the current location
-    if (isWorkoutActive && currentStep == 1 && _mapController != null) {
+    // If in active tracking mode, center the map on the current location if following is enabled
+    if (isWorkoutActive && currentStep == 1 && _isFollowingUser && _mapController.camera != null) {
       _mapController.move(MapService.getCurrentLocation(), _mapController.camera.zoom);
     }
   }
@@ -184,28 +208,34 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
     }
   }
 
-  void pauseWorkout() {
+void pauseWorkout() {
     if (isWorkoutActive && !isPaused) {
       setState(() {
         isPaused = true;
       });
       _timer?.cancel();
+      
+      // Tell MapService tracking is paused
+      MapService.setPaused(true);
     }
   }
 
-  void resumeWorkout() {
+void resumeWorkout() {
     if (isWorkoutActive && isPaused) {
       setState(() {
         isPaused = false;
       });
       _startTimer();
+      
+      // Tell MapService tracking is resumed
+      MapService.setPaused(false);
     }
   }
 
   void stopWorkout() {
     _timer?.cancel();
     
-    // PERBAIKAN MASALAH #3: Stop session when workout is stopped
+    // Stop session in MapService
     MapService.stopSession();
     
     setState(() {
@@ -535,63 +565,91 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
                     ),
                   ),
                   
-                  // Map display instead of treadmill image
+                  // Map display with follow me button
                   Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 5,
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 5,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(4),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: FlutterMap(
-                          mapController: _mapController,
-                          options: MapOptions(
-                            initialCenter: MapService.getCurrentLocation(),
-                            initialZoom: 15,
-                          ),
-                          children: [
-                            TileLayer(
-                              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                              userAgentPackageName: 'com.example.app',
-                            ),
-                            MarkerLayer(markers: markers),
-                            PolylineLayer(polylines: polylines), // This will be empty before GO
-                            // Add marker for current position without trace
-                            MarkerLayer(
-                              markers: [
-                                Marker(
-                                  point: MapService.getCurrentLocation(),
-                                  width: 60,
-                                  height: 60,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.3),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.location_on,
-                                        color: Colors.blue,
-                                        size: 30,
+                          padding: const EdgeInsets.all(4),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: FlutterMap(
+                              mapController: _mapController,
+                              options: MapOptions(
+                                initialCenter: MapService.defaultCenter, // Use default center initially
+                                initialZoom: 15,
+                                // Add interactiveFlags to prevent bounds error
+                                interactionOptions: const InteractionOptions(
+                                  enableMultiFingerGestureRace: true,
+                                ),
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  userAgentPackageName: 'com.example.app',
+                                ),
+                                // Always include at least one valid point in polylines
+                                PolylineLayer(
+                                  polylines: polylines.isEmpty ? 
+                                    [
+                                      Polyline(
+                                        points: [MapService.defaultCenter], // Include default center
+                                        color: Colors.transparent, // Make it invisible initially
+                                        strokeWidth: 0,
                                       ),
-                                    ),
-                                  ),
+                                    ] : polylines,
+                                ),
+                                MarkerLayer(
+                                  markers: markers.isEmpty ? 
+                                    [
+                                      Marker(
+                                        point: MapService.defaultCenter,
+                                        width: 60,
+                                        height: 60,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.withOpacity(0.3),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Center(
+                                            child: Icon(
+                                              Icons.location_on,
+                                              color: Colors.blue,
+                                              size: 30,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ] : markers,
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
+                        
+                        // Follow Me Button
+                        Positioned(
+                          right: 10,
+                          bottom: 10,
+                          child: FollowMeButton(
+                            isFollowing: _isFollowingUser,
+                            onPressed: _toggleFollowMode,
+                            activeColor: primaryGreen,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

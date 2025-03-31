@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:math' as math;
+import '../follow_me_button.dart'; // Import the follow me button
 
 class RunningSummary extends StatefulWidget {
   final double distance;
@@ -37,6 +38,7 @@ class _RunningSummaryState extends State<RunningSummary> {
   final MapController _mapController = MapController();
   // PERBAIKAN MASALAH #3: Fix membuat array perf data konstan
   final List<double> paceData = [0.5, 0.7, 0.4, 0.6, 0.5]; // Fixed pace data for summary
+  bool _isFollowingUser = true; // Default state for the follow button
 
   LatLng _calculateMapCenter() {
     if (widget.routePoints.isEmpty) {
@@ -57,8 +59,55 @@ class _RunningSummaryState extends State<RunningSummary> {
     );
   }
 
+  // Toggle follow mode - In summary view this centers on the route
+  void _toggleFollowMode() {
+    setState(() {
+      _isFollowingUser = !_isFollowingUser;
+      
+      // If enabling follow mode, center the map on the route
+      if (_isFollowingUser) {
+        _mapController.move(_calculateMapCenter(), _mapController.camera.zoom);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Ensure we have valid polylines even if empty
+    final List<Polyline> displayPolylines = widget.polylines.isEmpty || widget.routePoints.isEmpty ? 
+      [
+        Polyline(
+          points: [const LatLng(-7.767, 110.378)], // Use default point if empty
+          color: Colors.transparent,
+          strokeWidth: 0,
+        )
+      ] : 
+      widget.polylines;
+      
+    // Ensure we have valid markers even if empty
+    final List<Marker> displayMarkers = widget.markers.isEmpty ? 
+      [
+        Marker(
+          point: const LatLng(-7.767, 110.378),
+          width: 80,
+          height: 80,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.location_on,
+                color: Colors.blue,
+                size: 30,
+              ),
+            ),
+          ),
+        )
+      ] : 
+      widget.markers;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -79,12 +128,23 @@ class _RunningSummaryState extends State<RunningSummary> {
                 userAgentPackageName: 'com.example.running_app',
               ),
               PolylineLayer(
-                polylines: widget.polylines,
+                polylines: displayPolylines,
               ),
               MarkerLayer(
-                markers: widget.markers,
+                markers: displayMarkers,
               ),
             ],
+          ),
+          
+          // Follow me button (positioned in bottom right, above the metrics panel)
+          Positioned(
+            right: 16,
+            bottom: 220, // Position above the bottom metrics panel
+            child: FollowMeButton(
+              isFollowing: _isFollowingUser,
+              onPressed: _toggleFollowMode,
+              activeColor: widget.primaryGreen,
+            ),
           ),
           
           // Header overlay
