@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tervist_apk/widgets/calendar_popup.dart';
 import 'package:intl/intl.dart';
-import 'scanfood.dart'; // Make sure to import the scanfood.dart file
+import 'scanfood.dart';
+import 'package:tervist_apk/widgets/navigation_bar.dart';
 
 class NutritionMainPage extends StatefulWidget {
   const NutritionMainPage({super.key});
@@ -321,54 +322,11 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
-          ),
-          child: BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            currentIndex: 1,
-            selectedItemColor: Colors.black,
-            unselectedItemColor: Colors.grey,
-            showSelectedLabels: true,
-            showUnselectedLabels: true,
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-            items: [
-              BottomNavigationBarItem(
-                icon: Image.asset('assets/images/home.png', height: 24),
-                label: 'Home',
-              ),
-              const BottomNavigationBarItem(
-                icon: Text("🍽️", style: TextStyle(fontSize: 24)),
-                activeIcon: Text("🍽️", style: TextStyle(fontSize: 24)),
-                label: 'Nutritions',
-              ),
-              BottomNavigationBarItem(
-                icon: Image.asset('assets/images/activity.png', height: 24),
-                label: 'Activity',
-              ),
-              BottomNavigationBarItem(
-                icon: Image.asset('assets/images/profile.png', height: 24),
-                label: 'Profile',
-              ),
-            ],
-          ),
-        ),
+      bottomNavigationBar: AppNavigationBar(
+        currentIndex: 1, // karena ini halaman Nutritions
+        onTap: (index) {
+          // Untuk sekarang biarkan kosong atau tambahkan logika navigasi nanti
+        },
       ),
     );
   }
