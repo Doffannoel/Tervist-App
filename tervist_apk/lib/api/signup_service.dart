@@ -4,12 +4,21 @@ import 'package:tervist_apk/api/api_config.dart';
 import 'package:tervist_apk/api/signup_data.dart';
 
 class SignupService {
-  static Future<http.Response> submitSignup(SignupData data) async {
-    print(jsonEncode(data.toJson()));
-    return await http.post(
+  static Future<http.Response> submitSignup(SignupData data) {
+    return http.post(
       ApiConfig.signup,
-      headers: {"Content-Type": "application/json"},
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode(data.toJson()),
     );
   }
+
+  static Future<http.Response> loginUser(String email, String password) {
+    return http.post(
+      ApiConfig.login,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+  }
+
+  
 }

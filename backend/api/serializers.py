@@ -48,3 +48,8 @@ class RunningActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = RunningActivity
         fields = ['id', 'user', 'distance_km', 'time_seconds', 'pace', 'calories_burned', 'steps', 'date']
+
+# NEW: Serializer untuk statistik ringkasan lari
+class RunningStatsSerializer(serializers.Serializer):
+    weekly = serializers.DictField()
+    year_to_date = serializers.DictField()

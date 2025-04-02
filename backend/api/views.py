@@ -1,12 +1,14 @@
 from rest_framework import viewsets, permissions, status
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.db.models import Sum
 from rest_framework.response import Response
 from django.utils import timezone
+
+from authentication.models import CustomUser
 from .models import CaloriesBurned, DailySteps, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
 from .serializers import DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, RunningActivitySerializer
 from rest_framework.views import APIView
-
+from django.db.models import Avg, Sum, Count
 
 class NutritionalTargetView(viewsets.ModelViewSet):
     queryset = NutritionalTarget.objects.all()
@@ -253,4 +255,55 @@ class WeeklyNutritionSummaryView(APIView):
             "total_eaten": round(total_eaten),
             "net_difference": round(net),
             "net_average": round(net / 7) if calorie_goal else 0,
+        })
+    
+
+class RunningStatsView(viewsets.ViewSet):
+    permission_classes = [permissions.AllowAny]  # Membuka akses publik
+
+    def list(self, request):
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response({"detail": "user_id is required"}, status=400)
+
+        # Ambil user berdasarkan user_id
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response({"detail": "User not found"}, status=404)
+
+        today = timezone.now().date()
+        week_ago = today - timedelta(days=7)
+        year_start = today.replace(month=1, day=1)
+
+        # Data mingguan
+        weekly_activities = RunningActivity.objects.filter(user=user, date__gte=week_ago)
+        avg_runs = weekly_activities.count()
+        avg_distance = weekly_activities.aggregate(Avg('distance_km'))['distance_km__avg'] or 0
+        avg_time = weekly_activities.aggregate(Avg('time_seconds'))['time_seconds__avg'] or 0
+
+        # Data sepanjang tahun
+        ytd_activities = RunningActivity.objects.filter(user=user, date__gte=year_start)
+        total_runs = ytd_activities.count()
+        total_distance = ytd_activities.aggregate(Sum('distance_km'))['distance_km__sum'] or 0
+        total_time = ytd_activities.aggregate(Sum('time_seconds'))['time_seconds__sum'] or 0
+        total_steps = ytd_activities.aggregate(Sum('steps'))['steps__sum'] or 0
+
+        return Response({
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email
+            },
+            "weekly": {
+                "avg_runs_per_week": avg_runs,
+                "avg_distance_km": round(avg_distance, 2),
+                "avg_time_seconds": round(avg_time)
+            },
+            "year_to_date": {
+                "total_runs": total_runs,
+                "total_distance_km": round(total_distance, 2),
+                "total_time_seconds": round(total_time),
+                "total_steps": total_steps
+            }
         })
