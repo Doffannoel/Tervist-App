@@ -88,7 +88,7 @@ class _UserDataPageState extends State<UserDataPage> {
                           color: Colors.black54,
                           fontWeight: FontWeight.w500,
                         ),
-=======
+
             const SizedBox(height: 16),
             if (signupData.timeline != null)
               _infoTile(
@@ -113,7 +113,7 @@ class _UserDataPageState extends State<UserDataPage> {
                       SnackBar(
                         content: Text(error['detail'] ?? 'Signup failed'),
                         backgroundColor: Colors.red,
->>>>>>> d7f874f7ab7b6674ff682ed9e4b9a76b29f58640
+
                       ),
                       const SizedBox(height: 24),
                       _buildSectionCard(
