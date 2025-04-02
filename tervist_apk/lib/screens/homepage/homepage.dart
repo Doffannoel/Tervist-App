@@ -1,607 +1,475 @@
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
   @override
-  State<HomePage> createState() => _HomePageState();
+  _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  final int _calorieGoal = 1236;
-  final int _caloriesConsumed = 654; // 220 + 498
-  final int _caloriesBurned = 486;
+  bool _showLogoutDialog = false;
 
-  // Navigation items
-  final List<BottomNavigationBarItem> _navItems = const [
-    BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-    BottomNavigationBarItem(icon: Icon(Icons.restaurant_menu), label: 'Food'),
-    BottomNavigationBarItem(
-        icon: Icon(Icons.directions_run), label: 'Exercise'),
-    BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-  ];
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: const Text(
-            'Are you sure you want to logout?',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: const BorderSide(color: Colors.red),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child:
-                        const Text('Log out', style: TextStyle(fontSize: 16)),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // Add logout logic here
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: const Text('Back', style: TextStyle(fontSize: 16)),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
-  void _showProfileMenu() {
-    final RenderBox button = context.findRenderObject() as RenderBox;
-    final Offset offset = button.localToGlobal(Offset.zero);
 
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        offset.dx + button.size.width - 160,
-        offset.dy + 80,
-        offset.dx + 20,
-        offset.dy,
+  Widget _buildStepsCard() {
+  return Card(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    elevation: 4,
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.directions_walk, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('Daily steps', style: TextStyle(fontWeight: FontWeight.bold)),
+              Spacer(),
+              Text('7,234', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: 0.72,
+            backgroundColor: const Color.fromARGB(255, 25, 167, 77),
+            color: const Color.fromARGB(255, 70, 129, 248),
+            minHeight: 6,
+          ),
+          SizedBox(height: 4),
+          Text('72% of daily goal (10,000 steps)'),
+          SizedBox(height: 8),
+          Text('Distance: 1.7 km'),
+          Text('Avg. Pace: 14 min/km'),
+        ],
       ),
-      items: [
-        PopupMenuItem(
-          child: const Text('View profile'),
-          onTap: () {
-            // Add a delay to allow menu to close before navigation
-            Future.delayed(const Duration(milliseconds: 10), () {
-              Navigator.pushNamed(context, '/profile');
-            });
-          },
-        ),
-        PopupMenuItem(
-          child: const Text('Log out', style: TextStyle(color: Colors.red)),
-          onTap: () {
-            // Add a delay to allow menu to close before showing dialog
-            Future.delayed(const Duration(milliseconds: 10), () {
-              _showLogoutDialog();
-            });
-          },
-        ),
-      ],
-      elevation: 8,
+    ),
+  );
+}
+
+
+  Widget _buildCaloriesBurnedCard() {
+  return Card(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    elevation: 4,
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.local_fire_department, color: Colors.orange),
+              SizedBox(width: 8),
+              Text('Calories Burned', style: TextStyle(fontWeight: FontWeight.bold)),
+              Spacer(),
+              Text('486', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: 0.48,
+            backgroundColor: const Color.fromARGB(255, 26, 153, 47),
+            color: const Color.fromARGB(255, 245, 169, 39),
+            minHeight: 6,
+          ),
+          SizedBox(height: 4),
+          Text('48% of daily goal (1000 kcal)'),
+          SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Exercise\n286 kcal', style: TextStyle(fontWeight: FontWeight.bold)),
+              Column(
+                children: [
+                  Text('BMR'),
+                  SizedBox(height: 4),
+                  Container(height: 4, width: 80, color: Colors.black),
+                  SizedBox(height: 4),
+                  Text('200 kcal', style: TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
+  Widget _buildAchievementsCard() {
+    return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Calculate remaining calories
-    final int caloriesRemaining =
-        _calorieGoal - _caloriesConsumed + _caloriesBurned;
-    final double calorieProgress = 1 - (caloriesRemaining / _calorieGoal);
-
-    return Scaffold(
-      backgroundColor: Colors.grey[300],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text('Home page', style: TextStyle(color: Colors.black)),
-      ),
-      body: SingleChildScrollView(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Admin header section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'Hi, admin!',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(Icons.notifications_none,
-                              color: Colors.orange[300]),
-                          const Text('(1)',
-                              style: TextStyle(color: Colors.orange)),
-                        ],
-                      ),
-                      GestureDetector(
-                        onTap: _showProfileMenu,
-                        child: const CircleAvatar(
-                          backgroundColor: Colors.grey,
-                          radius: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Text(
-                    'Track your daily progress',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Calorie budget section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Your Calorie Budget',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text('$_calorieGoal'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Calorie progress chart
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        height: 120,
-                        width: 120,
-                        child: CircularProgressIndicator(
-                          value: calorieProgress,
-                          backgroundColor: Colors.grey[200],
-                          valueColor:
-                              const AlwaysStoppedAnimation<Color>(Colors.blue),
-                          strokeWidth: 12,
-                        ),
-                      ),
-                      Column(
-                        children: [
-                          Text(
-                            '$caloriesRemaining',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Text(
-                            'kcal\nLeft',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Progress indicator line
-                  Container(
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Meal tracking section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildMealItem('Breakfast', 220, Icons.breakfast_dining),
-                      _buildMealItem('Lunch', 498, Icons.lunch_dining),
-                      _buildMealItem('Dinner', 0, Icons.dinner_dining),
-                      _buildMealItem('Snack', 0, Icons.icecream),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Daily steps card
-            _buildMetricCard(
-              title: 'Daily steps',
-              value: '7,234',
-              subtitle: '75% of daily goal (10,000 steps)',
-              icon: Icons.directions_walk,
-              progressValue: 0.75,
-              progressColor: Colors.blue,
-              additionalInfo: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Distance: 5.1 km'),
-                  Text('Avg. Pace: 15 min/km'),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Calories burned card
-            _buildMetricCard(
-              title: 'Calories Burned',
-              value: '486',
-              subtitle: '49% of daily goal (1000 kcal)',
-              icon: Icons.local_fire_department_outlined,
-              progressValue: 0.49,
-              progressColor: Colors.orange,
-              additionalInfo: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text('Exercises: 286 kcal'),
-                  Text('BMR: 200 kcal'),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Health metrics row
             Row(
               children: [
-                Expanded(
-                  child: _buildSimpleMetricCard(
-                    title: 'Heart Rate',
-                    icon: Icons.favorite,
-                    iconColor: Colors.red,
-                    value: '72 BPM',
-                    subtitle: 'Resting',
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildSimpleMetricCard(
-                    title: 'Workout time',
-                    icon: Icons.timer_outlined,
-                    iconColor: Colors.blue,
-                    value: '42 min',
-                    subtitle: '70% of daily goal',
-                  ),
+                Icon(Icons.emoji_events, color: Colors.amber),
+                SizedBox(width: 8),
+                Text(
+                  'Recent Achievements',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
             ),
-
-            const SizedBox(height: 16),
-
-            // Achievements section
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: const [
-                      Icon(Icons.emoji_events, color: Colors.amber),
-                      SizedBox(width: 8),
-                      Text(
-                        'Recent Achievements',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildAchievementItem(
-                    title: 'First Step',
-                    subtitle: '1000 steps in a day',
-                    icon: Icons.directions_walk,
-                    iconBgColor: Colors.blue[100]!,
-                    iconColor: Colors.blue,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildAchievementItem(
-                    title: 'Balanced Eater',
-                    subtitle: '50% macros in 7 days in a row',
-                    icon: Icons.restaurant,
-                    iconBgColor: Colors.green[100]!,
-                    iconColor: Colors.green,
-                  ),
-                ],
-              ),
+            SizedBox(height: 16),
+            _buildAchievementItem(
+              imagePath: 'images/step.png',
+              title: 'First Step',
+              subtitle: 'Walk 1,000 steps in a day',
             ),
-
-            const SizedBox(height: 24),
+            SizedBox(height: 12),
+            _buildAchievementItem(
+              imagePath: 'images/fnb.png',
+              title: 'Balanced Eater',
+              subtitle: 'Log meals for 7 days in a row',
+            ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        items: _navItems,
-      ),
-    );
-  }
-
-  Widget _buildMealItem(String title, int calories, IconData icon) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            '$calories',
-            style: const TextStyle(fontSize: 12),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.blue),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: Colors.blue),
-        ),
-        const SizedBox(height: 4),
-        Text(title, style: const TextStyle(fontSize: 12)),
-      ],
-    );
-  }
-
-  Widget _buildMetricCard({
-    required String title,
-    required String value,
-    required String subtitle,
-    required IconData icon,
-    required double progressValue,
-    required Color progressColor,
-    required Widget additionalInfo,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: progressColor),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: progressColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Stack(
-            children: [
-              Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              FractionallySizedBox(
-                widthFactor: progressValue,
-                child: Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: progressColor,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          additionalInfo,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSimpleMetricCard({
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required String value,
-    required String subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      margin: const EdgeInsets.only(left: 16, right: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: iconColor),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildAchievementItem({
+    required String imagePath,
     required String title,
     required String subtitle,
-    required IconData icon,
-    required Color iconBgColor,
-    required Color iconColor,
   }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: iconBgColor,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: iconColor, size: 20),
+        CircleAvatar(
+          backgroundImage: AssetImage(imagePath),
+          radius: 20,
+          backgroundColor: Colors.grey.shade200,
         ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: Row(
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
+            Text("Hi, admin!",
+                style: TextStyle(
+                    color: Colors.black, fontWeight: FontWeight.bold)),
+            SizedBox(width: 8),
+            Icon(Icons.local_fire_department, color: Colors.orange),
+            Text("11", style: TextStyle(color: Colors.black)),
+          ],
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: CircleAvatar(
+              backgroundImage: AssetImage('images/profile.png'),
+            ),
+            onSelected: (value) {
+              if (value == 'logout') {
+                setState(() {
+                  _showLogoutDialog = true;
+                });
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              PopupMenuItem<String>(
+                value: 'profile',
+                child: Text('View profile'),
+              ),
+              PopupMenuItem<String>(
+                value: 'logout',
+                child: Text('Log out', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          )
+        ],
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: EdgeInsets.all(16),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _buildCalorieBudget(),
+                      SizedBox(height: 16),
+                      _buildMealSummary(),
+                      SizedBox(height: 16),
+                      _buildStepsCard(),
+                      SizedBox(height: 16),
+                      _buildCaloriesBurnedCard(),
+                      SizedBox(height: 16),
+                      _buildHeartWorkoutRow(),
+                      SizedBox(height: 16),
+                      _buildAchievementsCard(),
+                      SizedBox(height: 80),
+                    ]),
+                  ),
+                ),
+              ],
+            ),
+            if (_showLogoutDialog) _buildLogoutDialog(),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: Colors.blueAccent,
+        unselectedItemColor: Colors.grey,
+        showSelectedLabels: true, // Hanya label aktif (home) yang tampil
+        showUnselectedLabels: false,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.restaurant_menu),
+            label: 'Meals',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.fitness_center),
+            label: 'Workout',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalorieBudget() {
+    return Column(
+      children: [
+        Text('Your Calorie Budget',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              height: 100,
+              width: 100,
+              child: CircularProgressIndicator(
+                value: 582 / 1236,
+                strokeWidth: 12,
+                backgroundColor: Colors.grey.shade300,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
               ),
             ),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+            Column(
+              children: [
+                Text('582',
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text('kcal Left'),
+              ],
             ),
           ],
         ),
       ],
     );
   }
+
+  Widget _buildMealSummary() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _buildMealItem('Breakfast', 220, 'images/breakfast.png'),
+        _buildMealItem('Lunch', 498, 'images/lunch.png'),
+        _buildMealItem('Dinner', 0, 'images/dinner.png'),
+        _buildMealItem('Snack', 0, 'images/snack.png'),
+      ],
+    );
+  }
+
+  Widget _buildMealItem(String label, int cal, String assetPath) {
+    return Column(
+      children: [
+        CircleAvatar(radius: 30, backgroundImage: AssetImage(assetPath)),
+        SizedBox(height: 4),
+        Text(label),
+        Text('$cal kcal', style: TextStyle(fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+
+  Widget _buildHeartWorkoutRow() {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    children: [
+      _buildMiniCard(
+        icon: Icons.favorite_border,
+        iconColor: Colors.red,
+        title: 'Heart Rate',
+        value: '72 BPM',
+        valueColor: Colors.red,
+        subtitle: 'Resting',
+      ),
+      _buildMiniCard(
+        icon: Icons.timer_outlined,
+        iconColor: Colors.blue,
+        title: 'Workout Time',
+        value: '42 min',
+        valueColor: Colors.blue,
+        subtitle: '35% of daily goal\n(2 hours)',
+      ),
+    ],
+  );
+}
+Widget _buildMiniCard({
+  required IconData icon,
+  required Color iconColor,
+  required String title,
+  required String value,
+  required Color valueColor,
+  required String subtitle,
+}) {
+  return Card(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    elevation: 4,
+    child: Container(
+      width: 160,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, color: iconColor, size: 28),
+          SizedBox(height: 8),
+          Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(height: 4),
+          Text(value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: valueColor,
+              )),
+          SizedBox(height: 4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
+  Widget _buildInfoCard(
+      {required String title,
+      required String value,
+      required String subtitle}) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: 8),
+            Text(value,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(subtitle),
+          ],
+        ),
       ),
-      body: const Center(
-        child: Text('Profile Page'),
+    );
+  }
+
+
+  Widget _buildLogoutDialog() {
+    return Center(
+      child: Container(
+        padding: EdgeInsets.all(16),
+        margin: EdgeInsets.symmetric(horizontal: 32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(blurRadius: 10, color: Colors.black26)],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Are you sure you want to logout?',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.red),
+                    foregroundColor: Colors.red,
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text('Log out'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _showLogoutDialog = false;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text('Back'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

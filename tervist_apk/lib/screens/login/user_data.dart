@@ -67,6 +67,7 @@ class _UserDataPageState extends State<UserDataPage> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(32),
               ),
+<<<<<<< HEAD
               child: SingleChildScrollView(
                 child: Padding(
                   padding:
@@ -87,6 +88,32 @@ class _UserDataPageState extends State<UserDataPage> {
                           color: Colors.black54,
                           fontWeight: FontWeight.w500,
                         ),
+=======
+            const SizedBox(height: 16),
+            if (signupData.timeline != null)
+              _infoTile(
+                title: 'Timeline',
+                value: signupData.timeline!,
+              ),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  final response = await SignupService.submitSignup(signupData);
+                  print('RESPONSE: ${response.statusCode} ${response.body}');
+                  if (response.statusCode == 201) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => HomePage()),
+                    );
+                  } else {
+                    final error = jsonDecode(response.body);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(error['detail'] ?? 'Signup failed'),
+                        backgroundColor: Colors.red,
+>>>>>>> d7f874f7ab7b6674ff682ed9e4b9a76b29f58640
                       ),
                       const SizedBox(height: 24),
                       _buildSectionCard(
