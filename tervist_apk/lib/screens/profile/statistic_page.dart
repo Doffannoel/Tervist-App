@@ -9,7 +9,7 @@ class StatisticPage extends StatefulWidget {
 }
 
 class _StatisticPageState extends State<StatisticPage> {
-  bool isBiking = false;
+  bool isRiding = true;
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +21,7 @@ class _StatisticPageState extends State<StatisticPage> {
             // Header with Back Button and Title
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -29,108 +29,109 @@ class _StatisticPageState extends State<StatisticPage> {
               ),
               margin: const EdgeInsets.all(16),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
                     onTap: () {
                       Navigator.pop(context);
                     },
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.arrow_back_ios, size: 20),
+                        const Icon(Icons.arrow_back_ios, size: 16),
+                        const SizedBox(width: 4),
                         Text(
                           'Profile',
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'Statistic',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                  Text(
+                    'Statistic',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        isBiking = !isBiking;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.orange),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        Icons.directions_bike,
-                        size: 16,
-                        color: Colors.orange,
-                      ),
-                    ),
-                  ),
+                  const SizedBox(width: 60), // balance spacing
                 ],
               ),
             ),
 
-            // Activity Toggle
+            // Toggle icon section
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
+              margin: const EdgeInsets.only(right: 16, left: 16, bottom: 10),
+              alignment:
+                  isRiding ? Alignment.centerRight : Alignment.centerLeft,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    isRiding = !isRiding;
+                  });
+                },
+                child: Container(
+                  width: 64,
+                  height: 27,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.orange),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: isRiding
+                      ? Icon(Icons.pedal_bike, size: 22, color: Colors.orange)
+                      : Image.asset(
+                          'assets/images/runicon.png',
+                          width: 22,
+                          height: 20,
+                          color: Colors.orange,
+                        ),
+                ),
+              ),
+            ),
+
+            // Activity section with correct icon
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 32),
+              decoration: const BoxDecoration(color: Colors.white),
               child: Row(
                 children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.orange),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                            isBiking
-                                ? Icons.directions_run
-                                : Icons.directions_bike,
-                            size: 16,
-                            color: Colors.orange),
-                      ],
-                    ),
-                  ),
+                  isRiding
+                      ? Image.asset(
+                          'assets/images/runicon.png',
+                          width: 20,
+                          height: 20,
+                        )
+                      : const Icon(
+                          Icons.pedal_bike,
+                          size: 20,
+                        ),
                   const SizedBox(width: 8),
                   Text(
                     'ACTIVITY',
                     style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Activity Details
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
               child: Column(
                 children: [
                   buildStatRow(
-                      isBiking ? 'Avg Rides/Week' : 'Avg Runs/Week', '0'),
+                      isRiding ? 'Avg Runs/Week' : 'Avg Rides/Week', '0'),
                   const SizedBox(height: 16),
                   buildStatRow('Avg Time/Week', '0h'),
                   const SizedBox(height: 16),
@@ -139,48 +140,44 @@ class _StatisticPageState extends State<StatisticPage> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-            // Year-to-Date Section
+            // Year-to-Date Header in white container
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'YEAR-TO-DATE',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Year-to-Date Details
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Year-to-Date Header
-                  Text(
-                    'YEAR-TO-DATE',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
+                  buildStatRow(isRiding ? 'Runs' : 'Rides', '0'),
                   const SizedBox(height: 16),
-
-                  // Year-to-Date Details
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        buildStatRow(isBiking ? 'Rides' : 'Runs', '0'),
-                        const SizedBox(height: 16),
-                        buildStatRow('Time', '0h'),
-                        const SizedBox(height: 16),
-                        buildStatRow('Distance', '0mi'),
-                        const SizedBox(height: 16),
-                        buildStatRow('Elevation Gain', '0ft'),
-                      ],
-                    ),
-                  ),
+                  buildStatRow('Time', '0h'),
+                  const SizedBox(height: 16),
+                  buildStatRow('Distance', '0mi'),
+                  const SizedBox(height: 16),
+                  buildStatRow('Elevation Gain', '0ft'),
                 ],
               ),
             ),
 
-            // Space for the navbar that will be imported
             const Spacer(),
           ],
         ),
@@ -195,15 +192,15 @@ class _StatisticPageState extends State<StatisticPage> {
         Text(
           label,
           style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
           ),
         ),
         Text(
           value,
           style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],

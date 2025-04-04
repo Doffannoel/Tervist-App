@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  shared_preferences: ^2.2.2
+  
 
   flutter_svg: ^2.0.17 # Added flutter_svg dependency for SVG support
 
