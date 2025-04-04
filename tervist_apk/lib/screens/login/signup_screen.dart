@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:tervist_apk/api/login_service.dart';
 import 'package:tervist_apk/screens/forgetpassword/reset_password.dart';
+import 'package:tervist_apk/screens/homepage/homepage.dart';
 import 'enter_details.dart'; // Import the EnterDetails page
 import '/../api/signup_data.dart';
 // Import the ResetPasswordPage
-
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -45,13 +46,31 @@ class _AuthPageState extends State<AuthPage> {
     });
   }
 
-  void _handleSignUpOrSignIn() {
+  void _handleSignUpOrSignIn() async {
     _validateFields();
 
     if (_isSignIn) {
       if (_isEmailValid && _isPasswordValid) {
-        print('Sign In Successful');
-        // Add your sign in logic here
+        try {
+          bool success = await LoginService.loginUser(
+            _emailController.text,
+            _passwordController.text,
+          );
+
+          if (success) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => HomePage()),
+            );
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceAll('Exception: ', '')),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } else {
       if (_isEmailValid &&

@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+from django.core.validators import FileExtensionValidator
 
 # Manajer pengguna kustom
 class CustomUserManager(BaseUserManager):
@@ -41,6 +42,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     city = models.CharField(max_length=100, null= True, blank=True)
     state = models.CharField(max_length=100, null=True, blank=True) 
     birthday = models.DateField(null=True, blank=True)
+    profile_picture = models.ImageField(
+        upload_to='profile_pics/',
+        null=True,
+        blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])],)
     
     # New fields
     activity_level = models.CharField(

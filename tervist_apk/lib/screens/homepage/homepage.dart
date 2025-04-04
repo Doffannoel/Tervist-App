@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -15,93 +17,98 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-
   Widget _buildStepsCard() {
-  return Card(
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    elevation: 4,
-    child: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.directions_walk, color: Colors.blue),
-              SizedBox(width: 8),
-              Text('Daily steps', style: TextStyle(fontWeight: FontWeight.bold)),
-              Spacer(),
-              Text('7,234', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: 0.72,
-            backgroundColor: const Color.fromARGB(255, 25, 167, 77),
-            color: const Color.fromARGB(255, 70, 129, 248),
-            minHeight: 6,
-          ),
-          SizedBox(height: 4),
-          Text('72% of daily goal (10,000 steps)'),
-          SizedBox(height: 8),
-          Text('Distance: 1.7 km'),
-          Text('Avg. Pace: 14 min/km'),
-        ],
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.directions_walk, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Daily steps',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Spacer(),
+                Text('7,234',
+                    style: TextStyle(
+                        color: Colors.blue, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: 0.72,
+              backgroundColor: const Color.fromARGB(255, 25, 167, 77),
+              color: const Color.fromARGB(255, 70, 129, 248),
+              minHeight: 6,
+            ),
+            SizedBox(height: 4),
+            Text('72% of daily goal (10,000 steps)'),
+            SizedBox(height: 8),
+            Text('Distance: 1.7 km'),
+            Text('Avg. Pace: 14 min/km'),
+          ],
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _buildCaloriesBurnedCard() {
-  return Card(
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    elevation: 4,
-    child: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.local_fire_department, color: Colors.orange),
-              SizedBox(width: 8),
-              Text('Calories Burned', style: TextStyle(fontWeight: FontWeight.bold)),
-              Spacer(),
-              Text('486', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: 0.48,
-            backgroundColor: const Color.fromARGB(255, 26, 153, 47),
-            color: const Color.fromARGB(255, 245, 169, 39),
-            minHeight: 6,
-          ),
-          SizedBox(height: 4),
-          Text('48% of daily goal (1000 kcal)'),
-          SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Exercise\n286 kcal', style: TextStyle(fontWeight: FontWeight.bold)),
-              Column(
-                children: [
-                  Text('BMR'),
-                  SizedBox(height: 4),
-                  Container(height: 4, width: 80, color: Colors.black),
-                  SizedBox(height: 4),
-                  Text('200 kcal', style: TextStyle(fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ],
-          ),
-        ],
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.local_fire_department, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('Calories Burned',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Spacer(),
+                Text('486',
+                    style: TextStyle(
+                        color: Colors.orange, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: 0.48,
+              backgroundColor: const Color.fromARGB(255, 26, 153, 47),
+              color: const Color.fromARGB(255, 245, 169, 39),
+              minHeight: 6,
+            ),
+            SizedBox(height: 4),
+            Text('48% of daily goal (1000 kcal)'),
+            SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Exercise\n286 kcal',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Column(
+                  children: [
+                    Text('BMR'),
+                    SizedBox(height: 4),
+                    Container(height: 4, width: 80, color: Colors.black),
+                    SizedBox(height: 4),
+                    Text('200 kcal',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _buildAchievementsCard() {
     return Card(
@@ -124,13 +131,13 @@ class _HomePageState extends State<HomePage> {
             ),
             SizedBox(height: 16),
             _buildAchievementItem(
-              imagePath: 'images/step.png',
+              imagePath: 'assets/images/step.png',
               title: 'First Step',
               subtitle: 'Walk 1,000 steps in a day',
             ),
             SizedBox(height: 12),
             _buildAchievementItem(
-              imagePath: 'images/fnb.png',
+              imagePath: 'assets/images/fnb.png',
               title: 'Balanced Eater',
               subtitle: 'Log meals for 7 days in a row',
             ),
@@ -190,7 +197,7 @@ class _HomePageState extends State<HomePage> {
         actions: [
           PopupMenuButton<String>(
             icon: CircleAvatar(
-              backgroundImage: AssetImage('images/profile.png'),
+              backgroundImage: AssetImage('assets/images/profile.png'),
             ),
             onSelected: (value) {
               if (value == 'logout') {
@@ -308,10 +315,10 @@ class _HomePageState extends State<HomePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildMealItem('Breakfast', 220, 'images/breakfast.png'),
-        _buildMealItem('Lunch', 498, 'images/lunch.png'),
-        _buildMealItem('Dinner', 0, 'images/dinner.png'),
-        _buildMealItem('Snack', 0, 'images/snack.png'),
+        _buildMealItem('Breakfast', 220, 'assets/images/breakfast.png'),
+        _buildMealItem('Lunch', 498, 'assets/images/lunch.png'),
+        _buildMealItem('Dinner', 0, 'assets/images/dinner.png'),
+        _buildMealItem('Snack', 0, 'assets/images/snack.png'),
       ],
     );
   }
@@ -327,69 +334,68 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   Widget _buildHeartWorkoutRow() {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-    children: [
-      _buildMiniCard(
-        icon: Icons.favorite_border,
-        iconColor: Colors.red,
-        title: 'Heart Rate',
-        value: '72 BPM',
-        valueColor: Colors.red,
-        subtitle: 'Resting',
-      ),
-      _buildMiniCard(
-        icon: Icons.timer_outlined,
-        iconColor: Colors.blue,
-        title: 'Workout Time',
-        value: '42 min',
-        valueColor: Colors.blue,
-        subtitle: '35% of daily goal\n(2 hours)',
-      ),
-    ],
-  );
-}
-Widget _buildMiniCard({
-  required IconData icon,
-  required Color iconColor,
-  required String title,
-  required String value,
-  required Color valueColor,
-  required String subtitle,
-}) {
-  return Card(
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    elevation: 4,
-    child: Container(
-      width: 160,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(icon, color: iconColor, size: 28),
-          SizedBox(height: 8),
-          Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-          SizedBox(height: 4),
-          Text(value,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: valueColor,
-              )),
-          SizedBox(height: 4),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-          ),
-        ],
-      ),
-    ),
-  );
-}
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildMiniCard(
+          icon: Icons.favorite_border,
+          iconColor: Colors.red,
+          title: 'Heart Rate',
+          value: '72 BPM',
+          valueColor: Colors.red,
+          subtitle: 'Resting',
+        ),
+        _buildMiniCard(
+          icon: Icons.timer_outlined,
+          iconColor: Colors.blue,
+          title: 'Workout Time',
+          value: '42 min',
+          valueColor: Colors.blue,
+          subtitle: '35% of daily goal\n(2 hours)',
+        ),
+      ],
+    );
+  }
 
+  Widget _buildMiniCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String value,
+    required Color valueColor,
+    required String subtitle,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon, color: iconColor, size: 28),
+            SizedBox(height: 8),
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: 4),
+            Text(value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: valueColor,
+                )),
+            SizedBox(height: 4),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildInfoCard(
       {required String title,
@@ -412,7 +418,6 @@ Widget _buildMiniCard({
       ),
     );
   }
-
 
   Widget _buildLogoutDialog() {
     return Center(

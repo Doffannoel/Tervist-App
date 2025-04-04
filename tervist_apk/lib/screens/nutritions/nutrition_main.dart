@@ -113,10 +113,10 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  SvgPicture.asset(
-                    'assets/svgs/logotervist.svg',
+                  Image.asset(
+                    'assets/images/logotervist.png',
                     height: 24,
-                    placeholderBuilder: (context) =>
+                    errorBuilder: (context, error, stackTrace) =>
                         const Icon(Icons.favorite, size: 24),
                   ),
                   Container(

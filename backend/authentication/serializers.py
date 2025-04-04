@@ -77,7 +77,13 @@ class ResetPasswordSerializer(serializers.Serializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'gender', 'bio', 'city', 'state', 'birthday', 'weight', 'height', 'age', 'activity_level', 'goal', 'target_weight', 'timeline']
+        fields = [
+            'email', 'username', 'gender', 'weight', 'height', 'age',
+            'bio', 'city', 'state', 'birthday', 'activity_level',
+            'goal', 'target_weight', 'timeline', 'profile_picture'
+        ]
+        read_only_fields = ['email']  # Atur field read-only jika perlu
+
 
     def update(self, instance, validated_data):
         """Override to update only the user profile fields."""
