@@ -21,5 +21,5 @@ class ApiConfig {
   static Uri get dashboard => Uri.parse('$baseUrl/api/dashboard/');
   static Uri get weeklyNutritionSummary =>
       Uri.parse('$baseUrl/api/nutrition-weekly-summary/');
-
+  static Uri get weeklySummary => Uri.parse('$baseUrl/api/weekly-summary/');
 }

@@ -163,5 +163,12 @@ class RunningActivity(models.Model):
             self.pace = 0
         self.save()
 
+    @property
+    def pace_min_per_km(self):
+        if self.distance_km > 0:
+            return (self.time_seconds / 60) / self.distance_km
+        return 0
+
     def __str__(self):
         return f"{self.user.username} - {self.distance_km} km on {self.date}"
+

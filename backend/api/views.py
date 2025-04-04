@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db.models import Sum
 from rest_framework.response import Response
 from django.utils import timezone
-
+from django.utils.timezone import now
 from authentication.models import CustomUser
 from .models import CaloriesBurned, DailySteps, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
 from .serializers import DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, RunningActivitySerializer
@@ -307,3 +307,28 @@ class RunningStatsView(viewsets.ViewSet):
                 "total_steps": total_steps
             }
         })
+    
+class WeeklySummaryView(APIView):
+    def get(self, request):
+        user = request.user
+        today = now().date()
+        start_week = today - timedelta(days=today.weekday())  # Monday
+        summary = RunningActivity.objects.filter(
+            user=user,
+            date__gte=start_week,
+            date__lte=today
+        ).order_by('date')
+
+        data = []
+        for i in range(7):
+            day = start_week + timedelta(days=i)
+            day_activities = summary.filter(date=day)
+            total_distance = sum(a.distance for a in day_activities)
+            total_time = sum((a.duration for a in day_activities), timedelta())
+            data.append({
+                'day': day.strftime('%a'),  # 'Mon', 'Tue' ...
+                'distance': total_distance,
+                'time_minutes': total_time.total_seconds() // 60
+            })
+
+        return Response(data)

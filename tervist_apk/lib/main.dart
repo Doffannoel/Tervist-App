@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tervist_apk/screens/main_navigation.dart';
 
 import 'package:tervist_apk/screens/onboarding_screen.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
@@ -6,7 +7,6 @@ import 'package:tervist_apk/screens/profile/userprofile_page.dart';
 import 'package:tervist_apk/screens/workout/workout_module.dart';
 import 'package:tervist_apk/screens/homepage/homepage.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
-
 
 void main() {
   runApp(const MyApp());
@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           primarySwatch: Colors.blue),
       home:
-          OnboardingScreen(), // kalo mau ganti disini OnboardingScreen to WorkoutModule
+          const MainNavigation(), 
     );
   }
 }
