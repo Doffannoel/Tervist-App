@@ -49,6 +49,9 @@ dependencies:
   location: ^8.0.0
   latlong2: ^0.9.0
   permission_handler: ^11.0.1 # For handling permissions
+  shared_preferences: ^2.5.3
+
+
 
 
 dev_dependencies:
