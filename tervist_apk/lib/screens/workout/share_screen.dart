@@ -57,6 +57,18 @@ class _ShareScreenState extends State<ShareScreen> {
           ),
         ),
         centerTitle: true,
+        // TASK 1: Ubah icon button next di atas kanan menjadi sharebutton.png
+        actions: [
+          IconButton(
+            icon: Image.asset(
+              'assets/images/sharebutton.png',
+              width: 24,
+              height: 24,
+              color: Colors.black,
+            ),
+            onPressed: _isSaving ? null : () => _shareImage(),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -421,33 +433,23 @@ class _ShareScreenState extends State<ShareScreen> {
     );
   }
 
+  // TASK 2: Buat kotak abu-abu di ganti menjadi workoutsummary1.png
   Widget _buildCustomTemplate() {
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: AssetImage('assets/images/nature_background.jpg'),
+          image: AssetImage('assets/images/workoutsummary1.png'),
           fit: BoxFit.cover,
         ),
       ),
       child: Stack(
         children: [
-          // Overlay for better text visibility
-          Container(
-            color: Colors.black.withOpacity(0.4),
-          ),
-          
           // Content
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo
-                Image.asset(
-                  'assets/images/tervist_logo.png',
-                  height: 50,
-                ),
-                
                 const SizedBox(height: 16),
                 
                 // Date
