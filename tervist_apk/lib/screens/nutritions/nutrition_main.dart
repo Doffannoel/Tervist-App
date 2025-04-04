@@ -116,8 +116,6 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                   Image.asset(
                     'assets/images/logotervist.png',
                     height: 24,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.favorite, size: 24),
                   ),
                   Container(
                     padding:

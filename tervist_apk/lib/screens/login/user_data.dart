@@ -36,17 +36,12 @@ class _UserDataPageState extends State<UserDataPage> {
     );
 
     if (response.statusCode == 200) {
-      print('Raw API Response: ${response.body}');
       final List data = json.decode(response.body);
-      print('Nutritional API Response: $data');
       if (data.isNotEmpty) {
         setState(() {
-          // Sort by ID in descending order and take the first (most recent)
           data.sort((a, b) => b['id'].compareTo(a['id']));
           nutritionalData = data[0];
         });
-      } else {
-        debugPrint('No nutritional data found');
       }
     } else {
       debugPrint('Failed to fetch nutritional target: ${response.body}');
@@ -69,15 +64,13 @@ class _UserDataPageState extends State<UserDataPage> {
               ),
               child: SingleChildScrollView(
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Image.asset('assets/images/check.png', height: 63),
                       const SizedBox(height: 24),
-                      Image.asset('assets/images/welcome.png',
-                          height: 55, width: 270),
+                      Image.asset('assets/images/welcome.png', height: 55, width: 270),
                       const SizedBox(height: 8),
                       Text(
                         'Your personalized fitness plan is all set—\ntime to kick off your journey!',
@@ -93,16 +86,17 @@ class _UserDataPageState extends State<UserDataPage> {
                         'Goal Summary',
                         Column(
                           children: [
+                            _buildGoalItem('Goal Type:', widget.signupData.goal ?? 'Maintain current weight'),
+                            const SizedBox(height: 8),
                             _buildGoalItem(
-                                'Goal Type:',
-                                widget.signupData.goal ??
-                                    'Maintain current weight'),
+                              'Target:',
+                              '${widget.signupData.targetWeight?.toStringAsFixed(1) ?? 60} kg',
+                            ),
                             const SizedBox(height: 8),
-                            _buildGoalItem('Target:',
-                                '${widget.signupData.targetWeight?.toStringAsFixed(1) ?? 60} kg'),
-                            const SizedBox(height: 8),
-                            _buildGoalItem('Timeline:',
-                                widget.signupData.timeline ?? '2 weeks'),
+                            _buildGoalItem(
+                              'Timeline:',
+                              widget.signupData.timeline ?? '2 weeks',
+                            ),
                           ],
                         ),
                       ),
@@ -128,36 +122,44 @@ class _UserDataPageState extends State<UserDataPage> {
                                   Row(
                                     children: [
                                       Expanded(
-                                          child: _buildMacroItem(
-                                              'Calories',
-                                              '${nutritionalData!['calorie_target'].round()}',
-                                              0.75,
-                                              Colors.black)),
+                                        child: _buildMacroItem(
+                                          'Calories',
+                                          '${nutritionalData!['calorie_target'].round()}',
+                                          0.75,
+                                          Colors.black,
+                                        ),
+                                      ),
                                       const SizedBox(width: 12),
                                       Expanded(
-                                          child: _buildMacroItem(
-                                              'Carbs',
-                                              '${nutritionalData!['carbs_target'].round()}g',
-                                              0.7,
-                                              Colors.amber)),
+                                        child: _buildMacroItem(
+                                          'Carbs',
+                                          '${nutritionalData!['carbs_target'].round()}g',
+                                          0.7,
+                                          Colors.amber,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                   const SizedBox(height: 12),
                                   Row(
                                     children: [
                                       Expanded(
-                                          child: _buildMacroItem(
-                                              'Protein',
-                                              '${nutritionalData!['protein_target'].round()}g',
-                                              0.6,
-                                              Colors.red)),
+                                        child: _buildMacroItem(
+                                          'Protein',
+                                          '${nutritionalData!['protein_target'].round()}g',
+                                          0.6,
+                                          Colors.red,
+                                        ),
+                                      ),
                                       const SizedBox(width: 12),
                                       Expanded(
-                                          child: _buildMacroItem(
-                                              'Fats',
-                                              '${nutritionalData!['fats_target'].round()}g',
-                                              0.4,
-                                              Colors.blue)),
+                                        child: _buildMacroItem(
+                                          'Fats',
+                                          '${nutritionalData!['fats_target'].round()}g',
+                                          0.4,
+                                          Colors.blue,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -170,16 +172,11 @@ class _UserDataPageState extends State<UserDataPage> {
                           children: [
                             _buildTipItem(Icons.directions_run, 'Do exercises'),
                             const SizedBox(height: 8),
-                            _buildTipItem(
-                                Image.asset('assets/images/goal2.png'),
-                                'Follow your daily calorie recommendation'),
+                            _buildTipItem(Image.asset('assets/images/goal2.png'), 'Follow your daily calorie recommendation'),
                             const SizedBox(height: 8),
-                            _buildTipItem(
-                                Image.asset('assets/images/goal3.png'),
-                                'Track your food'),
+                            _buildTipItem(Image.asset('assets/images/goal3.png'), 'Track your food'),
                             const SizedBox(height: 8),
-                            _buildTipItem('assets/images/goal4.png',
-                                'Balance your carbs, proteins, and fats'),
+                            _buildTipItem('assets/images/goal4.png', 'Balance your carbs, proteins, and fats'),
                           ],
                         ),
                       ),
@@ -188,28 +185,17 @@ class _UserDataPageState extends State<UserDataPage> {
                         width: 250,
                         child: ElevatedButton(
                           onPressed: () async {
-                            print('goal: ${widget.signupData.goal}');
-                            print(
-                                'targetWeight: ${widget.signupData.targetWeight}');
-                            print('timeline: ${widget.signupData.timeline}');
-                            print(
-                                'signupData: ${jsonEncode(widget.signupData)}');
-
-                            final response = await SignupService.submitSignup(
-                                widget.signupData);
+                            final response = await SignupService.submitSignup(widget.signupData);
                             if (response.statusCode == 201) {
-                              final loginResponse =
-                                  await SignupService.loginUser(
+                              final loginResponse = await SignupService.loginUser(
                                 widget.signupData.email!,
                                 widget.signupData.password!,
                               );
 
                               if (loginResponse.statusCode == 200) {
-                                final responseData =
-                                    jsonDecode(loginResponse.body);
+                                final responseData = jsonDecode(loginResponse.body);
                                 final token = responseData['access_token'];
-                                final prefs =
-                                    await SharedPreferences.getInstance();
+                                final prefs = await SharedPreferences.getInstance();
                                 await prefs.setString('access_token', token);
 
                                 Navigator.pushReplacement(
@@ -220,19 +206,16 @@ class _UserDataPageState extends State<UserDataPage> {
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text(
-                                        'Signup succeeded, but login failed'),
+                                    content: Text('Signup succeeded, but login failed'),
                                     backgroundColor: Colors.orange,
                                   ),
                                 );
                               }
                             } else {
                               final error = jsonDecode(response.body);
-                              print('Error details: $error');
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content:
-                                      Text(error['detail'] ?? 'Signup failed'),
+                                  content: Text(error['detail'] ?? 'Signup failed'),
                                   backgroundColor: Colors.red,
                                 ),
                               );
@@ -280,7 +263,6 @@ class _UserDataPageState extends State<UserDataPage> {
           Align(
             alignment: Alignment.center,
             child: Text(
-              textAlign: TextAlign.start,
               title,
               style: GoogleFonts.poppins(
                 fontSize: 16,
@@ -324,8 +306,7 @@ class _UserDataPageState extends State<UserDataPage> {
     );
   }
 
-  Widget _buildMacroItem(
-      String title, String value, double progress, Color color) {
+  Widget _buildMacroItem(String title, String value, double progress, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -383,8 +364,7 @@ class _UserDataPageState extends State<UserDataPage> {
                   shape: BoxShape.circle,
                   color: Colors.white,
                 ),
-                child: const Icon(Icons.edit_outlined,
-                    size: 14, color: Colors.black),
+                child: const Icon(Icons.edit_outlined, size: 14, color: Colors.black),
               ),
             ],
           ),
@@ -407,8 +387,7 @@ class _UserDataPageState extends State<UserDataPage> {
               : icon is Widget
                   ? SizedBox(width: 30, height: 30, child: icon)
                   : icon is String
-                      ? SizedBox(
-                          width: 30, height: 30, child: Image.asset(icon))
+                      ? SizedBox(width: 30, height: 30, child: Image.asset(icon))
                       : Icon(Icons.circle, size: 20, color: Colors.black87),
           const SizedBox(width: 15),
           Expanded(
@@ -422,6 +401,22 @@ class _UserDataPageState extends State<UserDataPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _infoTile({required String title, required String value}) {
+    return Column(
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.poppins(fontSize: 12),
+        ),
+      ],
     );
   }
 }

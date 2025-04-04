@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'scanfood2.dart'; // Import file scanfood2.dart
 
-class ScanFoodPage extends StatelessWidget {
-  const ScanFoodPage({super.key});
+class ScanFood2Page extends StatelessWidget {
+  const ScanFood2Page({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +50,7 @@ class ScanFoodPage extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(left: 24, right: 24, top: 8),
                     child: Text(
-                      'Best scanning\npractices',
+                      'Best practices for the food label',
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -137,7 +136,7 @@ class ScanFoodPage extends StatelessWidget {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Image.asset(
-                                'assets/images/frame61.png',
+                                'assets/images/frame612.png',
                                 fit: BoxFit.contain,
                               ),
                             ),
@@ -156,7 +155,7 @@ class ScanFoodPage extends StatelessWidget {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Image.asset(
-                                'assets/images/frame62.png',
+                                'assets/images/frame622.png',
                                 fit: BoxFit.contain,
                               ),
                             ),
@@ -214,7 +213,7 @@ class ScanFoodPage extends StatelessWidget {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Keep the food inside the scan lines',
+                                  'Make sure to get the entire food label in frame',
                                   style: TextStyle(fontSize: 16),
                                 ),
                               ),
@@ -258,7 +257,7 @@ class ScanFoodPage extends StatelessWidget {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Don\'t take the picture at obscure angles',
+                                  'Ensure the label’s text is legible',
                                   style: TextStyle(fontSize: 16),
                                 ),
                               ),
@@ -271,19 +270,14 @@ class ScanFoodPage extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  // Next button with navigation to ScanFood2Page
+                  // Next button
                   Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     child: ElevatedButton(
                       onPressed: () {
-                        // Navigate to ScanFood2Page when button is pressed
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ScanFood2Page(),
-                          ),
-                        );
+                        // Action for next button - if needed
+                        Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
@@ -293,7 +287,7 @@ class ScanFoodPage extends StatelessWidget {
                         minimumSize: Size(double.infinity, 56),
                       ),
                       child: Text(
-                        'Next',
+                        'Done',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
