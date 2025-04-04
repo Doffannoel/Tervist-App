@@ -23,8 +23,7 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
           primarySwatch: Colors.blue),
-      home:
-          WorkoutModule(), // kalo mau ganti disini OnboardingScreen to WorkoutModule
+      home: HomePage(), // kalo mau ganti disini OnboardingScreen to WorkoutModule
     );
   }
 }
