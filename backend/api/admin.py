@@ -34,6 +34,7 @@ class CaloriesBurnedAdmin(admin.ModelAdmin):
     list_display = ('user', 'exercise_calories', 'bmr_calories', 'total_calories', 'date')
     search_fields = ('user__username',)
     list_filter = ('date', 'user')
+    autocomplete_fields = ['user']  # mencegah user kosong
 
 @admin.register(RunningActivity)
 class RunningActivityAdmin(admin.ModelAdmin):
@@ -49,6 +50,7 @@ class RunningActivityAdmin(admin.ModelAdmin):
     )
     list_filter = ('user', 'date')
     search_fields = ('user__username',)
+    autocomplete_fields = ['user']  # Tambahkan agar user bisa dicari
 
     @admin.display(description='Time (hh:mm:ss)')
     def formatted_time(self, obj):

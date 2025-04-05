@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tervist_apk/api/api_config.dart';
+import 'package:tervist_apk/screens/onboarding_screen.dart';
 import 'package:tervist_apk/screens/profile/achievement_page.dart';
 import 'package:tervist_apk/screens/profile/editprofile_page.dart';
 import 'package:tervist_apk/screens/profile/nutrition_page.dart';
@@ -30,7 +31,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> fetchUserProfile() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = prefs.getString('access_token');
 
     final response = await http.get(
       ApiConfig.profile,
@@ -38,12 +39,23 @@ class _ProfilePageState extends State<ProfilePage> {
     );
     print('Profile response status: ${response.statusCode}');
     print('Profile response body: ${response.body}');
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       setState(() {
         username = data['username'] ?? 'User';
         profilePictureUrl = data['profile_picture'];
       });
+    } else if (response.statusCode == 401) {
+      // TOKEN EXPIRED → LOGOUT OTOMATIS
+      await prefs.remove('access_token');
+      if (context.mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+          (route) => false,
+        );
+      }
     }
   }
 
@@ -125,9 +137,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   OutlinedButton.icon(
                     onPressed: () {
                       Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const EditProfilePage()));
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const EditProfilePage()),
+                      ).then((_) {
+                        fetchUserProfile(); // ini akan refresh data setelah kembali dari edit
+                      });
                     },
                     icon: const Icon(Icons.edit_square,
                         size: 10, color: Colors.orange),
@@ -273,17 +288,20 @@ class _WeeklyChartState extends State<WeeklyChart> {
   @override
   void initState() {
     super.initState();
-    fetchWeeklySummary();
+    fetchMonthlySummary(); // Ganti fetch ke versi monthly
   }
 
-  Future<void> fetchWeeklySummary() async {
+  Future<void> fetchMonthlySummary() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = prefs.getString('access_token');
 
     final response = await http.get(
-      ApiConfig.weeklySummary,
+      ApiConfig.monthlySummary,
       headers: {'Authorization': 'Bearer $token'},
     );
+    print('Monthly summary response status: ${response.statusCode}');
+    print('Monthly summary response body: ${response.body}');
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       List<FlSpot> tempSpots = [];
@@ -294,7 +312,7 @@ class _WeeklyChartState extends State<WeeklyChart> {
       for (int i = 0; i < data.length; i++) {
         final item = data[i];
         tempSpots.add(FlSpot(i.toDouble(), item['distance_km'].toDouble()));
-        tempLabels.add(item['day']);
+        tempLabels.add(item['month']);
         distance += item['distance_km'];
         time += item['time_minutes'];
       }
@@ -305,11 +323,24 @@ class _WeeklyChartState extends State<WeeklyChart> {
         totalDistance = distance;
         totalTime = time;
       });
+    } else if (response.statusCode == 401) {
+      await prefs.remove('access_token');
+      if (context.mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+          (route) => false,
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (spots.isEmpty) {
+      return const Text("Belum ada data tersedia.");
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -319,7 +350,7 @@ class _WeeklyChartState extends State<WeeklyChart> {
                 width: 20, color: Colors.black),
             const SizedBox(width: 8),
             Text(
-              'This week',
+              'Running Summary (This Year)',
               style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold, fontSize: 16),
             ),
@@ -401,7 +432,7 @@ class _WeeklyChartState extends State<WeeklyChart> {
               ),
               borderData: FlBorderData(show: false),
               minX: 0,
-              maxX: 6,
+              maxX: (labels.length - 1).toDouble(),
               minY: 0,
               maxY: 10,
               lineBarsData: [

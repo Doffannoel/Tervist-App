@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from authentication.models import CustomUser
 from .models import  DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
 
 class NutritionalTargetSerializer(serializers.ModelSerializer):
@@ -53,3 +55,11 @@ class RunningActivitySerializer(serializers.ModelSerializer):
 class RunningStatsSerializer(serializers.Serializer):
     weekly = serializers.DictField()
     year_to_date = serializers.DictField()
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = [
+            'username', 'bio', 'city', 'state', 'birthday',
+            'gender', 'weight'
+        ]

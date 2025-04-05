@@ -247,7 +247,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   PopupMenuButton<String>(
                     icon: CircleAvatar(
-                      backgroundImage: AssetImage('images/profile.png'),
+                      backgroundImage: AssetImage('assets/images/profile.png'),
                       radius: 20,
                     ),
                     onSelected: (value) {
@@ -311,32 +311,6 @@ class _HomePageState extends State<HomePage> {
             if (_showLogoutDialog) _buildLogoutDialog(),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: const Color.fromARGB(255, 17, 17, 17),
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: true, // Hanya label aktif (home) yang tampil
-        showUnselectedLabels: false,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu),
-            label: 'Meals',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center),
-            label: 'Workout',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }

@@ -84,9 +84,15 @@ class ProfileSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['email']  # Atur field read-only jika perlu
 
+    def validate_weight(self, value):
+        if value is not None and (value < 30 or value > 300):
+            raise serializers.ValidationError("Weight must be between 30 and 300 kg.")
+        return value
+
 
     def update(self, instance, validated_data):
         """Override to update only the user profile fields."""
+        instance.username = validated_data.get('username', instance.username)
         instance.bio = validated_data.get('bio', instance.bio)
         instance.city = validated_data.get('city', instance.city)
         instance.state = validated_data.get('state', instance.state)
@@ -99,4 +105,13 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.target_weight = validated_data.get('target_weight', instance.target_weight)
         instance.timeline = validated_data.get('timeline', instance.timeline)
         instance.save()
+            # ✅ Tambahkan ini agar profile_picture ikut di-update
+    # ✅ Tambahkan ini agar profile_picture ikut di-update
+        if 'profile_picture' in validated_data:
+            instance.profile_picture = validated_data['profile_picture']
+            print("Gambar diterima:", validated_data.get("profile_picture"))
+        instance.save()
         return instance
+        
+
+

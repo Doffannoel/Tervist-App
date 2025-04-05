@@ -43,7 +43,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     state = models.CharField(max_length=100, null=True, blank=True) 
     birthday = models.DateField(null=True, blank=True)
     profile_picture = models.ImageField(
-        upload_to='profile_pics/',
+        upload_to='profile_picture/',
         null=True,
         blank=True,
         validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])],)

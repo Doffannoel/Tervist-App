@@ -1,3 +1,4 @@
+from collections import defaultdict
 from rest_framework import viewsets, permissions, status
 from datetime import datetime, timedelta
 from django.db.models import Sum
@@ -6,9 +7,11 @@ from django.utils import timezone
 from django.utils.timezone import now
 from authentication.models import CustomUser
 from .models import CaloriesBurned, DailySteps, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
-from .serializers import DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, RunningActivitySerializer
+from .serializers import DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, RunningActivitySerializer, UserProfileSerializer
 from rest_framework.views import APIView
 from django.db.models import Avg, Sum, Count
+from calendar import monthrange
+from rest_framework.viewsets import ModelViewSet
 
 class NutritionalTargetView(viewsets.ModelViewSet):
     queryset = NutritionalTarget.objects.all()
@@ -220,6 +223,8 @@ class WeeklyNutritionSummaryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        print("DEBUG: User = ", request.user)
+        print("DEBUG: Authenticated? ", request.user.is_authenticated)
         user = request.user
         today = timezone.now().date()
         week_ago = today - timezone.timedelta(days=6)  # 7 hari terakhir
@@ -308,27 +313,48 @@ class RunningStatsView(viewsets.ViewSet):
             }
         })
     
-class WeeklySummaryView(APIView):
+class MonthlySummaryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request):
         user = request.user
-        today = now().date()
-        start_week = today - timedelta(days=today.weekday())  # Monday
-        summary = RunningActivity.objects.filter(
+        today = timezone.now().date()
+        start_year = today.year
+
+        summary = defaultdict(lambda: {"distance_km": 0, "time_minutes": 0})
+
+        activities = RunningActivity.objects.filter(
             user=user,
-            date__gte=start_week,
-            date__lte=today
-        ).order_by('date')
+            date__year=start_year
+        )
 
-        data = []
-        for i in range(7):
-            day = start_week + timedelta(days=i)
-            day_activities = summary.filter(date=day)
-            total_distance = sum(a.distance for a in day_activities)
-            total_time = sum((a.duration for a in day_activities), timedelta())
-            data.append({
-                'day': day.strftime('%a'),  # 'Mon', 'Tue' ...
-                'distance': total_distance,
-                'time_minutes': total_time.total_seconds() // 60
-            })
+        for activity in activities:
+            month = activity.date.strftime("%b")  # e.g., 'Jan', 'Feb'
+            summary[month]["distance_km"] += activity.distance_km
+            summary[month]["time_minutes"] += activity.time_seconds // 60
 
-        return Response(data)
+        ordered_months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+        response_data = [
+            {
+                "month": m,
+                "distance_km": summary[m]["distance_km"],
+                "time_minutes": summary[m]["time_minutes"]
+            }
+            for m in ordered_months
+        ]
+
+        return Response(response_data)
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Supaya queryset tidak kosong, tapi tetap aman
+        return CustomUser.objects.filter(id=self.request.user.id)
+
+    def get_object(self):
+        # Selalu mengembalikan user yang sedang login
+        return self.request.user

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tervist_apk/api/login_service.dart';
 import 'package:tervist_apk/screens/forgetpassword/reset_password.dart';
 import 'package:tervist_apk/screens/homepage/homepage.dart';
+import 'package:tervist_apk/screens/main_navigation.dart';
 import 'enter_details.dart'; // Import the EnterDetails page
 import '/../api/signup_data.dart';
 // Import the ResetPasswordPage
@@ -60,7 +61,7 @@ class _AuthPageState extends State<AuthPage> {
           if (success) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => HomePage()),
+              MaterialPageRoute(builder: (_) => const MainNavigation()),
             );
           }
         } catch (e) {

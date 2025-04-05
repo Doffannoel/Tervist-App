@@ -1,8 +1,159 @@
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:tervist_apk/api/edit_profile_service.dart';
+import 'package:tervist_apk/screens/onboarding_screen.dart';
 
-class EditProfilePage extends StatelessWidget {
+class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
+
+  @override
+  State<EditProfilePage> createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<EditProfilePage> {
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _stateController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
+
+  DateTime? _selectedBirthday;
+  String? _selectedGender;
+  String _profileImagePath = 'assets/images/profilepicture.png';
+  bool _isImageFromAsset = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final profile = await EditProfileService.getProfile();
+    if (profile == null) return;
+
+    setState(() {
+      _usernameController.text = profile['username'] ?? '';
+      _bioController.text = profile['bio'] ?? '';
+      _cityController.text = profile['city'] ?? '';
+      _stateController.text = profile['state'] ?? '';
+      if (profile['weight'] != null && profile['weight'] != '') {
+        _weightController.text =
+            double.parse(profile['weight']).toStringAsFixed(2);
+      }
+
+      if (_weightController.text == '0' || _weightController.text == 'null') {
+        _weightController.text = '';
+      }
+      _selectedGender = profile['gender'] == '-' ? null : profile['gender'];
+
+      if (profile['birthday'] != null && profile['birthday'] != '') {
+        _selectedBirthday = DateTime.tryParse(profile['birthday']);
+      }
+
+      // If there's a profile image path stored, use it
+      if (profile['profile_picture'] != null &&
+          profile['profile_picture'].toString().isNotEmpty) {
+        _profileImagePath = profile['profile_picture'];
+        _isImageFromAsset = false;
+      }
+    });
+  }
+
+  Future<void> _pickImage() async {
+    bool permissionGranted = false;
+
+    // For Android 13+ (API level 33+)
+    if (await Permission.photos.request().isGranted) {
+      permissionGranted = true;
+    }
+    // For Android 12 and below
+    else if (await Permission.storage.request().isGranted) {
+      permissionGranted = true;
+    }
+
+    if (permissionGranted) {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image != null) {
+        setState(() {
+          _profileImagePath = image.path;
+          _isImageFromAsset = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        // Show dialog when permission is denied
+        showDialog(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            title: const Text('Permission Required'),
+            content: const Text(
+                'This app needs gallery access to select profile images. Please grant permission in app settings.'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              TextButton(
+                child: const Text('Open Settings'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  openAppSettings();
+                },
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  void _saveProfile() async {
+    print("Weight to be sent: ${_weightController.text}");
+
+    final success = await EditProfileService.updateProfile({
+      'username': _usernameController.text,
+      'bio': _bioController.text,
+      'city': _cityController.text,
+      'state': _stateController.text,
+      'birthday': _selectedBirthday?.toIso8601String().split('T').first,
+      'gender': _selectedGender,
+      'weight': _weightController.text.isNotEmpty
+          ? double.tryParse(_weightController.text)
+          : null,
+      'profileImage': _isImageFromAsset ? null : _profileImagePath,
+    });
+
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully')),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update profile')),
+      );
+    }
+  }
+
+  void _logout() async {
+    await EditProfileService.logout();
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,246 +161,323 @@ class EditProfilePage extends StatelessWidget {
       backgroundColor: const Color(0xFFF1F7F6),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Header
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.black),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'Cancel',
-                            style: GoogleFonts.poppins(
-                              color: Colors.black,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          'Profile',
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'Save',
-                            style: GoogleFonts.poppins(
-                              color: Colors.black,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Profile Image + Nama Horizontal
-                Container(
-                  width: 303,
-                  height: 119,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.black),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey, width: 1),
-                          image: const DecorationImage(
-                            image: AssetImage('assets/profile_pic.png'),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 30),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Container(
-                                height: 22,
-                                width: 112,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.black),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12),
-                                    child: Text(
-                                      'Yesaya',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              height: 22,
-                              width: 112,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.black),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: Text(
-                                    '...',
-                                    style: GoogleFonts.poppins(fontSize: 16),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Social Section
-                _buildSectionCard(
-                  title: 'Social',
-                  items: const [
-                    {
-                      'label': 'Bio',
-                      'value': 'Healthy life starts from yourself'
-                    },
-                    {'label': 'City', 'value': 'South Tangerang'},
-                    {'label': 'State', 'value': 'Indonesia'},
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // Personal Data Section
-                _buildSectionCard(
-                  title: 'Personal Data',
-                  items: const [
-                    {'label': 'Select Birthday', 'value': '15 Nov 2003'},
-                    {'label': 'Gender', 'value': 'Male'},
-                    {'label': 'Weight (lbs)', 'value': '70'},
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // Log Out Button
-                Container(
-                  width: 200,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.orange),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Log Out',
-                      style: GoogleFonts.poppins(
-                        color: Colors.orange,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 40),
-              ],
-            ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 20),
+              _buildProfileSection(),
+              const SizedBox(height: 20),
+              _buildSocialSection(),
+              const SizedBox(height: 20),
+              _buildPersonalSection(),
+              const SizedBox(height: 20),
+              _buildLogoutButton(),
+              const SizedBox(height: 40),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionCard({
-    required String title,
-    required List<Map<String, String>> items,
-  }) {
+  Widget _buildHeader() {
     return Container(
-      width: 350,
-      height: 150,
-      constraints: const BoxConstraints(minHeight: 150),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel',
+                style: GoogleFonts.poppins(fontSize: 12, color: Colors.black)),
+          ),
+          Text('Profile',
+              style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold, fontSize: 20)),
+          TextButton(
+            onPressed: _saveProfile,
+            child: Text('Save',
+                style: GoogleFonts.poppins(fontSize: 12, color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileSection() {
+    return Container(
+      width: 303,
+      height: 119,
+      constraints: const BoxConstraints(maxWidth: 350),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.center, // ubah ini dari center ke start
+        children: [
+          SizedBox(width: 16), // untuk padding kiri,
+          // Foto profil
+          Padding(
+            padding: const EdgeInsets.only(
+                top: 0.5), // geser sedikit ke bawah biar sejajar
+            child: GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey.shade400, width: 1),
+                  image: DecorationImage(
+                    image: _isImageFromAsset
+                        ? AssetImage(_profileImagePath)
+                        : (_profileImagePath.startsWith('http')
+                                ? NetworkImage(_profileImagePath)
+                                : FileImage(File(_profileImagePath)))
+                            as ImageProvider,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // Username & Bio
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 15,
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  height: 22,
+                  width: 112,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Center(
+                    child: TextField(
+                      controller: _usernameController,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  height: 22,
+                  width: 112,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Center(
+                    child: TextField(
+                      controller: _bioController,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(fontSize: 11),
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialSection() {
+    return _buildSectionCard(title: 'Social', children: [
+      _buildInputRow('Bio', _bioController),
+      _buildInputRow('City', _cityController),
+      _buildInputRow('State', _stateController),
+    ]);
+  }
+
+  Widget _buildPersonalSection() {
+    return _buildSectionCard(title: 'Personal Data', children: [
+      _buildBirthdayRow(),
+      _buildDropdownRow(),
+      _buildInputRow('Weight (kg)', _weightController),
+    ]);
+  }
+
+  Widget _buildLogoutButton() {
+    return GestureDetector(
+      onTap: _logout,
+      child: Container(
+        width: 200,
+        height: 48,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.orange),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text('Log Out',
+              style: GoogleFonts.poppins(
+                  color: Colors.orange,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard(
+      {required String title, required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 350),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.black12),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
             child: Center(
-              child: Text(
-                title,
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                ),
-              ),
+              child: Text(title,
+                  style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold, fontSize: 10)),
             ),
           ),
           const Divider(height: 1, thickness: 1),
-          for (int i = 0; i < items.length; i++)
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(items[i]['label']!,
-                          style: GoogleFonts.poppins(fontSize: 10)),
-                      Flexible(
-                        child: Text(items[i]['value']!,
-                            textAlign: TextAlign.right,
-                            style: GoogleFonts.poppins(
-                                fontSize: 8, color: Colors.grey.shade800)),
-                      ),
-                    ],
-                  ),
-                ],
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputRow(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: GoogleFonts.poppins(fontSize: 10)),
+          SizedBox(
+            width: 200,
+            child: TextField(
+              controller: controller,
+              textAlign: TextAlign.right,
+              style: GoogleFonts.poppins(fontSize: 10),
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                    RegExp(r'^\d{0,3}(\.\d{0,2})?$')),
+              ],
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                hintText: "",
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBirthdayRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('Select Birthday', style: GoogleFonts.poppins(fontSize: 10)),
+          GestureDetector(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _selectedBirthday ?? DateTime(2000),
+                firstDate: DateTime(1900),
+                lastDate: DateTime.now(),
+              );
+              if (picked != null) {
+                setState(() {
+                  _selectedBirthday = picked;
+                });
+              }
+            },
+            child: Text(
+              _selectedBirthday != null
+                  ? DateFormat('dd MMM yyyy').format(_selectedBirthday!)
+                  : '',
+              style: GoogleFonts.poppins(fontSize: 10),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('Gender', style: GoogleFonts.poppins(fontSize: 10)),
+          DropdownButton<String>(
+            value: _selectedGender,
+            items: ['Male', 'Female'].map((gender) {
+              return DropdownMenuItem(
+                value: gender,
+                child: Text(
+                  gender,
+                  style: GoogleFonts.poppins(fontSize: 10),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedGender = value;
+              });
+            },
+            hint: Text(
+              '',
+              style: GoogleFonts.poppins(fontSize: 10),
+            ),
+            underline: Container(
+              height: 1,
+              color: Colors.grey,
+            ),
+          ),
         ],
       ),
     );

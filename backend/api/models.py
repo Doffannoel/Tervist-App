@@ -58,7 +58,10 @@ class NutritionalTarget(models.Model):
         self.save()
 
     def __str__(self):
-        return f"{self.user.username} - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
+        if self.user:
+            return f"{self.user.username} - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
+        return f"Unknown User - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
+
     
 class FoodDatabase(models.Model):
     MEASUREMENT_CHOICES = [
@@ -134,7 +137,10 @@ class DailySteps(models.Model):
 
     
     def __str__(self):
-        return f"{self.user.username} - {self.steps} steps on {self.date}"
+        if self.user:
+            return f"{self.user.username} - {self.steps} steps on {self.date}"
+        return f"Unknown User - {self.steps} steps on {self.date}"
+
 
 class CaloriesBurned(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
@@ -144,7 +150,11 @@ class CaloriesBurned(models.Model):
     date = models.DateField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.user.username} - {self.total_calories} kcal on {self.date}"
+        if self.user:
+            return f"{self.user.username} - Total: {self.total_calories} kcal (Exercise: {self.exercise_calories}, BMR: {self.bmr_calories})"
+        return f"Unknown User - Total: {self.total_calories} kcal"
+
+
 
 class RunningActivity(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
@@ -170,5 +180,8 @@ class RunningActivity(models.Model):
         return 0
 
     def __str__(self):
-        return f"{self.user.username} - {self.distance_km} km on {self.date}"
+        if self.user:
+            return f"{self.user.username} - {self.distance_km} km on {self.date}"
+        return f"Unknown User - {self.distance_km} km on {self.date}"
+
 
