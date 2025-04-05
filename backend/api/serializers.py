@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from authentication.models import CustomUser
-from .models import  DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
+from .models import  CyclingActivity, DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
 
 class NutritionalTargetSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
@@ -63,3 +63,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'username', 'bio', 'city', 'state', 'birthday',
             'gender', 'weight'
         ]
+
+class CyclingActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CyclingActivity
+        fields = '__all__'
+        read_only_fields = ['user', 'calories_burned']

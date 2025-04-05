@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from authentication.models import CustomUser
 from django.utils import timezone
@@ -184,4 +185,36 @@ class RunningActivity(models.Model):
             return f"{self.user.username} - {self.distance_km} km on {self.date}"
         return f"Unknown User - {self.distance_km} km on {self.date}"
 
+class CyclingActivity(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    date = models.DateField()
+    duration = models.DurationField()  # misal: timedelta(minutes=78)
+    distance_km = models.DecimalField(max_digits=5, decimal_places=2)
+    avg_speed_kmh = models.DecimalField(max_digits=4, decimal_places=1)
+    max_speed_kmh = models.DecimalField(max_digits=4, decimal_places=1)
+    elevation_gain_m = models.PositiveIntegerField(default=0)
+    calories_burned = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
 
+    def save(self, *args, **kwargs):
+        if not self.calories_burned:
+            weight_kg = self.user.weight or 60  # fallback default 60 kg jika kosong
+            duration_hours = self.duration.total_seconds() / 3600
+            self.calories_burned = self.calculate_calories(duration_hours, weight_kg, float(self.avg_speed_kmh))
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def calculate_calories(duration_hours, weight_kg, avg_speed_kmh):
+        if avg_speed_kmh < 16:
+            met = 4.0
+        elif avg_speed_kmh < 19:
+            met = 6.8
+        elif avg_speed_kmh < 22:
+            met = 8.0
+        elif avg_speed_kmh < 25:
+            met = 10.0
+        else:
+            met = 12.0
+        return met * weight_kg * duration_hours
+
+    def __str__(self):
+        return f"{self.user.username} - {self.date} - {self.distance_km}km"

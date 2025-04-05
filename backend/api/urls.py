@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import NutritionalTargetView, FoodIntakeView, DailyStepsView, CaloriesBurnedView, DashboardView, RunningActivityView, RunningStatsView, UserProfileViewSet, WeeklyNutritionSummaryView, MonthlySummaryView
+from .views import CyclingActivityViewSet, CyclingStatsView, NutritionalTargetView, FoodIntakeView, DailyStepsView, CaloriesBurnedView, DashboardView, RunningActivityView, RunningStatsView, UserProfileViewSet, WeeklyNutritionSummaryView, MonthlySummaryView
 
 # Membuat router untuk viewsets
 router = DefaultRouter()
@@ -9,8 +9,10 @@ router.register(r'food-intake', FoodIntakeView, basename='food-intake')  # Penca
 router.register(r'daily-steps', DailyStepsView, basename='daily-steps')
 router.register(r'calories-burned', CaloriesBurnedView, basename='calories-burned')
 router.register(r'running-activity', RunningActivityView, basename='running-activity')
+router.register(r'cycling-activity', CyclingActivityViewSet, basename='cycling-activity')
 router.register(r'dashboard', DashboardView, basename='dashboard')
 router.register(r'running-stats', RunningStatsView, basename='running-stats') 
+router.register(r'cycling-stats', CyclingStatsView, basename='cycling-stats')
 router.register(r'profile-update', UserProfileViewSet, basename='profile-update')
 
 
