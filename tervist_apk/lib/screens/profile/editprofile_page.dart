@@ -38,6 +38,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final profile = await EditProfileService.getProfile();
     if (profile == null) return;
 
+    if (!mounted) return; // ✅ tambahkan pengecekan ini sebelum setState
     setState(() {
       _usernameController.text = profile['username'] ?? '';
       _bioController.text = profile['bio'] ?? '';
@@ -168,9 +169,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
               _buildHeader(),
               const SizedBox(height: 20),
               _buildProfileSection(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 50),
               _buildSocialSection(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 50),
               _buildPersonalSection(),
               const SizedBox(height: 20),
               _buildLogoutButton(),
@@ -218,7 +219,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       constraints: const BoxConstraints(maxWidth: 350),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.black),
       ),
       padding: const EdgeInsets.all(16),
@@ -252,7 +253,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 25),
 
           // Username & Bio
           Expanded(
@@ -336,11 +337,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return GestureDetector(
       onTap: _logout,
       child: Container(
-        width: 200,
-        height: 48,
+        width: 131,
+        height: 47,
         decoration: BoxDecoration(
           border: Border.all(color: Colors.orange),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(5),
         ),
         child: Center(
           child: Text('Log Out',
@@ -360,8 +361,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       constraints: const BoxConstraints(maxWidth: 350),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.black),
       ),
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Column(
