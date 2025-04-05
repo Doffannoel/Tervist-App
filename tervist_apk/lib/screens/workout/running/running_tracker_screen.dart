@@ -394,30 +394,32 @@ void resumeWorkout() {
           onStop: stopWorkout,
         );
       case 2:
-        return RunningSummary(
-          distance: distance,
-          formattedDuration: formattedDuration,
-          formattedPace: formattedPace,
-          calories: calories,
-          steps: steps,
-          routePoints: routePoints,
-          markers: markers,
-          polylines: polylines,
-          primaryGreen: primaryGreen,
-          onBackToHome: () {
-            setState(() {
-              currentStep = 0; // Back to initial screen
-              
-              // Reset workout metrics
-              distance = 0.0;
-              duration = const Duration(seconds: 0);
-              calories = 0;
-              steps = 0;
-              stepsPerMinute = 0;
-              performanceData = List.generate(5, (index) => 0.0);
-            });
-          },
-        );
+  return RunningSummary(
+    distance: distance,
+    formattedDuration: formattedDuration,
+    formattedPace: formattedPace,
+    calories: calories,
+    steps: steps,
+    routePoints: routePoints,
+    markers: markers,
+    polylines: polylines,
+    primaryGreen: primaryGreen,
+    // Add this new required parameter
+    duration: duration,
+    onBackToHome: () {
+      setState(() {
+        currentStep = 0; // Back to initial screen
+        
+        // Reset workout metrics
+        distance = 0.0;
+        duration = const Duration(seconds: 0);
+        calories = 0;
+        steps = 0;
+        stepsPerMinute = 0;
+        performanceData = List.generate(5, (index) => 0.0);
+      });
+    },
+  );
       default:
         return _buildInitialScreen();
     }

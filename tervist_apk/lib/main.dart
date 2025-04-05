@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           primarySwatch: Colors.blue),
       home:
-          OnboardingScreen(), // kalo mau ganti disini OnboardingScreen to WorkoutModule
+          WorkoutModule(), // kalo mau ganti disini OnboardingScreen to WorkoutModule
     );
   }
 }

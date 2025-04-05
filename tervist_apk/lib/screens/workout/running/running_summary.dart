@@ -15,6 +15,8 @@ class RunningSummary extends StatefulWidget {
   final List<Polyline> polylines;
   final Color primaryGreen;
   final VoidCallback onBackToHome;
+  final Duration duration; 
+
 
   const RunningSummary({
     super.key,
@@ -28,6 +30,7 @@ class RunningSummary extends StatefulWidget {
     required this.polylines,
     required this.primaryGreen,
     required this.onBackToHome,
+    required this.duration,
   });
 
   @override
