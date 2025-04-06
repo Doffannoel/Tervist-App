@@ -19,13 +19,14 @@ class NutritionalTargetView(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
     
     def perform_create(self, serializer):
+        nutritional_target = serializer.save()
         if self.request.user.is_authenticated:
-            # Menyimpan pengguna dan menghitung target nutrisi
-            nutritional_target = serializer.save(user=self.request.user)
-            nutritional_target.calculate_targets()  # Hitung kalori dan target makronutrien setelah penyimpanan
-            
+            nutritional_target.user = self.request.user
+            nutritional_target.save()
+            nutritional_target.calculate_targets()
         else:
-            serializer.save()
+            # Gunakan data dari request langsung
+            nutritional_target.calculate_targets(manual_data=self.request.data)
 
 class FoodIntakeView(viewsets.ModelViewSet):
     queryset = FoodIntake.objects.all()

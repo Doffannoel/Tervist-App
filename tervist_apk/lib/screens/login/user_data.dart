@@ -7,6 +7,7 @@ import 'package:tervist_apk/api/api_config.dart';
 import 'package:tervist_apk/screens/homepage/homepage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:tervist_apk/screens/main_navigation.dart';
 
 class UserDataPage extends StatefulWidget {
   final SignupData signupData;
@@ -23,28 +24,73 @@ class _UserDataPageState extends State<UserDataPage> {
   @override
   void initState() {
     super.initState();
-    fetchNutritionalTarget();
+    fetchGoalSummary();
   }
 
-  Future<void> fetchNutritionalTarget() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
+  // Fetch Goal Summary based on user data from widget.signupData
+  void fetchGoalSummary() async {
+    try {
+      print("DEBUG: Fetching nutritional data with user data...");
 
-    final response = await http.get(
-      ApiConfig.nutritionalTarget,
-      headers: {'Authorization': 'Bearer $token'},
-    );
+      // Ambil data dari widget.signupData (data pengguna yang diisi selama registrasi)
+      final goal = widget.signupData.goal;
+      final weight = widget.signupData.weight;
+      final height = widget.signupData.height;
+      final age = widget.signupData.age;
+      final gender = widget.signupData.gender;
 
-    if (response.statusCode == 200) {
-      final List data = json.decode(response.body);
-      if (data.isNotEmpty) {
-        setState(() {
-          data.sort((a, b) => b['id'].compareTo(a['id']));
-          nutritionalData = data[0];
-        });
+      // Validasi untuk memastikan weight dan height tidak null atau kurang dari 0
+      if (weight == null || weight <= 0 || height == null || height <= 0) {
+        print("ERROR: Weight or Height is invalid.");
+        return; // Jangan kirim data jika ada yang invalid
       }
-    } else {
-      debugPrint('Failed to fetch nutritional target: ${response.body}');
+
+      // Debug log untuk memastikan data pengguna yang dikirim
+      print(
+          "DEBUG: User Data - Goal: $goal, Weight: $weight, Height: $height, Age: $age, Gender: $gender");
+
+      // Menyiapkan data yang diperlukan untuk API call
+      final body = {
+        'goal': goal,
+        'weight': weight,
+        'height': height,
+        'age': age,
+        'gender': gender,
+      };
+
+      // Debugging: Memastikan data yang dikirim ke API
+      print("DEBUG: Sending data to NutritionalTarget API: $body");
+
+      // Memanggil API untuk menghitung target nutrisi tanpa autentikasi
+      final response = await http.post(
+        ApiConfig.nutritionalTarget, // URL endpoint untuk target nutrisi
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
+      // Debugging: Memeriksa status kode dan respons body
+      print("DEBUG: API Response Status Code: ${response.statusCode}");
+      print("DEBUG: API Response Body: ${response.body}");
+
+      if (response.statusCode == 201) {
+        // Parse data yang diterima dari API
+        final Map<String, dynamic> data = json.decode(response.body);
+
+        // Debugging: Menampilkan data yang diterima dari API
+        print("DEBUG: Nutritional data from API: $data");
+
+        setState(() {
+          // Update data nutrisi berdasarkan API response
+          nutritionalData = data;
+        });
+      } else {
+        // Menampilkan error jika status code bukan 200
+        print(
+            "ERROR: Failed to fetch data from API. Status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      // Menangani kesalahan saat memanggil API
+      print("ERROR: Exception occurred while calling API: $e");
     }
   }
 
@@ -64,13 +110,15 @@ class _UserDataPageState extends State<UserDataPage> {
               ),
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Image.asset('assets/images/check.png', height: 63),
                       const SizedBox(height: 24),
-                      Image.asset('assets/images/welcome.png', height: 55, width: 270),
+                      Image.asset('assets/images/welcome.png',
+                          height: 55, width: 270),
                       const SizedBox(height: 8),
                       Text(
                         'Your personalized fitness plan is all set—\ntime to kick off your journey!',
@@ -86,7 +134,10 @@ class _UserDataPageState extends State<UserDataPage> {
                         'Goal Summary',
                         Column(
                           children: [
-                            _buildGoalItem('Goal Type:', widget.signupData.goal ?? 'Maintain current weight'),
+                            _buildGoalItem(
+                                'Goal Type:',
+                                widget.signupData.goal ??
+                                    'Maintain current weight'),
                             const SizedBox(height: 8),
                             _buildGoalItem(
                               'Target:',
@@ -172,11 +223,16 @@ class _UserDataPageState extends State<UserDataPage> {
                           children: [
                             _buildTipItem(Icons.directions_run, 'Do exercises'),
                             const SizedBox(height: 8),
-                            _buildTipItem(Image.asset('assets/images/goal2.png'), 'Follow your daily calorie recommendation'),
+                            _buildTipItem(
+                                Image.asset('assets/images/goal2.png'),
+                                'Follow your daily calorie recommendation'),
                             const SizedBox(height: 8),
-                            _buildTipItem(Image.asset('assets/images/goal3.png'), 'Track your food'),
+                            _buildTipItem(
+                                Image.asset('assets/images/goal3.png'),
+                                'Track your food'),
                             const SizedBox(height: 8),
-                            _buildTipItem('assets/images/goal4.png', 'Balance your carbs, proteins, and fats'),
+                            _buildTipItem('assets/images/goal4.png',
+                                'Balance your carbs, proteins, and fats'),
                           ],
                         ),
                       ),
@@ -185,37 +241,52 @@ class _UserDataPageState extends State<UserDataPage> {
                         width: 250,
                         child: ElevatedButton(
                           onPressed: () async {
-                            final response = await SignupService.submitSignup(widget.signupData);
+                            // Proceed with signup
+                            final response = await SignupService.submitSignup(
+                                widget.signupData);
                             if (response.statusCode == 201) {
-                              final loginResponse = await SignupService.loginUser(
+                              // After successful signup, proceed to login
+                              final loginResponse =
+                                  await SignupService.loginUser(
                                 widget.signupData.email!,
                                 widget.signupData.password!,
                               );
 
                               if (loginResponse.statusCode == 200) {
-                                final responseData = jsonDecode(loginResponse.body);
+                                final responseData =
+                                    jsonDecode(loginResponse.body);
                                 final token = responseData['access_token'];
-                                final prefs = await SharedPreferences.getInstance();
-                                await prefs.setString('access_token', token);
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                await prefs.setString(
+                                    'access_token', token); // Save the token
 
+                                // Navigate to HomePage after successful login
                                 Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (_) => HomePage()),
+                                      builder: (_) => MainNavigation()),
                                 );
                               } else {
+                                // If login fails, show error message
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Signup succeeded, but login failed'),
+                                    content: Text(
+                                        'Signup succeeded, but login failed'),
                                     backgroundColor: Colors.orange,
                                   ),
                                 );
                               }
                             } else {
+                              print(
+                                  "DEBUG: Signup failed with code ${response.statusCode}");
+                              print("DEBUG: Error response: ${response.body}");
+                              // If signup fails, show error message
                               final error = jsonDecode(response.body);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(error['detail'] ?? 'Signup failed'),
+                                  content:
+                                      Text(error['detail'] ?? 'Signup failed'),
                                   backgroundColor: Colors.red,
                                 ),
                               );
@@ -306,7 +377,8 @@ class _UserDataPageState extends State<UserDataPage> {
     );
   }
 
-  Widget _buildMacroItem(String title, String value, double progress, Color color) {
+  Widget _buildMacroItem(
+      String title, String value, double progress, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -364,7 +436,8 @@ class _UserDataPageState extends State<UserDataPage> {
                   shape: BoxShape.circle,
                   color: Colors.white,
                 ),
-                child: const Icon(Icons.edit_outlined, size: 14, color: Colors.black),
+                child: const Icon(Icons.edit_outlined,
+                    size: 14, color: Colors.black),
               ),
             ],
           ),
@@ -387,7 +460,8 @@ class _UserDataPageState extends State<UserDataPage> {
               : icon is Widget
                   ? SizedBox(width: 30, height: 30, child: icon)
                   : icon is String
-                      ? SizedBox(width: 30, height: 30, child: Image.asset(icon))
+                      ? SizedBox(
+                          width: 30, height: 30, child: Image.asset(icon))
                       : Icon(Icons.circle, size: 20, color: Colors.black87),
           const SizedBox(width: 15),
           Expanded(
@@ -401,22 +475,6 @@ class _UserDataPageState extends State<UserDataPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _infoTile({required String title, required String value}) {
-    return Column(
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: GoogleFonts.poppins(fontSize: 12),
-        ),
-      ],
     );
   }
 }

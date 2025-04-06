@@ -19,6 +19,4 @@ class SignupService {
       body: jsonEncode({'email': email, 'password': password}),
     );
   }
-
-  
 }

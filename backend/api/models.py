@@ -12,16 +12,35 @@ class NutritionalTarget(models.Model):
     steps_goal = models.IntegerField(default=0)  # Step goal per day based on activity level
     calories_burned_goal = models.FloatField(default=0.0)  # Calories burned goal based on TDEE
 
-    def calculate_targets(self):
-        """Calculate and update the daily calorie, protein, carbs, fats, and steps goals based on user data."""
-        user = self.user
+    def calculate_targets(self, manual_data=None):
+        """Calculate and update targets based on user data or manual input."""
+        if self.user:
+            # Use data from the authenticated user
+            user = self.user
+        elif manual_data:
+            # Use the manual input data
+            class TempUser:
+                def __init__(self, data):
+                    self.weight = float(data.get('weight', 0))
+                    self.height = float(data.get('height', 0))
+                    self.age = int(data.get('age', 25))
+                    self.gender = data.get('gender', 'Male')
+                    self.activity_level = data.get('activity_level', 'Low Active')
+                    self.goal = data.get('goal', 'Maintain Weight')
+                    self.username = "TempUser"
+            user = TempUser(manual_data)
+        else:
+            print("ERROR: No user data available for calculation")
+            return
+
+        # BMR calculation based on user's data
         bmr = 10 * user.weight + 6.25 * user.height - 5 * user.age
         if user.gender == 'Male':
             bmr += 5  # Adjustment for males
         else:
             bmr -= 161  # Adjustment for females
 
-        # Factor in the activity level for TDEE calculation
+        # Activity multiplier based on the user's activity level
         activity_multipliers = {
             'Sedentary': 1.2,
             'Low Active': 1.375,
@@ -39,7 +58,7 @@ class NutritionalTarget(models.Model):
         else:
             self.calorie_target = tdee  # Maintain current weight
 
-        # Calculate the nutritional targets based on the TDEE
+        # Calculate the nutritional targets based on TDEE
         self.protein_target = tdee * 0.15 / 4  # 15% of TDEE for protein (in grams, 1g protein = 4 calories)
         self.carbs_target = tdee * 0.55 / 4  # 55% of TDEE for carbohydrates (in grams, 1g carbs = 4 calories)
         self.fats_target = tdee * 0.30 / 9  # 30% of TDEE for fats (in grams, 1g fat = 9 calories)
