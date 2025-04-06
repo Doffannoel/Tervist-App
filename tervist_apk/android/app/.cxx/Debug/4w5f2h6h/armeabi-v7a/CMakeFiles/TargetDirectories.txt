@@ -1,0 +1,2 @@
+C:/Users/Deasi Sastra Astiti/Tervist-App/tervist_apk/android/app/.cxx/Debug/4w5f2h6h/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/Deasi Sastra Astiti/Tervist-App/tervist_apk/android/app/.cxx/Debug/4w5f2h6h/armeabi-v7a/CMakeFiles/rebuild_cache.dir
