@@ -1,4 +1,5 @@
 from collections import defaultdict
+from django.db import IntegrityError
 from rest_framework import viewsets, permissions, status
 from datetime import datetime, timedelta
 from django.db.models import Sum
@@ -6,8 +7,8 @@ from rest_framework.response import Response
 from django.utils import timezone
 from django.utils.timezone import now
 from authentication.models import CustomUser
-from .models import CaloriesBurned, CyclingActivity, DailySteps, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
-from .serializers import CyclingActivitySerializer, DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, RunningActivitySerializer, UserProfileSerializer
+from .models import CaloriesBurned, CyclingActivity, DailySteps, FoodDatabase, FoodIntake, NutritionalTarget, Reminder, RunningActivity
+from .serializers import CyclingActivitySerializer, DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, ReminderSerializer, RunningActivitySerializer, UserProfileSerializer
 from rest_framework.views import APIView
 from django.db.models import Avg, Sum, Count
 from calendar import monthrange
@@ -123,29 +124,39 @@ class DashboardView(viewsets.ViewSet):
         # Get today's date
         today = timezone.now().date()
 
-        # Get the total steps for today (from DailySteps)
+        # Get the total steps for today (from DailySteps and RunningActivity)
         total_steps = DailySteps.objects.filter(user=user, date=today).aggregate(Sum('steps'))['steps__sum'] or 0
-
-        # Get the total calories burned for today (from CaloriesBurned)
-        total_calories_burned = CaloriesBurned.objects.filter(user=user, date=today).aggregate(Sum('total_calories'))['total_calories__sum'] or 0
-        
-        # Get the total calories burned for today (from RunningActivity)
-        total_running_calories_burned = RunningActivity.objects.filter(user=user, date=today).aggregate(Sum('calories_burned'))['calories_burned__sum'] or 0
-        total_calories_burned += total_running_calories_burned  # Add running activity calories to total calories
-
-        # Get the total steps for today from RunningActivity
         total_running_steps = RunningActivity.objects.filter(user=user, date=today).aggregate(Sum('steps'))['steps__sum'] or 0
-        total_steps += total_running_steps  # Add running activity steps to total steps
+        total_steps += total_running_steps
+        
+        # Get distance and pace information
+        distance_km = RunningActivity.objects.filter(user=user, date=today).aggregate(Sum('distance_km'))['distance_km__sum'] or 0
+        
+        # Get average pace (jika ada beberapa aktivitas, ini akan jadi rata-rata tertimbang)
+        pace = "14 min/km"  # Default value
+        running_activities = RunningActivity.objects.filter(user=user, date=today)
+        if running_activities.exists() and distance_km > 0:
+            total_time_seconds = running_activities.aggregate(Sum('time_seconds'))['time_seconds__sum'] or 0
+            avg_pace_minutes = (total_time_seconds / 60) / distance_km if distance_km > 0 else 0
+            pace = f"{int(avg_pace_minutes)} min/km"
 
-        # Get nutritional target data for the user
+        # Get calories burned information
+        total_calories_burned = CaloriesBurned.objects.filter(user=user, date=today).aggregate(Sum('total_calories'))['total_calories__sum'] or 0
+        total_running_calories_burned = RunningActivity.objects.filter(user=user, date=today).aggregate(Sum('calories_burned'))['calories_burned__sum'] or 0
+        total_calories_burned += total_running_calories_burned
+        
+        # Get exercise and BMR breakdown if available
+        exercise_calories = CaloriesBurned.objects.filter(user=user, date=today).aggregate(Sum('exercise_calories'))['exercise_calories__sum'] or 0
+        bmr_calories = CaloriesBurned.objects.filter(user=user, date=today).aggregate(Sum('bmr_calories'))['bmr_calories__sum'] or 0
+
+        # Get nutritional target data
         nutritional_target = NutritionalTarget.objects.filter(user=user).first()
         nutritional_target_data = NutritionalTargetSerializer(nutritional_target).data if nutritional_target else {}
 
-        # Get the food intake data for today
-        food_intake = FoodIntake.objects.filter(user=user, date=timezone.now().date())
+        # Get and categorize food intake
+        food_intake = FoodIntake.objects.filter(user=user, date=today)
         food_intake_data = FoodIntakeSerializer(food_intake, many=True).data
 
-        # Categorize the food intake into Breakfast, Lunch, Dinner, Snack
         categorized_food = {
             "Breakfast": [],
             "Lunch": [],
@@ -155,16 +166,26 @@ class DashboardView(viewsets.ViewSet):
 
         for food in food_intake_data:
             meal_type = food.get("meal_type")
-            categorized_food[meal_type].append(food)
+            if meal_type in categorized_food:
+                categorized_food[meal_type].append(food)
 
         # Prepare the response data
         response_data = {
             "nutritional_target": nutritional_target_data,
             "total_steps": total_steps,
-            "steps_goal": nutritional_target.steps_goal if nutritional_target else 0,
-            "calories_burned_goal": nutritional_target.calories_burned_goal if nutritional_target else 0,
+            "steps_goal": nutritional_target.steps_goal if nutritional_target else 10000,
+            "distance_km": distance_km or 1.7,  # Default to 1.7 if no data
+            "pace": pace,
+            
+            "calories_burned_goal": nutritional_target.calories_burned_goal if nutritional_target else 1000,
             "total_calories_burned": total_calories_burned,
+            "exercise_calories": exercise_calories or 286,  # Default to 286 if no data
+            "bmr_calories": bmr_calories or 200,  # Default to 200 if no data
+            
+            "calorie_target": nutritional_target.calorie_target if nutritional_target else 1236,
             "categorized_food": categorized_food,
+            
+            # Heart rate, workout times and achievements tetap statis
         }
         
         return Response(response_data, status=status.HTTP_200_OK)
@@ -394,3 +415,38 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         # Selalu mengembalikan user yang sedang login
         return self.request.user
     
+class ReminderViewSet(viewsets.ModelViewSet):
+    serializer_class = ReminderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Return only the current user's reminders"""
+        return Reminder.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        """Create a new reminder for the current user"""
+        try:
+            serializer.save(user=self.request.user)
+        except IntegrityError:
+            # User already has a reminder for this meal type, update it instead
+            meal_type = serializer.validated_data.get('meal_type')
+            reminder = Reminder.objects.get(user=self.request.user, meal_type=meal_type)
+            
+            # Update the existing reminder
+            reminder.time = serializer.validated_data.get('time')
+            reminder.is_active = serializer.validated_data.get('is_active', True)
+            reminder.save()
+            
+            return Response(
+                ReminderSerializer(reminder).data,
+                status=status.HTTP_200_OK
+            )
+    
+    def update(self, request, *args, **kwargs):
+        """Update an existing reminder"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)

@@ -26,5 +26,10 @@ class ApiConfig {
       Uri.parse('$baseUrl/api/nutrition-weekly-summary/');
   static Uri get monthlySummary => Uri.parse('$baseUrl/api/monthly-summary/');
 
+    // NEW: Reminder API endpoint
+  static Uri get reminders => Uri.parse('$baseUrl/api/reminders/');
+
+  // Other constants
+  static const int timeoutDuration = 15; // Seconds
 
 }

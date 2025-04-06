@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tervist_apk/api/notification_service.dart';
 import 'package:tervist_apk/screens/main_navigation.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:tervist_apk/api/api_config.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
 
-void main() {
+void main() async {
+  // Ensure Flutter is initialized before calling any platform methods
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize notifications service
+  await NotificationService().init();
+
   runApp(const MyApp());
 }
 
@@ -31,7 +37,8 @@ class MyApp extends StatelessWidget {
       return true;
     } else {
       // Token tidak valid, hapus dari SharedPreferences
-      await prefs.remove('token');
+      await prefs.remove(
+          'access_token'); // Changed from 'token' to 'access_token' to match your other code
       return false;
     }
   }

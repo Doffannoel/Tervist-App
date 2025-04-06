@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from authentication.models import CustomUser
-from .models import  CyclingActivity, DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
+from .models import  CyclingActivity, DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget, Reminder, RunningActivity
 
 class NutritionalTargetSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
@@ -57,15 +57,30 @@ class RunningStatsSerializer(serializers.Serializer):
     year_to_date = serializers.DictField()
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    remaining_calories = serializers.SerializerMethodField()
+
     class Meta:
         model = CustomUser
         fields = [
-            'username', 'bio', 'city', 'state', 'birthday',
-            'gender', 'weight'
+            'email', 'username', 'bio', 'city', 'state', 'birthday',
+            'gender', 'weight', 'calorie_target', 'total_calories_consumed', 'remaining_calories'
         ]
 
+    def get_remaining_calories(self, obj):
+        """Menghitung sisa kalori yang bisa dikonsumsi"""
+        return obj.calorie_target - obj.total_calories_consumed
+    
+    
 class CyclingActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = CyclingActivity
         fields = '__all__'
         read_only_fields = ['user', 'calories_burned']
+
+class ReminderSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+    
+    class Meta:
+        model = Reminder
+        fields = ['id', 'user', 'meal_type', 'time', 'is_active', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'created_at', 'updated_at']

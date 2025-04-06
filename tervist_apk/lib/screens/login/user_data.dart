@@ -97,7 +97,7 @@ class _UserDataPageState extends State<UserDataPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEBFDFA),
+      backgroundColor: const Color(0xFFF1F7F6),
       body: SafeArea(
         child: Center(
           child: Padding(

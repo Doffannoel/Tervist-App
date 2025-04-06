@@ -1,9 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:tervist_apk/api/nutrition_model.dart';
+import 'package:tervist_apk/api/nutrition_service.dart';
 
-class NutritionPage extends StatelessWidget {
+class NutritionPage extends StatefulWidget {
   const NutritionPage({super.key});
+
+  @override
+  State<NutritionPage> createState() => _NutritionPageState();
+}
+
+class _NutritionPageState extends State<NutritionPage> {
+  final NutritionService _nutritionService = NutritionService();
+  bool _isLoading = true;
+  String _errorMessage = '';
+  WeeklyNutritionData? _nutritionData;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchNutritionData();
+  }
+
+  Future<void> _fetchNutritionData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
+
+      final data = await _nutritionService.getWeeklyNutritionSummary();
+
+      setState(() {
+        _nutritionData = WeeklyNutritionData.fromJson(data);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load nutrition data: $e';
+        _isLoading = false;
+      });
+      print('Error: $_errorMessage');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,77 +96,121 @@ class NutritionPage extends StatelessWidget {
             ),
 
             // Chart Section
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 2),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            if (_isLoading)
+              const Expanded(
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_errorMessage.isNotEmpty)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    _errorMessage,
+                    style: GoogleFonts.poppins(
+                      color: Colors.red,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _fetchNutritionData,
+                  child: ListView(
                     children: [
-                      const Icon(Icons.restaurant_outlined, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        'This week',
-                        style: GoogleFonts.poppins(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
+                      // Chart Container
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 2),
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.restaurant_outlined, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'This week',
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 18),
+                            SizedBox(
+                              height: 150,
+                              child: NutritionChartSample(
+                                weekData: _nutritionData?.weekData ?? [],
+                                goalValue: _nutritionData?.goal ?? 0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Calorie Stats Section
+                      Container(
+                        color: Colors.white,
+                        width: double.infinity,
+                        height: 31,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: [
+                              Image.asset('assets/images/caloriesicon.png',
+                                  width: 20, height: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Calories',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildStatRow(
+                              'Net Calories Under Weekly Goal',
+                              _nutritionData?.netDifference.toString() ?? '0',
+                            ),
+                            const SizedBox(height: 16),
+                            buildStatRow(
+                              'Net Average',
+                              _nutritionData?.netAverage.toString() ?? '0',
+                            ),
+                            const SizedBox(height: 16),
+                            buildStatRow(
+                              'Goal',
+                              _nutritionData?.goal.toString() ?? '0',
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                  const SizedBox(height: 150, child: NutritionChartSample()),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Calorie Stats Section
-            Container(
-              color: Colors.white,
-              width: 430,
-              height: 31,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Image.asset('assets/images/caloriesicon.png',
-                        width: 20, height: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Calories',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ),
-
-            const SizedBox(height: 12),
-
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  buildStatRow('Net Calories Under Weekly Goal', '18.000'),
-                  const SizedBox(height: 16),
-                  buildStatRow('Net Average', '-18'),
-                  const SizedBox(height: 16),
-                  buildStatRow('Goal', '2.800'),
-                ],
-              ),
-            ),
-
-            const Spacer(),
           ],
         ),
       ),
@@ -160,16 +244,74 @@ class NutritionPage extends StatelessWidget {
 }
 
 class NutritionChartSample extends StatelessWidget {
-  const NutritionChartSample({super.key});
+  final List<DailyCalories> weekData;
+  final int goalValue;
+
+  const NutritionChartSample({
+    super.key,
+    required this.weekData,
+    required this.goalValue,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Prepare chart data
+    List<FlSpot> spots = [];
+    List<String> weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    Map<String, int> dayToIndex = {
+      'Mon': 0,
+      'Tue': 1,
+      'Wed': 2,
+      'Thu': 3,
+      'Fri': 4,
+      'Sat': 5,
+      'Sun': 6
+    };
+
+    // Default empty spots
+    spots = List.generate(7, (index) => FlSpot(index.toDouble(), 0));
+
+    // Fill with data if available
+    if (weekData.isNotEmpty) {
+      for (var day in weekData) {
+        int? index = dayToIndex[day.date];
+        if (index != null) {
+          spots[index] = FlSpot(index.toDouble(), day.calories.toDouble());
+        }
+      }
+    } else {
+      // If no data, generate some sample data (gradually increasing values)
+      spots =
+          List.generate(7, (index) => FlSpot(index.toDouble(), index * 200.0));
+    }
+
+    // Find max Y for scaling chart
+    double maxY = 0;
+    for (var spot in spots) {
+      if (spot.y > maxY) {
+        maxY = spot.y;
+      }
+    }
+
+    // Ensure we have a non-zero goal value
+    double goalDouble = goalValue > 0 ? goalValue.toDouble() : 2000.0;
+
+    // Choose the larger of max data point or goal value
+    maxY = maxY < goalDouble ? goalDouble : maxY * 1.2;
+
+    // Ensure maxY is never too small (minimum of 400)
+    maxY = maxY < 400 ? 400 : maxY;
+
+    // Round up to nearest 400 for better readability
+    maxY = ((maxY / 400).ceil() * 400).toDouble();
+
     return LineChart(
       LineChartData(
         gridData: FlGridData(
           show: true,
           drawVerticalLine: true,
-          horizontalInterval: 800,
+          // Ensure horizontalInterval is never zero
+          horizontalInterval: maxY <= 0 ? 100 : maxY / 4,
           verticalInterval: 1,
           getDrawingHorizontalLine: (value) {
             return FlLine(
@@ -187,21 +329,22 @@ class NutritionChartSample extends StatelessWidget {
         ),
         titlesData: FlTitlesData(
           show: true,
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 30,
               interval: 1,
               getTitlesWidget: (value, meta) {
-                const titles = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
                 final index = value.toInt();
-                if (index >= 0 && index < titles.length) {
+                if (index >= 0 && index < weekDays.length) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
-                      titles[index],
+                      weekDays[index],
                       style: GoogleFonts.poppins(
                         color: Colors.orange,
                         fontWeight: FontWeight.bold,
@@ -217,7 +360,7 @@ class NutritionChartSample extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: 800,
+              interval: maxY / 4,
               reservedSize: 40,
               getTitlesWidget: (value, meta) {
                 return Padding(
@@ -235,18 +378,10 @@ class NutritionChartSample extends StatelessWidget {
         minX: 0,
         maxX: 6,
         minY: 0,
-        maxY: 3200,
+        maxY: maxY,
         lineBarsData: [
           LineChartBarData(
-            spots: const [
-              FlSpot(0, 0),
-              FlSpot(1, 800),
-              FlSpot(2, 800),
-              FlSpot(3, 1200),
-              FlSpot(4, 1600),
-              FlSpot(5, 2000),
-              FlSpot(6, 2400),
-            ],
+            spots: spots,
             isCurved: false,
             color: Colors.orange,
             barWidth: 3,
