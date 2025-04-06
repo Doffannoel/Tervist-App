@@ -81,36 +81,6 @@ class _UserDataPageState extends State<UserDataPage> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      if (widget.signupData.timeline != null)
-                        _infoTile(
-                          title: 'Timeline',
-                          value: widget.signupData.timeline!,
-                        ),
-                      const SizedBox(height: 40),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final response = await SignupService.submitSignup(widget.signupData);
-                            if (response.statusCode == 201) {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (_) => HomePage()),
-                              );
-                            } else {
-                              final error = jsonDecode(response.body);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(error['detail'] ?? 'Signup failed'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          },
-                          child: const Text("Continue"),
-                        ),
-                      ),
                       const SizedBox(height: 24),
                       _buildSectionCard(
                         'Goal Summary',
@@ -230,7 +200,8 @@ class _UserDataPageState extends State<UserDataPage> {
 
                                 Navigator.pushReplacement(
                                   context,
-                                  MaterialPageRoute(builder: (_) => HomePage()),
+                                  MaterialPageRoute(
+                                      builder: (_) => HomePage()),
                                 );
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(

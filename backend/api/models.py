@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from authentication.models import CustomUser
 from django.utils import timezone
@@ -58,7 +59,10 @@ class NutritionalTarget(models.Model):
         self.save()
 
     def __str__(self):
-        return f"{self.user.username} - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
+        if self.user:
+            return f"{self.user.username} - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
+        return f"Unknown User - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
+
     
 class FoodDatabase(models.Model):
     MEASUREMENT_CHOICES = [
@@ -134,7 +138,10 @@ class DailySteps(models.Model):
 
     
     def __str__(self):
-        return f"{self.user.username} - {self.steps} steps on {self.date}"
+        if self.user:
+            return f"{self.user.username} - {self.steps} steps on {self.date}"
+        return f"Unknown User - {self.steps} steps on {self.date}"
+
 
 class CaloriesBurned(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
@@ -144,7 +151,11 @@ class CaloriesBurned(models.Model):
     date = models.DateField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.user.username} - {self.total_calories} kcal on {self.date}"
+        if self.user:
+            return f"{self.user.username} - Total: {self.total_calories} kcal (Exercise: {self.exercise_calories}, BMR: {self.bmr_calories})"
+        return f"Unknown User - Total: {self.total_calories} kcal"
+
+
 
 class RunningActivity(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
@@ -163,5 +174,47 @@ class RunningActivity(models.Model):
             self.pace = 0
         self.save()
 
+    @property
+    def pace_min_per_km(self):
+        if self.distance_km > 0:
+            return (self.time_seconds / 60) / self.distance_km
+        return 0
+
     def __str__(self):
-        return f"{self.user.username} - {self.distance_km} km on {self.date}"
+        if self.user:
+            return f"{self.user.username} - {self.distance_km} km on {self.date}"
+        return f"Unknown User - {self.distance_km} km on {self.date}"
+
+class CyclingActivity(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    date = models.DateField()
+    duration = models.DurationField()  # misal: timedelta(minutes=78)
+    distance_km = models.DecimalField(max_digits=5, decimal_places=2)
+    avg_speed_kmh = models.DecimalField(max_digits=4, decimal_places=1)
+    max_speed_kmh = models.DecimalField(max_digits=4, decimal_places=1)
+    elevation_gain_m = models.PositiveIntegerField(default=0)
+    calories_burned = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.calories_burned:
+            weight_kg = self.user.weight or 60  # fallback default 60 kg jika kosong
+            duration_hours = self.duration.total_seconds() / 3600
+            self.calories_burned = self.calculate_calories(duration_hours, weight_kg, float(self.avg_speed_kmh))
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def calculate_calories(duration_hours, weight_kg, avg_speed_kmh):
+        if avg_speed_kmh < 16:
+            met = 4.0
+        elif avg_speed_kmh < 19:
+            met = 6.8
+        elif avg_speed_kmh < 22:
+            met = 8.0
+        elif avg_speed_kmh < 25:
+            met = 10.0
+        else:
+            met = 12.0
+        return met * weight_kg * duration_hours
+
+    def __str__(self):
+        return f"{self.user.username} - {self.date} - {self.distance_km}km"

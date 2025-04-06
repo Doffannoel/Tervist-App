@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -84,6 +86,43 @@ class _HomePageState extends State<HomePage> {
 
 Widget _buildCaloriesBurnedCard() {
   double progress = 0.48;
+  Widget _buildAchievementsCard() {
+    return Card(
+      margin: EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.emoji_events, color: Colors.amber),
+                SizedBox(width: 8),
+                Text(
+                  'Recent Achievements',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            _buildAchievementItem(
+              imagePath: 'assets/images/step.png',
+              title: 'First Step',
+              subtitle: 'Walk 1,000 steps in a day',
+            ),
+            SizedBox(height: 12),
+            _buildAchievementItem(
+              imagePath: 'assets/images/fnb.png',
+              title: 'Balanced Eater',
+              subtitle: 'Log meals for 7 days in a row',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   return Card(
     color: Colors.white,

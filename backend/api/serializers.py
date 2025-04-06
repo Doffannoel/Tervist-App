@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from .models import  DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
+
+from authentication.models import CustomUser
+from .models import  CyclingActivity, DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
 
 class NutritionalTargetSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
@@ -53,3 +55,17 @@ class RunningActivitySerializer(serializers.ModelSerializer):
 class RunningStatsSerializer(serializers.Serializer):
     weekly = serializers.DictField()
     year_to_date = serializers.DictField()
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = [
+            'username', 'bio', 'city', 'state', 'birthday',
+            'gender', 'weight'
+        ]
+
+class CyclingActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CyclingActivity
+        fields = '__all__'
+        read_only_fields = ['user', 'calories_burned']

@@ -1,14 +1,17 @@
+from collections import defaultdict
 from rest_framework import viewsets, permissions, status
 from datetime import datetime, timedelta
 from django.db.models import Sum
 from rest_framework.response import Response
 from django.utils import timezone
-
+from django.utils.timezone import now
 from authentication.models import CustomUser
-from .models import CaloriesBurned, DailySteps, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
-from .serializers import DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, RunningActivitySerializer
+from .models import CaloriesBurned, CyclingActivity, DailySteps, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
+from .serializers import CyclingActivitySerializer, DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, RunningActivitySerializer, UserProfileSerializer
 from rest_framework.views import APIView
 from django.db.models import Avg, Sum, Count
+from calendar import monthrange
+from rest_framework.viewsets import ModelViewSet
 
 class NutritionalTargetView(viewsets.ModelViewSet):
     queryset = NutritionalTarget.objects.all()
@@ -215,11 +218,24 @@ class RunningActivityView(viewsets.ModelViewSet):
         weight = self.request.user.weight  # Ensure the user profile has weight data
         calories = (weight * MET * time) / 60  # Basic estimation based on weight and time
         return round(calories)
+    
+class CyclingActivityViewSet(viewsets.ModelViewSet):
+    queryset = CyclingActivity.objects.all()
+    serializer_class = CyclingActivitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class WeeklyNutritionSummaryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        print("DEBUG: User = ", request.user)
+        print("DEBUG: Authenticated? ", request.user.is_authenticated)
         user = request.user
         today = timezone.now().date()
         week_ago = today - timezone.timedelta(days=6)  # 7 hari terakhir
@@ -259,30 +275,20 @@ class WeeklyNutritionSummaryView(APIView):
     
 
 class RunningStatsView(viewsets.ViewSet):
-    permission_classes = [permissions.AllowAny]  # Membuka akses publik
+    permission_classes = [permissions.IsAuthenticated]  # ganti AllowAny
 
     def list(self, request):
-        user_id = request.query_params.get('user_id')
-        if not user_id:
-            return Response({"detail": "user_id is required"}, status=400)
-
-        # Ambil user berdasarkan user_id
-        try:
-            user = CustomUser.objects.get(id=user_id)
-        except CustomUser.DoesNotExist:
-            return Response({"detail": "User not found"}, status=404)
+        user = request.user  # tidak perlu user_id dari query params
 
         today = timezone.now().date()
         week_ago = today - timedelta(days=7)
         year_start = today.replace(month=1, day=1)
 
-        # Data mingguan
         weekly_activities = RunningActivity.objects.filter(user=user, date__gte=week_ago)
         avg_runs = weekly_activities.count()
         avg_distance = weekly_activities.aggregate(Avg('distance_km'))['distance_km__avg'] or 0
         avg_time = weekly_activities.aggregate(Avg('time_seconds'))['time_seconds__avg'] or 0
 
-        # Data sepanjang tahun
         ytd_activities = RunningActivity.objects.filter(user=user, date__gte=year_start)
         total_runs = ytd_activities.count()
         total_distance = ytd_activities.aggregate(Sum('distance_km'))['distance_km__sum'] or 0
@@ -290,20 +296,100 @@ class RunningStatsView(viewsets.ViewSet):
         total_steps = ytd_activities.aggregate(Sum('steps'))['steps__sum'] or 0
 
         return Response({
-            "user": {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email
-            },
             "weekly": {
-                "avg_runs_per_week": avg_runs,
-                "avg_distance_km": round(avg_distance, 2),
-                "avg_time_seconds": round(avg_time)
+                "average_per_week": avg_runs,
+                "average_distance_per_week": round(avg_distance, 2),
+                "average_time_per_week": f"{round(avg_time / 60)} min"
             },
             "year_to_date": {
-                "total_runs": total_runs,
-                "total_distance_km": round(total_distance, 2),
-                "total_time_seconds": round(total_time),
-                "total_steps": total_steps
+                "total_count": total_runs,
+                "total_distance": f"{round(total_distance, 2)} km",
+                "total_time": f"{round(total_time / 3600)} h",
+                "total_elevation_gain": "0 m"
             }
         })
+
+    
+class CyclingStatsView(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def list(self, request):
+        user = request.user
+        today = timezone.now().date()
+        week_ago = today - timedelta(days=7)
+        year_start = today.replace(month=1, day=1)
+
+        # Weekly stats
+        weekly_activities = CyclingActivity.objects.filter(user=user, date__gte=week_ago)
+        avg_rides = weekly_activities.count()
+        avg_distance = weekly_activities.aggregate(Avg('distance_km'))['distance_km__avg'] or 0
+        avg_duration = weekly_activities.aggregate(Avg('duration'))['duration__avg'] or timedelta(seconds=0)
+
+        # Year to date
+        ytd_activities = CyclingActivity.objects.filter(user=user, date__gte=year_start)
+        total_rides = ytd_activities.count()
+        total_distance = ytd_activities.aggregate(Sum('distance_km'))['distance_km__sum'] or 0
+        total_duration = ytd_activities.aggregate(Sum('duration'))['duration__sum'] or timedelta(seconds=0)
+        total_elevation = ytd_activities.aggregate(Sum('elevation_gain_m'))['elevation_gain_m__sum'] or 0
+
+        return Response({
+            "weekly": {
+                "average_per_week": avg_rides,
+                "average_distance_per_week": f"{round(avg_distance, 2)} km",
+                "average_time_per_week": f"{round(avg_duration.total_seconds() / 60)} min"
+            },
+            "year_to_date": {
+                "total_count": total_rides,
+                "total_distance": f"{round(total_distance, 2)} km",
+                "total_time": f"{round(total_duration.total_seconds() / 3600)} h",
+                "total_elevation_gain": f"{total_elevation} m"
+            }
+        })
+
+    
+class MonthlySummaryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        today = timezone.now().date()
+        start_year = today.year
+
+        summary = defaultdict(lambda: {"distance_km": 0, "time_minutes": 0})
+
+        activities = RunningActivity.objects.filter(
+            user=user,
+            date__year=start_year
+        )
+
+        for activity in activities:
+            month = activity.date.strftime("%b")  # e.g., 'Jan', 'Feb'
+            summary[month]["distance_km"] += activity.distance_km
+            summary[month]["time_minutes"] += activity.time_seconds // 60
+
+        ordered_months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+        response_data = [
+            {
+                "month": m,
+                "distance_km": summary[m]["distance_km"],
+                "time_minutes": summary[m]["time_minutes"]
+            }
+            for m in ordered_months
+        ]
+
+        return Response(response_data)
+
+class UserProfileViewSet(viewsets.ModelViewSet):
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Supaya queryset tidak kosong, tapi tetap aman
+        return CustomUser.objects.filter(id=self.request.user.id)
+
+    def get_object(self):
+        # Selalu mengembalikan user yang sedang login
+        return self.request.user
+    

@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  shared_preferences: ^2.2.2
+  
 
   flutter_svg: ^2.0.17 # Added flutter_svg dependency for SVG support
 
@@ -49,7 +49,13 @@ dependencies:
   path_provider: ^2.1.2 
   location: ^8.0.0
   latlong2: ^0.9.0
+  shared_preferences: ^2.5.3
+  fl_chart: ^0.70.2
+  # flutter_svg: ^2.0.17
   permission_handler: ^11.0.1 # For handling permissions
+  image_picker: ^1.1.2
+
+
 
 
 dev_dependencies:
