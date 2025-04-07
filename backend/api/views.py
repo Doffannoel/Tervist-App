@@ -1,13 +1,15 @@
 from collections import defaultdict
+from django.db import IntegrityError
 from rest_framework import viewsets, permissions, status
 from datetime import datetime, timedelta
 from django.db.models import Sum
 from rest_framework.response import Response
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
 from django.utils.timezone import now
 from authentication.models import CustomUser
-from .models import CaloriesBurned, CyclingActivity, DailySteps, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
-from .serializers import CyclingActivitySerializer, DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, RunningActivitySerializer, UserProfileSerializer
+from .models import CaloriesBurned, CyclingActivity, DailySteps, FoodDatabase, FoodIntake, NutritionalTarget, Reminder, RunningActivity
+from .serializers import CyclingActivitySerializer, DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, ReminderSerializer, RunningActivitySerializer, UserProfileSerializer
 from rest_framework.views import APIView
 from django.db.models import Avg, Sum, Count
 from calendar import monthrange
@@ -36,58 +38,107 @@ class FoodIntakeView(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user
         data = self.request.data
-        instance = serializer.save(user=user)
-
-        # === SCENARIO 1: Input dari FoodDatabase ===
-        if instance.food_data:
-            if not instance.meal_type:
-                current_time = datetime.now().time()
-                if current_time >= datetime.strptime("06:00", "%H:%M").time() and current_time < datetime.strptime("10:00", "%H:%M").time():
-                    instance.meal_type = "Breakfast"
-                elif current_time >= datetime.strptime("10:00", "%H:%M").time() and current_time < datetime.strptime("15:00", "%H:%M").time():
-                    instance.meal_type = "Lunch"
-                elif current_time >= datetime.strptime("15:00", "%H:%M").time() and current_time < datetime.strptime("20:00", "%H:%M").time():
-                    instance.meal_type = "Dinner"
-                else:
-                    instance.meal_type = "Snack"
-            instance.save()
-
+        
+        # Debugging print statements
+        print("Food Intake Creation Data:")
+        print(f"User: {user.username}")
+        print(f"Input Data: {data}")
+        
+        # Determine meal type if not provided
+        meal_type = data.get('meal_type')
+        if not meal_type:
+            current_time = datetime.now().time()
+            if current_time >= datetime.strptime("06:00", "%H:%M").time() and current_time < datetime.strptime("10:00", "%H:%M").time():
+                meal_type = "Breakfast"
+            elif current_time >= datetime.strptime("10:00", "%H:%M").time() and current_time < datetime.strptime("15:00", "%H:%M").time():
+                meal_type = "Lunch"
+            elif current_time >= datetime.strptime("15:00", "%H:%M").time() and current_time < datetime.strptime("20:00", "%H:%M").time():
+                meal_type = "Dinner"
+            else:
+                meal_type = "Snack"
+        
+        # Prepare instance data
+        instance_data = {
+            'user': user,
+            'meal_type': meal_type,
+            'date': data.get('date', timezone.now().date()),
+            'time': data.get('time', timezone.now().time())
+        }
+        
+        # Handle food data from database
+        food_data_id = data.get('food_data_id')
+        manual_calories = data.get('manual_calories')
+        
+        try:
+            if food_data_id:
+                # Scenario 1: Food from database
+                food_data = FoodDatabase.objects.get(id=food_data_id)
+                instance_data['food_data'] = food_data
+                calories = food_data.calories
+                
+                # Optional: Adjust for serving size if needed
+                serving_size = data.get('serving_size', 1)
+                try:
+                    serving_size = float(serving_size)
+                    calories *= serving_size
+                except (ValueError, TypeError):
+                    pass
+                
+                print(f"Database Food Selected: {food_data.name}")
+                print(f"Calories: {calories}")
+                
+                # Create instance with food data
+                instance = serializer.save(**instance_data)
+            
+            elif manual_calories is not None:
+                # Scenario 2: Manual calories input
+                instance_data['manual_calories'] = float(manual_calories)
+                calories = float(manual_calories)
+                
+                print(f"Manual Calories Input: {calories}")
+                
+                # Create instance with manual calories
+                instance = serializer.save(**instance_data)
+            
+            else:
+                # No calories provided
+                return Response(
+                    {"error": "Either food from database or manual calories are required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update Nutritional Target
             try:
                 nt = NutritionalTarget.objects.get(user=user)
-                nt.calorie_target -= instance.food_data.calories
-                nt.protein_target -= instance.food_data.protein
-                nt.carbs_target -= instance.food_data.carbs
-                nt.fats_target -= instance.food_data.fat
+                nt.calorie_target -= calories
                 nt.save()
+                
+                print(f"Updated Nutritional Target. Remaining Calories: {nt.calorie_target}")
+            
             except NutritionalTarget.DoesNotExist:
-                pass
-
-        # === SCENARIO 2: Input Manual (Log Empty Meal) ===
-        elif instance.manual_calories is not None:
-            if not instance.meal_type:
-                return Response({"error": "Meal type is required for manual input."}, status=status.HTTP_400_BAD_REQUEST)
-            instance.save()
-
-            try:
-                nt = NutritionalTarget.objects.get(user=user)
-                nt.calorie_target -= instance.manual_calories or 0
-                nt.protein_target -= instance.manual_protein or 0
-                nt.carbs_target -= instance.manual_carbs or 0
-                nt.fats_target -= instance.manual_fats or 0
-                nt.save()
-            except NutritionalTarget.DoesNotExist:
-                pass
-
-        else:
-            return Response({"error": "Either food_data or manual nutritional values are required."}, status=status.HTTP_400_BAD_REQUEST)
+                print("No Nutritional Target found for user")
+            
+            return Response(
+                self.get_serializer(instance).data, 
+                status=status.HTTP_201_CREATED
+            )
+        
+        except FoodDatabase.DoesNotExist:
+            return Response(
+                {"error": "Selected food item not found in database"},
+                status=status.HTTP_400_BAD_REQUEST
+        )
 
     def list(self, request):
+        # Existing search functionality
         search_query = request.GET.get('search', None)
         if search_query:
             food_items = FoodDatabase.objects.filter(name__icontains=search_query)
             return Response(FoodDatabaseSerializer(food_items, many=True).data)
         else:
-            return Response({"message": "No search query provided"}, status=status.HTTP_400_BAD_REQUEST)
+            # List user's food intakes
+            food_intakes = FoodIntake.objects.filter(user=request.user)
+            return Response(FoodIntakeSerializer(food_intakes, many=True).data)
 
 
 class DailyStepsView(viewsets.ModelViewSet):
@@ -115,37 +166,94 @@ class CaloriesBurnedView(viewsets.ModelViewSet):
             serializer.save()
 
 class DashboardView(viewsets.ViewSet):
+    authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.AllowAny]
     
     def list(self, request):
+        # Cek header dan authentikasi
+        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
         user = request.user if request.user.is_authenticated else None
+        
+        print(f"Dashboard auth header: {auth_header}")
+        print(f"Dashboard user authenticated: {user is not None}")
+        
+        if user:
+            print(f"User ID: {user.id}, Username: {user.username}, Email: {user.email}")
         
         # Get today's date
         today = timezone.now().date()
-
-        # Get the total steps for today (from DailySteps)
-        total_steps = DailySteps.objects.filter(user=user, date=today).aggregate(Sum('steps'))['steps__sum'] or 0
-
-        # Get the total calories burned for today (from CaloriesBurned)
-        total_calories_burned = CaloriesBurned.objects.filter(user=user, date=today).aggregate(Sum('total_calories'))['total_calories__sum'] or 0
+        print(f"Filtering data for date: {today}")
         
-        # Get the total calories burned for today (from RunningActivity)
-        total_running_calories_burned = RunningActivity.objects.filter(user=user, date=today).aggregate(Sum('calories_burned'))['calories_burned__sum'] or 0
-        total_calories_burned += total_running_calories_burned  # Add running activity calories to total calories
+        if user is None:
+            # Return default data for unauthorized users
+            return Response({
+                "message": "Please log in to view your personalized dashboard",
+                "calorie_target": 1236,
+                "total_steps": 0,
+                "steps_goal": 10000,
+                "distance_km": 1.7,
+                "pace": "14 min/km",
+                "calories_burned_goal": 1000,
+                "total_calories_burned": 0,
+                "exercise_calories": 286,
+                "bmr_calories": 200,
+                "categorized_food": {
+                    "Breakfast": [],
+                    "Lunch": [],
+                    "Dinner": [],
+                    "Snack": []
+                }
+            }, status=status.HTTP_200_OK)
+        
+        # Get the total steps for today (from DailySteps and RunningActivity)
+        steps_data = DailySteps.objects.filter(user=user, date=today)
+        total_steps = steps_data.aggregate(Sum('steps'))['steps__sum'] or 0
+        print(f"Steps from DailySteps: {total_steps} (records: {steps_data.count()})")
+        
+        running_steps_data = RunningActivity.objects.filter(user=user, date=today)
+        total_running_steps = running_steps_data.aggregate(Sum('steps'))['steps__sum'] or 0
+        print(f"Steps from RunningActivity: {total_running_steps} (records: {running_steps_data.count()})")
+        
+        total_steps += total_running_steps
+        
+        # Get distance and pace information
+        distance_km = running_steps_data.aggregate(Sum('distance_km'))['distance_km__sum'] or 0
+        print(f"Total distance: {distance_km} km")
+        
+        # Get average pace (jika ada beberapa aktivitas, ini akan jadi rata-rata tertimbang)
+        pace = "14 min/km"  # Default value
+        if running_steps_data.exists() and distance_km > 0:
+            total_time_seconds = running_steps_data.aggregate(Sum('time_seconds'))['time_seconds__sum'] or 0
+            avg_pace_minutes = (total_time_seconds / 60) / distance_km if distance_km > 0 else 0
+            pace = f"{int(avg_pace_minutes)} min/km"
+        print(f"Average pace: {pace}")
 
-        # Get the total steps for today from RunningActivity
-        total_running_steps = RunningActivity.objects.filter(user=user, date=today).aggregate(Sum('steps'))['steps__sum'] or 0
-        total_steps += total_running_steps  # Add running activity steps to total steps
+        # Get calories burned information
+        calories_burned_data = CaloriesBurned.objects.filter(user=user, date=today)
+        total_calories_burned = calories_burned_data.aggregate(Sum('total_calories'))['total_calories__sum'] or 0
+        print(f"Calories from CaloriesBurned: {total_calories_burned} (records: {calories_burned_data.count()})")
+        
+        total_running_calories_burned = running_steps_data.aggregate(Sum('calories_burned'))['calories_burned__sum'] or 0
+        print(f"Calories from RunningActivity: {total_running_calories_burned}")
+        
+        total_calories_burned += total_running_calories_burned
+        
+        # Get exercise and BMR breakdown if available
+        exercise_calories = calories_burned_data.aggregate(Sum('exercise_calories'))['exercise_calories__sum'] or 0
+        bmr_calories = calories_burned_data.aggregate(Sum('bmr_calories'))['bmr_calories__sum'] or 0
+        print(f"Exercise calories: {exercise_calories}, BMR calories: {bmr_calories}")
 
-        # Get nutritional target data for the user
+        # Get nutritional target data
         nutritional_target = NutritionalTarget.objects.filter(user=user).first()
         nutritional_target_data = NutritionalTargetSerializer(nutritional_target).data if nutritional_target else {}
+        print(f"Nutritional target: {nutritional_target_data}")
 
-        # Get the food intake data for today
-        food_intake = FoodIntake.objects.filter(user=user, date=timezone.now().date())
-        food_intake_data = FoodIntakeSerializer(food_intake, many=True).data
+        # Get and categorize food intake
+        food_intake_data = FoodIntake.objects.filter(user=user, date=today)
+        print(f"Food intake records: {food_intake_data.count()}")
+        
+        serialized_food = FoodIntakeSerializer(food_intake_data, many=True).data
 
-        # Categorize the food intake into Breakfast, Lunch, Dinner, Snack
         categorized_food = {
             "Breakfast": [],
             "Lunch": [],
@@ -153,20 +261,32 @@ class DashboardView(viewsets.ViewSet):
             "Snack": []
         }
 
-        for food in food_intake_data:
+        for food in serialized_food:
             meal_type = food.get("meal_type")
-            categorized_food[meal_type].append(food)
+            if meal_type in categorized_food:
+                categorized_food[meal_type].append(food)
+        
+        for meal_type, items in categorized_food.items():
+            print(f"{meal_type} items: {len(items)}")
 
         # Prepare the response data
         response_data = {
             "nutritional_target": nutritional_target_data,
             "total_steps": total_steps,
-            "steps_goal": nutritional_target.steps_goal if nutritional_target else 0,
-            "calories_burned_goal": nutritional_target.calories_burned_goal if nutritional_target else 0,
+            "steps_goal": nutritional_target.steps_goal if nutritional_target else 10000,
+            "distance_km": distance_km or 1.7,  # Default to 1.7 if no data
+            "pace": pace,
+            
+            "calories_burned_goal": nutritional_target.calories_burned_goal if nutritional_target else 1000,
             "total_calories_burned": total_calories_burned,
+            "exercise_calories": exercise_calories or 286,  # Default to 286 if no data
+            "bmr_calories": bmr_calories or 200,  # Default to 200 if no data
+            
+            "calorie_target": nutritional_target.calorie_target if nutritional_target else 1236,
             "categorized_food": categorized_food,
         }
         
+        print(f"Response prepared with {len(response_data)} keys")
         return Response(response_data, status=status.HTTP_200_OK)
 
 
@@ -265,6 +385,8 @@ class WeeklyNutritionSummaryView(APIView):
         total_eaten = sum(d['calories'] for d in data)
         weekly_goal = calorie_goal * 7
         net = total_eaten - weekly_goal
+        print("FOOD LOG COUNT", food_logs.count())
+        print("DATES IN FOOD LOG", list(food_logs.values_list('date', flat=True)))  # 
 
         return Response({
             "week_data": data,
@@ -272,7 +394,9 @@ class WeeklyNutritionSummaryView(APIView):
             "total_eaten": round(total_eaten),
             "net_difference": round(net),
             "net_average": round(net / 7) if calorie_goal else 0,
+            
         })
+    
     
 
 class RunningStatsView(viewsets.ViewSet):
@@ -394,3 +518,38 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         # Selalu mengembalikan user yang sedang login
         return self.request.user
     
+class ReminderViewSet(viewsets.ModelViewSet):
+    serializer_class = ReminderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Return only the current user's reminders"""
+        return Reminder.objects.filter(user=self.request.user)
+    
+    def perform_create(self, serializer):
+        """Create a new reminder for the current user"""
+        try:
+            serializer.save(user=self.request.user)
+        except IntegrityError:
+            # User already has a reminder for this meal type, update it instead
+            meal_type = serializer.validated_data.get('meal_type')
+            reminder = Reminder.objects.get(user=self.request.user, meal_type=meal_type)
+            
+            # Update the existing reminder
+            reminder.time = serializer.validated_data.get('time')
+            reminder.is_active = serializer.validated_data.get('is_active', True)
+            reminder.save()
+            
+            return Response(
+                ReminderSerializer(reminder).data,
+                status=status.HTTP_200_OK
+            )
+    
+    def update(self, request, *args, **kwargs):
+        """Update an existing reminder"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)

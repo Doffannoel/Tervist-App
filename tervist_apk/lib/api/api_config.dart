@@ -1,8 +1,9 @@
 class ApiConfig {
   // Ganti IP address di sini saat development lokal Ipake IP address dari komputer kalian di terminal dengan perintah ipconfig (Windows) atau ifconfig (Linux/Mac)
   // terus cari IPv4 Address.
-  
-  static const String baseUrl = 'http://192.168.1.5:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
+
+  static const String baseUrl =
+      'http://192.168.1.10:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
 
   // ---------------- AUTHENTICATION ----------------
   static Uri get signup => Uri.parse('$baseUrl/auth/signup/');
@@ -26,5 +27,10 @@ class ApiConfig {
       Uri.parse('$baseUrl/api/nutrition-weekly-summary/');
   static Uri get monthlySummary => Uri.parse('$baseUrl/api/monthly-summary/');
 
+  // NEW: Reminder API endpoint
+  static Uri get reminders => Uri.parse('$baseUrl/api/reminders/');
+
+  // Other constants
+  static const int timeoutDuration = 15; // Seconds
 
 }

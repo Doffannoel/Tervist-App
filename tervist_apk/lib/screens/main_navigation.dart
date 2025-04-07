@@ -68,6 +68,7 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF1F7F6),
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,

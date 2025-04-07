@@ -97,7 +97,7 @@ class _UserDataPageState extends State<UserDataPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEBFDFA),
+      backgroundColor: const Color(0xFFF1F7F6),
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -260,6 +260,23 @@ class _UserDataPageState extends State<UserDataPage> {
                                     await SharedPreferences.getInstance();
                                 await prefs.setString(
                                     'access_token', token); // Save the token
+
+                                if (nutritionalData != null) {
+                                  final saveTargetResponse = await http.post(
+                                    Uri.parse(
+                                        '${ApiConfig.baseUrl}/api/nutritional-target/'),
+                                    headers: {
+                                      'Authorization': 'Bearer $token',
+                                      'Content-Type': 'application/json',
+                                    },
+                                    body: jsonEncode(nutritionalData),
+                                  );
+
+                                  print(
+                                      "DEBUG: Save NutritionalTarget response code: ${saveTargetResponse.statusCode}");
+                                  print(
+                                      "DEBUG: Save NutritionalTarget response body: ${saveTargetResponse.body}");
+                                }
 
                                 // Navigate to HomePage after successful login
                                 Navigator.pushReplacement(
