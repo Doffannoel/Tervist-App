@@ -7,7 +7,8 @@ import 'treadmill_summary.dart';
 import '../workout_countdown.dart';
 import 'package:flutter/scheduler.dart'; // Import for Ticker
 import '../running/running_tracker_screen.dart'; 
-import '/widgets/navigation_bar.dart'; // Import the navigation bar widget
+import 'share_screen_treadmill.dart'; // Import ShareScreen
+import '../weather_service.dart'; // Import the weather service
 
 class TreadmillTrackerScreen extends StatefulWidget {
   const TreadmillTrackerScreen({super.key});
@@ -35,7 +36,6 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
   List<double> performanceData = List.generate(7, (index) => math.Random().nextDouble() * 3 + 5);
 
   final Color primaryGreen = const Color(0xFF4CB9A0);
-  double celsiusTemp = 30.0; // Temperature value
 
   @override
   void initState() {
@@ -136,6 +136,7 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
     distance = newDistance;
     calories = newCalories;
   }
+  
   String get formattedDuration {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     String hours = twoDigits(duration.inHours);
@@ -281,27 +282,8 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
                     ],
                   ),
                   
-                  // Weather information
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.amber[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.wb_sunny, color: Colors.amber, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${celsiusTemp.toStringAsFixed(0)}°C Cloudy',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.amber[800],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Weather information - Using the WeatherWidget with styling to match the original UI
+                  const WeatherWidget(),
                 ],
               ),
             ),
@@ -341,11 +323,11 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
                   Container(
                     width: 14,
                     height: 14,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.black,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.question_mark, color: Colors.white, size: 10),
+                    child: const Icon(Icons.question_mark, color: Colors.white, size: 10),
                   ),
                 ],
               ),
@@ -403,7 +385,7 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
           ],
         ),
       ),
-      bottomNavigationBar: AppNavigationBar(
+      bottomNavigationBar: CustomNavigationBar(
         currentIndex: 2, // Workout tab is selected
         onTap: (index) {
           // Handle navigation
@@ -413,78 +395,65 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          color: Colors.black54,
-          size: 24,
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            color: Colors.black54,
-          ),
-        ),
-        if (isActive)
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            width: 4,
-            height: 4,
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              shape: BoxShape.circle,
-            ),
-          ),
-      ],
-    );
-  }
-
   Widget _buildWorkoutTypeButton(String label, bool isSelected) {
-  bool isRunning = label.contains('running');
-  bool isTreadmill = label.contains('Treadmill');
-  
-  return InkWell(
-    onTap: () {
-      if (isRunning && !isSelected) {
-        // Navigate to RunningTrackerScreen if running is selected
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const RunningTrackerScreen()),
-        );
-      }
-      // If already on treadmill screen, no need to navigate
-    },
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Column(
-        children: [
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? Colors.black : Colors.grey[600],
-            ),
-          ),
-          if (isSelected)
-            Container(
-              margin: const EdgeInsets.only(top: 2),
-              height: 2,
-              width: 60,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(1),
+    bool isRunning = label.contains('running');
+    bool isTreadmill = label.contains('Treadmill');
+    bool isWalking = label.contains('Walking');
+    bool isCycling = label.contains('cycling');
+    
+    return InkWell(
+      onTap: () {
+        if (isTreadmill && !isSelected) {
+          // Navigate to TreadmillTrackerScreen if treadmill is selected
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const TreadmillTrackerScreen()),
+          );
+        } else if (isRunning && !isSelected) {
+          // Navigate to RunningTrackerScreen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const RunningTrackerScreen()),
+          );
+        } else if (isCycling && !isSelected) {
+          // For now, just reset to initial screen since CyclingTrackerScreen isn't implemented
+          setState(() {
+            currentStep = 0; // Reset to initial screen
+          });
+        } else if (isWalking && !isSelected) {
+          // Already on the walking screen, no need to navigate
+          // But you could refresh or reset if needed
+          setState(() {
+            currentStep = 0; // Reset to initial screen
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          children: [
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? Colors.black : Colors.grey[600],
               ),
             ),
-        ],
+            if (isSelected)
+              Container(
+                margin: const EdgeInsets.only(top: 2),
+                height: 2,
+                width: 60,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildRecommendationItem(String text, Color color) {
     return Container(
@@ -528,15 +497,15 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
       builder: (context) {
         return Container(
           height: MediaQuery.of(context).size.height * 0.6,
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 240, 240, 240),
+          decoration: const BoxDecoration(
+            color: Color.fromARGB(255, 240, 240, 240),
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(30),
               topRight: Radius.circular(30),
             ),
           ),
           // Added margin to the entire container
-          margin: EdgeInsets.symmetric(horizontal: 8.0),
+          margin: const EdgeInsets.symmetric(horizontal: 8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -550,7 +519,7 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
                         Navigator.of(context).pop();
                       },
                       child: Container(
-                        padding: EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(8),
                         child: Image.asset(
                           'assets/images/buttonbackblack.png',
                           width: 24,
@@ -584,11 +553,11 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     _buildRecommendationItem('Backpack', Colors.green),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     _buildRecommendationItem('In your hand', Colors.green),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     Text(
                       "Don't",
                       style: GoogleFonts.poppins(
@@ -596,12 +565,12 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     _buildRecommendationItem('Treadmill', Colors.red),
                   ],
                 ),
               ),
-              Spacer(),
+              const Spacer(),
               Padding(
                 // Increased padding for the button area
                 padding: const EdgeInsets.all(24.0),
@@ -623,7 +592,7 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      minimumSize: Size(200, 50),
+                      minimumSize: const Size(200, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(25),
                       ),
@@ -642,6 +611,74 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
           ),
         );
       },
+    );
+  }
+}
+
+// Create a custom navigation bar widget
+class CustomNavigationBar extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onTap;
+
+  const CustomNavigationBar({
+    Key? key,
+    required this.currentIndex,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      currentIndex: currentIndex,
+      onTap: onTap,
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: const Color(0xFF4CB9A0),
+      unselectedItemColor: Colors.grey,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.history),
+          label: 'History',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.directions_run),
+          label: 'Workout',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+}
+
+// Create a WeatherWidget to display weather information
+class WeatherWidget extends StatelessWidget {
+  const WeatherWidget({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(
+          Icons.wb_sunny, 
+          color: Colors.amber,
+          size: 20,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          '28°C',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
+        ),
+      ],
     );
   }
 }

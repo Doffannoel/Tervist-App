@@ -5,26 +5,32 @@ import 'package:tervist_apk/api/api_config.dart';
 
 class LoginService {
   static Future<bool> loginUser(String email, String password) async {
-    try {
-      final response = await http.post(
-        ApiConfig.login,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({"email": email, "password": password}),
-      );
+    final url = ApiConfig.login;
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final token = data['access_token'];
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+      }),
+    );
 
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('access_token', token);
-        return true;
-      } else {
-        final error = jsonDecode(response.body);
-        throw Exception(error['detail'] ?? 'Login failed');
-      }
-    } catch (e) {
-      throw Exception('Login error: $e');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final accessToken = data['access_token'];
+      final refreshToken = data['refresh_token'];
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('access_token', accessToken);
+      await prefs.setString(
+          'refresh_token', refreshToken); // untuk keperluan nanti
+
+      return true;
+    } else {
+      print("Login failed: ${response.statusCode}");
+      print("Response body: ${response.body}");
+      throw Exception('Login gagal: ${jsonDecode(response.body)["detail"]}');
     }
   }
 }

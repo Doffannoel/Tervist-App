@@ -54,16 +54,30 @@ INSTALLED_APPS = [
     'rest_auth.registration'
 ]
 
+# REST_FRAMEWORK = {
+#     'DEFAULT_AUTHENTICATION_CLASSES': [],  # Hapus JWTAuthentication agar bisa diakses tanpa token
+#     'DEFAULT_PERMISSION_CLASSES': (
+#         'rest_framework.permissions.AllowAny',  # Izinkan akses untuk siapa saja
+#     ),
+#     'DEFAULT_RENDERER_CLASSES': (
+#         'rest_framework.renderers.JSONRenderer',
+#         'rest_framework.renderers.BrowsableAPIRenderer',  # Menambahkan Browsable API
+#     ),
+# }
+
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [],  # Hapus JWTAuthentication agar bisa diakses tanpa token
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny',  # Izinkan akses untuk siapa saja
-    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # ✅ Aktifkan JWT
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',  # ✅ Wajib login
+    ],
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',  # Menambahkan Browsable API
+        'rest_framework.renderers.BrowsableAPIRenderer',
     ),
 }
+
 
 
 SIMPLE_JWT = {

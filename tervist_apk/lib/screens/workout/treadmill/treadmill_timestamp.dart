@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../share_screen.dart'; // Add this import
 
 class TreadmillTimestamp extends StatefulWidget {
   final double distance;
@@ -41,6 +42,18 @@ class _TreadmillTimestampState extends State<TreadmillTimestamp> {
       body: SafeArea(
         child: Column(
           children: [
+            // Top actions bar with share button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(width: 40), // Empty space for balance
+
+                ],
+              ),
+            ),
+
             // Main content in the middle of the screen
             Expanded(
               child: Center(
@@ -162,42 +175,7 @@ class _TreadmillTimestampState extends State<TreadmillTimestamp> {
               ),
             ),
             
-            // Bottom indicator
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
 
-            // Bottom navigation bar
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildNavItem(Icons.home, 'Home', false),
-                  _buildNavItem(Icons.restaurant_menu, 'Menu', false),
-                  _buildNavItem(Icons.directions_run, 'Workout', true),
-                  _buildNavItem(Icons.person, 'Profile', false),
-                ],
-              ),
-            ),
           ],
         ),
       ),

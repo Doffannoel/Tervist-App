@@ -6,13 +6,18 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'running_timestamp.dart';
 import 'running_summary.dart';
-import 'map_service.dart';
+import '../map_service.dart';
 import '../workout_countdown.dart';
 import '../treadmill/treadmill_tracker_screen.dart';
+import '../walking/walking_tracker_screen.dart';
 import 'package:flutter/scheduler.dart'; // Import for Ticker
-import 'location_permission_handler.dart'; // Import the permission handler
+import '../location_permission_handler.dart'; // Import the permission handler
 import '/widgets/navigation_bar.dart'; // Import the navigation bar widget
 import '../follow_me_button.dart'; // Import the follow me button widget
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+// Weather Service
+
 
 class RunningTrackerScreen extends StatefulWidget {
   const RunningTrackerScreen({super.key});

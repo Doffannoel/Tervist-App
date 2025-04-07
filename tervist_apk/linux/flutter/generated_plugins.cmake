@@ -3,6 +3,11 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  file_selector_linux
+<<<<<<< Updated upstream
+  flutter_secure_storage_linux
+=======
+>>>>>>> Stashed changes
   url_launcher_linux
 )
 

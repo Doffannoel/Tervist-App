@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'map_service.dart';
+import '../map_service.dart';
 import '../follow_me_button.dart'; // Import the follow me button
 
 class RunningTimestamp extends StatefulWidget {

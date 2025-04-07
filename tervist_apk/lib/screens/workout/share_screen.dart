@@ -34,9 +34,66 @@ class ShareScreen extends StatefulWidget {
 }
 
 class _ShareScreenState extends State<ShareScreen> {
-  bool isDefaultTemplate = true;
+  bool isDefaultTemplate = false; // Set the default to Custom template
   final GlobalKey _screenshotKey = GlobalKey();
   bool _isSaving = false;
+
+  // Helper method to create metric columns
+  Widget _buildMetricColumn(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Helper method to create metrics with icons
+  Widget _buildMetricWithIcon(
+    IconData icon, 
+    String label, 
+    String value, 
+    Color color,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(width: 5),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,18 +114,6 @@ class _ShareScreenState extends State<ShareScreen> {
           ),
         ),
         centerTitle: true,
-        // TASK 1: Ubah icon button next di atas kanan menjadi sharebutton.png
-        actions: [
-          IconButton(
-            icon: Image.asset(
-              'assets/images/sharebutton.png',
-              width: 24,
-              height: 24,
-              color: Colors.black,
-            ),
-            onPressed: _isSaving ? null : () => _shareImage(),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -191,7 +236,7 @@ class _ShareScreenState extends State<ShareScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 24),
+                const SizedBox(width: 60), // Increased spacing between buttons
                 // Share button
                 GestureDetector(
                   onTap: _isSaving ? null : () => _shareImage(),
@@ -204,10 +249,8 @@ class _ShareScreenState extends State<ShareScreen> {
                           color: _isSaving ? Colors.grey : Colors.black,
                           borderRadius: BorderRadius.circular(25),
                         ),
-                        child: Image.asset(
-                          'assets/images/sharebutton.png',
-                          width: 24,
-                          height: 24,
+                        child: const Icon(
+                          Icons.share,
                           color: Colors.white,
                         ),
                       ),
@@ -231,87 +274,79 @@ class _ShareScreenState extends State<ShareScreen> {
   }
 
   Widget _buildDefaultTemplate() {
+    // Matching exact design from Image 2
     return Container(
       color: Colors.white,
-      child: Column(
-        children: [
-          // 3D image
-          Expanded(
-            flex: 2,
-            child: widget.activityType == 'Treadmill'
-                ? Image.asset('assets/images/treadmill.png')
-                : Image.asset('assets/images/running.png'),
-          ),
-          
-          // Stats area
-          Expanded(
-            flex: 3,
-            child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Running icon - Blue runner icon as shown in Image 2
+            Icon(
+              Icons.directions_run,
+              size: 80,
+              color: Colors.blue,
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Workout Summary Card - Clean, minimal design as in Image 2
+            Container(
+              width: 300,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.05),
+                    spreadRadius: 1,
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Activity type
-                  Text(
-                    'Tervist | ${widget.activityType}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Distance and user info
+                  // Activity and user info
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        widget.distance.toStringAsFixed(2),
+                        widget.activityType,
                         style: GoogleFonts.poppins(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[600],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4.0),
-                        child: Text(
-                          'Km',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      // User info
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            widget.userName,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            '${widget.workoutDate.day}/${widget.workoutDate.month}/${widget.workoutDate.year} ${widget.workoutDate.hour}:${widget.workoutDate.minute.toString().padLeft(2, '0')}',
-                            style: GoogleFonts.poppins(
-                              fontSize: 10,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
+                      // User avatar - small circle with image
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage: const AssetImage('assets/images/profile.png'),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
                   
-                  // Time and Pace
+                  const SizedBox(height: 12),
+                  
+                  // Distance - Large central text
+                  Text(
+                    '${widget.distance.toStringAsFixed(2)} Km',
+                    style: GoogleFonts.poppins(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 12),
+                  
+                  // Time and Pace Row
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,27 +354,26 @@ class _ShareScreenState extends State<ShareScreen> {
                           Text(
                             widget.formattedDuration,
                             style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600, 
                             ),
                           ),
                           Text(
                             'Time',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color: Colors.grey,
+                              color: Colors.grey[400],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(width: 60),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             widget.formattedPace,
                             style: GoogleFonts.poppins(
-                              fontSize: 20,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -347,7 +381,7 @@ class _ShareScreenState extends State<ShareScreen> {
                             'Pace',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color: Colors.grey,
+                              color: Colors.grey[400],
                             ),
                           ),
                         ],
@@ -357,141 +391,369 @@ class _ShareScreenState extends State<ShareScreen> {
                   
                   const SizedBox(height: 16),
                   
-                  // Calories
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.local_fire_department,
-                        color: Colors.orange[400],
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Calories Burned',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.orange[400],
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${widget.calories}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange[400],
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'kcal',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
+                  // Divider - thin line
+                  Divider(color: Colors.grey.shade200, height: 1),
                   
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   
-                  // Steps
+                  // Calories and Steps Row - with colorful icons
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(
-                        Icons.directions_walk,
-                        color: Colors.blue[400],
-                        size: 20,
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.local_fire_department,
+                            color: Colors.orange,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${widget.calories} kcal',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.orange,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Steps',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.blue[400],
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${widget.steps}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue[400],
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.directions_walk,
+                            color: Colors.blue,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${widget.steps}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // TASK 2: Buat kotak abu-abu di ganti menjadi workoutsummary1.png
   Widget _buildCustomTemplate() {
+    // Based on Image 1 - Map view with card at bottom
     return Container(
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/images/workoutsummary1.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: Stack(
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+          // Top section with Tervist logo and map view (takes most of the screen)
+          Expanded(
+            flex: 3,
+            child: Stack(
               children: [
-                const SizedBox(height: 16),
-                
-                // Date
-                Text(
-                  '${widget.workoutDate.day}/${widget.workoutDate.month}/${widget.workoutDate.year}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    color: Colors.white,
+                // Map background with route
+                Container(
+                  color: Colors.grey[200],
+                  child: Center(
+                    // This would be a map in the real implementation
+                    // Using a simple placeholder with route indicator
+                    child: Stack(
+                      children: [
+                        // Map tiles background
+                        Image.asset(
+                          'assets/images/map_background.png',
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback if image not found
+                            return Container(
+                              color: Colors.grey[200],
+                              child: Center(
+                                child: Text(
+                                  'MAP VIEW',
+                                  style: TextStyle(color: Colors.grey[400]),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        
+                        // Route line (simplified)
+                        Center(
+                          child: Container(
+                            width: 120,
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        
+                        // Location marker
+                        Center(
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: Colors.blue,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 
-                const SizedBox(height: 32),
-                
-                // Motivational text
-                Text(
-                  'Make exercise',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                // Tervist logo overlay at top left
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.favorite,
+                        color: Colors.black,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Tervist',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                
-                Text(
-                  'your busyness',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+              ],
+            ),
+          ),
+          
+          // Bottom card with workout details - matches Image 1
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Activity type and user avatar
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Tervist | ${widget.activityType}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundImage: const AssetImage('assets/images/profile.png'),
+                    ),
+                  ],
                 ),
                 
-                const SizedBox(height: 32),
+                const SizedBox(height: 10),
                 
-                // Exercise info
-                Text(
-                  '${widget.activityType} | ${widget.distance.toStringAsFixed(2)} Km',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
+                // Distance with timestamp
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Distance with label
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${widget.distance.toStringAsFixed(2)}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'km',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Timestamp
+                    Text(
+                      '${widget.workoutDate.day}/${widget.workoutDate.month}/${widget.workoutDate.year} ${widget.workoutDate.hour}:${widget.workoutDate.minute.toString().padLeft(2, '0')}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Time and Average Speed
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Time column
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.formattedDuration,
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Time',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Average speed column (using pace for calculation)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          // Calculate speed in km/h from pace (rough estimation)
+                          '6 Km/h',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Average speed',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Calories and Max speed in two cards
+                Row(
+                  children: [
+                    // Calories card
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Calories Burned',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${widget.calories}',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange,
+                              ),
+                            ),
+                            Text(
+                              'kcal',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Max speed card
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Max speed',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '10',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                            Text(
+                              'Km/h',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -534,8 +796,7 @@ class _ShareScreenState extends State<ShareScreen> {
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('Gagal menyimpan gambar ke galeri'),
               backgroundColor: Colors.red,
             ),

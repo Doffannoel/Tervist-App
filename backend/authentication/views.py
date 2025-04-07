@@ -131,3 +131,4 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         # Ensure we return the currently authenticated user
         return self.request.user
+    

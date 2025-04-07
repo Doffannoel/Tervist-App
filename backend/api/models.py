@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from authentication.models import CustomUser
 from django.utils import timezone
@@ -11,16 +12,35 @@ class NutritionalTarget(models.Model):
     steps_goal = models.IntegerField(default=0)  # Step goal per day based on activity level
     calories_burned_goal = models.FloatField(default=0.0)  # Calories burned goal based on TDEE
 
-    def calculate_targets(self):
-        """Calculate and update the daily calorie, protein, carbs, fats, and steps goals based on user data."""
-        user = self.user
+    def calculate_targets(self, manual_data=None):
+        """Calculate and update targets based on user data or manual input."""
+        if self.user:
+            # Use data from the authenticated user
+            user = self.user
+        elif manual_data:
+            # Use the manual input data
+            class TempUser:
+                def __init__(self, data):
+                    self.weight = float(data.get('weight', 0))
+                    self.height = float(data.get('height', 0))
+                    self.age = int(data.get('age', 25))
+                    self.gender = data.get('gender', 'Male')
+                    self.activity_level = data.get('activity_level', 'Low Active')
+                    self.goal = data.get('goal', 'Maintain Weight')
+                    self.username = "TempUser"
+            user = TempUser(manual_data)
+        else:
+            print("ERROR: No user data available for calculation")
+            return
+
+        # BMR calculation based on user's data
         bmr = 10 * user.weight + 6.25 * user.height - 5 * user.age
         if user.gender == 'Male':
             bmr += 5  # Adjustment for males
         else:
             bmr -= 161  # Adjustment for females
 
-        # Factor in the activity level for TDEE calculation
+        # Activity multiplier based on the user's activity level
         activity_multipliers = {
             'Sedentary': 1.2,
             'Low Active': 1.375,
@@ -38,7 +58,7 @@ class NutritionalTarget(models.Model):
         else:
             self.calorie_target = tdee  # Maintain current weight
 
-        # Calculate the nutritional targets based on the TDEE
+        # Calculate the nutritional targets based on TDEE
         self.protein_target = tdee * 0.15 / 4  # 15% of TDEE for protein (in grams, 1g protein = 4 calories)
         self.carbs_target = tdee * 0.55 / 4  # 55% of TDEE for carbohydrates (in grams, 1g carbs = 4 calories)
         self.fats_target = tdee * 0.30 / 9  # 30% of TDEE for fats (in grams, 1g fat = 9 calories)
@@ -58,7 +78,10 @@ class NutritionalTarget(models.Model):
         self.save()
 
     def __str__(self):
-        return f"{self.user.username} - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
+        if self.user:
+            return f"{self.user.username} - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
+        return f"Unknown User - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
+
     
 class FoodDatabase(models.Model):
     MEASUREMENT_CHOICES = [
@@ -134,17 +157,24 @@ class DailySteps(models.Model):
 
     
     def __str__(self):
-        return f"{self.user.username} - {self.steps} steps on {self.date}"
+        if self.user:
+            return f"{self.user.username} - {self.steps} steps on {self.date}"
+        return f"Unknown User - {self.steps} steps on {self.date}"
+
 
 class CaloriesBurned(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-    exercise_calories = models.IntegerField()  # Kalori terbakar dari olahraga
-    bmr_calories = models.IntegerField()  # Kalori terbakar dari BMR
-    total_calories = models.IntegerField()  # Total kalori yang terbakar
+    exercise_calories = models.IntegerField(null=True, blank=True)  # Kalori terbakar dari olahraga
+    bmr_calories = models.IntegerField(null=True,blank=True)  # Kalori terbakar dari BMR
+    total_calories = models.IntegerField(null=True,  blank=True)  # Total kalori yang terbakar
     date = models.DateField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.user.username} - {self.total_calories} kcal on {self.date}"
+        if self.user:
+            return f"{self.user.username} - Total: {self.total_calories} kcal (Exercise: {self.exercise_calories}, BMR: {self.bmr_calories})"
+        return f"Unknown User - Total: {self.total_calories} kcal"
+
+
 
 class RunningActivity(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
@@ -163,5 +193,74 @@ class RunningActivity(models.Model):
             self.pace = 0
         self.save()
 
+    @property
+    def pace_min_per_km(self):
+        if self.distance_km > 0:
+            return (self.time_seconds / 60) / self.distance_km
+        return 0
+
     def __str__(self):
-        return f"{self.user.username} - {self.distance_km} km on {self.date}"
+        if self.user:
+            return f"{self.user.username} - {self.distance_km} km on {self.date}"
+        return f"Unknown User - {self.distance_km} km on {self.date}"
+
+class CyclingActivity(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    date = models.DateField()
+    duration = models.DurationField()  # misal: timedelta(minutes=78)
+    distance_km = models.DecimalField(max_digits=5, decimal_places=2)
+    avg_speed_kmh = models.DecimalField(max_digits=4, decimal_places=1)
+    max_speed_kmh = models.DecimalField(max_digits=4, decimal_places=1)
+    elevation_gain_m = models.PositiveIntegerField(default=0)
+    calories_burned = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.calories_burned:
+            weight_kg = self.user.weight or 60  # fallback default 60 kg jika kosong
+            duration_hours = self.duration.total_seconds() / 3600
+            self.calories_burned = self.calculate_calories(duration_hours, weight_kg, float(self.avg_speed_kmh))
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def calculate_calories(duration_hours, weight_kg, avg_speed_kmh):
+        if avg_speed_kmh < 16:
+            met = 4.0
+        elif avg_speed_kmh < 19:
+            met = 6.8
+        elif avg_speed_kmh < 22:
+            met = 8.0
+        elif avg_speed_kmh < 25:
+            met = 10.0
+        else:
+            met = 12.0
+        return met * weight_kg * duration_hours
+
+    def __str__(self):
+<<<<<<< Updated upstream
+        return f"{self.user.username} - {self.date} - {self.distance_km}km"
+    
+
+class Reminder(models.Model):
+    MEAL_CHOICES = [
+        ('Breakfast', 'Breakfast'),
+        ('Lunch', 'Lunch'),
+        ('Dinner', 'Dinner'),
+        ('Snack', 'Snack'),
+    ]
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    meal_type = models.CharField(max_length=20, choices=MEAL_CHOICES)
+    time = models.TimeField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        # Ensure each user can have only one reminder per meal type
+        unique_together = ('user', 'meal_type')
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.meal_type} at {self.time.strftime('%H:%M')}"
+=======
+        return f"{self.user.username} - {self.date} - {self.distance_km}km"
+>>>>>>> Stashed changes

@@ -52,7 +52,16 @@ dependencies:
   fl_chart: ^0.70.2
   # flutter_svg: ^2.0.17
   permission_handler: ^11.0.1 # For handling permissions
+  image_picker: ^1.1.2
+<<<<<<< Updated upstream
+  percent_indicator: ^4.2.4
+  flutter_secure_storage: ^9.2.4
+  flutter_local_notifications: 18.0.1
+  timezone: 0.10.0
+  
+=======
   shared_preferences: ^2.5.3
+>>>>>>> Stashed changes
 
 
 

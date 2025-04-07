@@ -13,12 +13,16 @@ class SignupService {
   }
 
   static Future<http.Response> loginUser(String email, String password) {
-    return http.post(
+    return http
+        .post(
       ApiConfig.login,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
-    );
+    )
+        .then((response) {
+      print('Login response headers: ${response.headers}');
+      print('Login response body: ${response.body}');
+      return response;
+    });
   }
-
-  
 }

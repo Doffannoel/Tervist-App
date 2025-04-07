@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
@@ -31,22 +32,27 @@ class CustomUserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
+
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=30, unique=True)
-    gender = models.CharField(max_length=10, choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')])
+    gender = models.CharField(
+        max_length=10, 
+        choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')]
+    )
     weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     height = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     age = models.PositiveIntegerField(null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
-    city = models.CharField(max_length=100, null= True, blank=True)
-    state = models.CharField(max_length=100, null=True, blank=True) 
+    city = models.CharField(max_length=100, null=True, blank=True)
+    state = models.CharField(max_length=100, null=True, blank=True)
     birthday = models.DateField(null=True, blank=True)
     profile_picture = models.ImageField(
-        upload_to='profile_pics/',
+        upload_to='profile_picture/',
         null=True,
         blank=True,
-        validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])],)
+        validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])]
+    )
     
     # New fields
     activity_level = models.CharField(
@@ -54,7 +60,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         choices=[('Sedentary', 'Sedentary'), ('Low Active', 'Low Active'), ('Active', 'Active'), ('Very Active', 'Very Active')],
         default='Sedentary'
     )
-    goal = models.CharField(    
+    goal = models.CharField(
         max_length=20, 
         choices=[('Weight Gain', 'Weight Gain'), ('Maintain Weight', 'Maintain Weight'), ('Weight Loss', 'Weight Loss')],
         default='Maintain Weight'
@@ -62,6 +68,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     target_weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     timeline = models.CharField(max_length=20, choices=[('Weeks', 'Weeks'), ('Months', 'Months')], null=True, blank=True)
     
+    # Calorie tracking fields
+    calorie_target = models.FloatField(default=0.0)  # Total calories to consume per day
+    total_calories_consumed = models.FloatField(default=0.0)  # Total calories consumed by the user
+    remaining_calories = models.FloatField(default=0.0)  # Remaining calories to be consumed
+    
+    # Tracking
     date_joined = models.DateTimeField(default=timezone.now)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -74,6 +86,28 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+    def save(self, *args, **kwargs):
+        """Override save method to calculate remaining calories when saving the user."""
+        self.remaining_calories = self.calorie_target - self.total_calories_consumed
+        super().save(*args, **kwargs)
+
+    def calculate_calorie_target(self):
+        """Calculate and update calorie target based on user goal, activity level, and other data."""
+        # Example logic for calculating calorie target based on activity level and goal
+        if self.goal == 'Weight Gain':
+            self.calorie_target = 2500  # Example value for weight gain
+        elif self.goal == 'Weight Loss':
+            self.calorie_target = 1800  # Example value for weight loss
+        else:
+            self.calorie_target = 2000  # Maintenance goal
+        
+        self.save()  # Save the changes to the model
+
+    def update_total_calories(self, calories: Decimal):
+        """Update total calories consumed by the user."""
+        self.total_calories_consumed += calories
+        self.save()  # Recalculate remaining calories when updating total calories
     
 class PasswordResetOTP(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # Mengaitkan dengan CustomUser
