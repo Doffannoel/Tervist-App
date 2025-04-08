@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tervist_apk/screens/homepage/homepage.dart';
 import 'package:tervist_apk/screens/nutritions/nutrition_main.dart';
+import 'package:tervist_apk/screens/nutritions/selected_food_page.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
 import 'package:tervist_apk/screens/profile/userprofile_page.dart';
 import 'package:tervist_apk/screens/workout/workout_module.dart';

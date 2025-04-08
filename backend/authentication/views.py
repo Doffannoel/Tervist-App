@@ -123,6 +123,20 @@ class ResetPasswordView(GenericAPIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class VerifyOTPView(GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        otp = request.data.get('otp')
+
+        try:
+            otp_record = PasswordResetOTP.objects.get(otp=otp)
+            if otp_record.is_expired():
+                return Response({"detail": "OTP expired!"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "OTP is valid."}, status=status.HTTP_200_OK)
+        except PasswordResetOTP.DoesNotExist:
+            return Response({"detail": "Invalid OTP!"}, status=status.HTTP_400_BAD_REQUEST)
+
 class ProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]  # Only authenticated users can view/update their profile
     serializer_class = ProfileSerializer

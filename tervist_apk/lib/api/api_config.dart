@@ -3,13 +3,14 @@ class ApiConfig {
   // terus cari IPv4 Address.
 
   static const String baseUrl =
-      'http://192.168.1.10:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
+      'http://192.168.174.66:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
 
   // ---------------- AUTHENTICATION ----------------
   static Uri get signup => Uri.parse('$baseUrl/auth/signup/');
   static Uri get login => Uri.parse('$baseUrl/auth/login/');
   static Uri get forgotPassword => Uri.parse('$baseUrl/auth/forgot-password/');
   static Uri get resetPassword => Uri.parse('$baseUrl/auth/reset-password/');
+  static Uri get verifyOtp => Uri.parse('$baseUrl/auth/verify-otp/');
   static Uri get profile => Uri.parse('$baseUrl/auth/profile/');
 
   // ---------------- API (Fitness Data) ----------------

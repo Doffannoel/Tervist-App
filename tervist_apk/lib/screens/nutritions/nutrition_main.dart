@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:tervist_apk/screens/nutritions/selected_food_page.dart';
 import 'package:tervist_apk/widgets/calendar_popup.dart';
 import 'package:intl/intl.dart';
 import 'scanfood.dart';
@@ -312,19 +313,23 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
           ),
         ),
       ),
+      // Gw matiin bentar ya pris, gw butuh update progress ke pak mata jadi tombol plus nya gw arahain ke page selected food dulu
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () {
+      //     _showFoodSelection(context);
+      //   },
+      //   backgroundColor: Colors.black,
+      //   shape: const CircleBorder(),
+      //   child: const Icon(Icons.add, color: Colors.white),
+      // ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _showFoodSelection(context);
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => SelectedFoodPage()));
         },
         backgroundColor: Colors.black,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
-      ),
-      bottomNavigationBar: AppNavigationBar(
-        currentIndex: 1, // karena ini halaman Nutritions
-        onTap: (index) {
-          // Untuk sekarang biarkan kosong atau tambahkan logika navigasi nanti
-        },
       ),
     );
   }
