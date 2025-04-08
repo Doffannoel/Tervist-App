@@ -33,4 +33,5 @@ class ApiConfig {
   // Other constants
   static const int timeoutDuration = 15; // Seconds
 
+
 }
