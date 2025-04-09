@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../map_service.dart';
 import '../follow_me_button.dart'; // Import the follow me button
 
-class RunningTimestamp extends StatefulWidget {
+class CyclingTimestamp extends StatefulWidget {
   final double distance;
   final String formattedDuration;
   final String formattedPace;
@@ -19,7 +19,7 @@ class RunningTimestamp extends StatefulWidget {
   final VoidCallback onResume;
   final VoidCallback onStop;
 
-  const RunningTimestamp({
+  const CyclingTimestamp({
     super.key,
     required this.distance,
     required this.formattedDuration,
@@ -36,10 +36,10 @@ class RunningTimestamp extends StatefulWidget {
   });
 
   @override
-  State<RunningTimestamp> createState() => _RunningTimestampState();
+  State<CyclingTimestamp> createState() => _CyclingTimestampState();
 }
 
-class _RunningTimestampState extends State<RunningTimestamp> {
+class _CyclingTimestampState extends State<CyclingTimestamp> {
   final MapController _mapController = MapController();
   List<LatLng> currentRoutePoints = [];
   List<Marker> currentMarkers = [];
@@ -110,7 +110,7 @@ class _RunningTimestampState extends State<RunningTimestamp> {
   
   @override
   void dispose() {
-    // No need to stop location updates here, as it's managed by the parent RunningTrackerScreen
+    // No need to stop location updates here, as it's managed by the parent cyclingTrackerScreen
     super.dispose();
   }
 
@@ -154,7 +154,7 @@ class _RunningTimestampState extends State<RunningTimestamp> {
             mapController: _mapController,
             options: MapOptions(
               initialCenter: displayLocation,
-              initialZoom: 17, // Zoom in more for running
+              initialZoom: 17, // Zoom in more for cycling
               interactionOptions: const InteractionOptions(
                 enableMultiFingerGestureRace: true,
               ),
@@ -162,7 +162,7 @@ class _RunningTimestampState extends State<RunningTimestamp> {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.running_app',
+                userAgentPackageName: 'com.example.cycling_app',
               ),
               PolylineLayer(
                 polylines: displayPolylines,

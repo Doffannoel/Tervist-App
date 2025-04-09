@@ -4,33 +4,30 @@ import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'running_timestamp.dart';
-import 'running_summary.dart';
+import 'walking_timestamp.dart';
+import 'walking_summary.dart';
 import '../map_service.dart';
 import '../workout_countdown.dart';
 import '../workout_navbar.dart';
-import 'package:flutter/scheduler.dart'; // Import for Ticker
-import '../location_permission_handler.dart'; // Import the permission handler
-import '../follow_me_button.dart'; // Import the follow me button widget
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import '../weather_service.dart'; 
-import '/api/running_service.dart';
-import '/api/auth_helper.dart'; // Import AuthHelper
+import 'package:flutter/scheduler.dart';
+import '../location_permission_handler.dart';
+import '../follow_me_button.dart';
+import '../weather_service.dart';
 
-class RunningTrackerScreen extends StatefulWidget {
+
+class WalkingTrackerScreen extends StatefulWidget {
   final Function(String)? onWorkoutTypeChanged;
   
-  const RunningTrackerScreen({
-    super.key, 
+  const WalkingTrackerScreen({
+    super.key,
     this.onWorkoutTypeChanged,
   });
   
   @override
-  State<RunningTrackerScreen> createState() => _RunningTrackerScreenState();
+  State<WalkingTrackerScreen> createState() => _WalkingTrackerScreenState();
 }
 
-class _RunningTrackerScreenState extends State<RunningTrackerScreen> with SingleTickerProviderStateMixin {
+class _WalkingTrackerScreenState extends State<WalkingTrackerScreen> with SingleTickerProviderStateMixin {
   int currentStep = 0; // 0: initial, 1: workout tracking, 2: summary
   bool isWorkoutActive = false;
   bool isPaused = false;
@@ -48,11 +45,6 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
   final LocationPermissionHandler _locationPermissionHandler = LocationPermissionHandler();
   bool _locationPermissionChecked = false;
   
-  // User profile info
-  String _userName = "User"; // Default value until loaded
-  bool _isLoggedIn = false;
-  bool _isLoading = true;
-  
   // Workout metrics
   double distance = 0.0; // Start with 0
   Duration duration = const Duration(seconds: 0); // Start with 0
@@ -66,108 +58,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
   List<Marker> markers = [];
   List<Polyline> polylines = [];
 
-  final Color primaryGreen = const Color(0xFF4CB9A0); // Temperature value
-
-  final RunningService _runningService = RunningService();
-
-  void stopWorkout() async {
-    _timer?.cancel();
-    
-    // Stop session in MapService
-    MapService.stopSession();
-    
-    // Calculate pace in minutes per km
-    double paceMinutes = 0;
-    if (distance > 0) {
-      paceMinutes = duration.inSeconds / 60 / distance;
-    }
-    
-    // Verify authentication status first
-    try {
-      // Check if we have a valid token
-      bool isAuthenticated = await AuthHelper.isLoggedIn();
-      
-      if (!isAuthenticated) {
-        print('Authentication failed - user may need to log in again');
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Authentication error - please log in again'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-        // Still proceed to save the workout but expect it might fail
-      }
-      
-      // Print key values before saving
-      print('Saving running activity:');
-      print('- Distance: $distance km');
-      print('- Duration: ${duration.inSeconds} seconds');
-      print('- Pace: $paceMinutes min/km');
-      print('- Calories: $calories');
-      print('- Steps: $steps');
-      
-      // Save running activity to backend
-      bool saved = await _runningService.saveRunningActivity(
-        distanceKm: distance,
-        timeSeconds: duration.inSeconds,
-        pace: paceMinutes,
-        caloriesBurned: calories,
-        steps: steps,
-        date: DateTime.now(),
-      );
-      
-      if (saved) {
-        print('Running activity successfully saved to backend');
-        
-        // Show success message
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Aktivitas lari berhasil disimpan'),
-              backgroundColor: primaryGreen,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-      } else {
-        print('Failed to save running activity');
-        
-        // Show error message
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal menyimpan aktivitas lari - periksa koneksi internet'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      print('Error saving running activity: $e');
-      
-      // Show error message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } finally {
-      // Always update UI state regardless of whether the save succeeded
-      setState(() {
-        isWorkoutActive = false;
-        isPaused = false;
-        currentStep = 2; // Move to summary screen
-      });
-    }
-  }
+  final Color primaryGreen = const Color(0xFF4CB9A0);
 
   @override
   void initState() {
@@ -186,57 +77,6 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
     
     // Initialize map data
     _initializeMapData();
-    
-    // Load user profile
-    _loadUserProfile();
-  }
-  
-  // Load user profile data including username
-  Future<void> _loadUserProfile() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
-    try {
-      // Check authentication status
-      bool isLoggedIn = await AuthHelper.isLoggedIn();
-      
-      if (isLoggedIn) {
-        // Try to get username from AuthHelper
-        String? storedName = await AuthHelper.getUserName();
-        
-        if (storedName != null && storedName.isNotEmpty) {
-          setState(() {
-            _userName = storedName;
-            _isLoggedIn = true;
-          });
-        } else {
-          // If not in AuthHelper, try to fetch from API
-          String? apiName = await _runningService.getUserName();
-          
-          if (apiName != null && apiName.isNotEmpty) {
-            setState(() {
-              _userName = apiName;
-              _isLoggedIn = true;
-            });
-            
-            // Save it for future use
-            await AuthHelper.saveUserName(apiName);
-          }
-        }
-      } else {
-        setState(() {
-          _isLoggedIn = false;
-          _userName = "Guest";
-        });
-      }
-    } catch (e) {
-      print('Error loading user profile: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
   }
 
   // Check location permission status
@@ -342,21 +182,6 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
 
   // Start workout after ensuring location permission
   Future<void> startWorkoutWithPermissionCheck() async {
-    // First check authentication
-    bool isLoggedIn = await AuthHelper.isLoggedIn();
-    if (!isLoggedIn) {
-      // Show login required message
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please log in to track your running activity'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-      return;
-    }
-
     bool hasPermission = await _requestLocationPermission();
     
     if (!hasPermission) {
@@ -364,7 +189,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Aplikasi memerlukan izin lokasi untuk melacak aktivitas lari Anda'),
+            content: Text('Aplikasi memerlukan izin lokasi untuk melacak aktivitas jalan Anda'),
             duration: Duration(seconds: 3),
           ),
         );
@@ -412,6 +237,19 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
     }
   }
 
+  void stopWorkout() {
+    _timer?.cancel();
+    
+    // Stop session in MapService
+    MapService.stopSession();
+    
+    setState(() {
+      isWorkoutActive = false;
+      isPaused = false;
+      currentStep = 2; // Move to summary screen
+    });
+  }
+
   void _startTimer() {
     _timer?.cancel();
     
@@ -445,20 +283,19 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
       }
     }
     
-    // Steps calculation (about 160 steps per minute for running)
-    final stepsPerSecond = 160.0 / 60.0;
+    // Steps calculation (about 100 steps per minute for walking, less than running)
+    final stepsPerSecond = 100.0 / 60.0;
     final newStepsCount = steps + stepsPerSecond.round();
     
     // Calculate calories (using a simple approximation)
-    // Running burns more calories, around 600 kcal per hour
-    final caloriesPerSecond = 600.0 / 3600.0;
+    // Walking burns less calories than running, around 300 kcal per hour
+    final caloriesPerSecond = 300.0 / 3600.0;
     final newCalories = (newDuration.inSeconds * caloriesPerSecond).round();
     
     // Update steps per minute
-    stepsPerMinute = 160; // Common running cadence
+    stepsPerMinute = 100; // Common walking cadence
     
     // Update performance data for pace graph
-    // Only update if workout is active
     if (isWorkoutActive && currentStep == 1) {
       // Calculate current pace
       double currentPace = 0;
@@ -535,7 +372,6 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: _buildCurrentStep(),
       ),
@@ -548,7 +384,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
       case 0:
         return _buildInitialScreen();
       case 1:
-        return RunningTimestamp(
+        return walkingTimestamp(
           distance: distance,
           formattedDuration: formattedDuration,
           formattedPace: formattedPace,
@@ -563,7 +399,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
           onStop: stopWorkout,
         );
       case 2:
-        return RunningSummary(
+        return walkingSummary(
           distance: distance,
           formattedDuration: formattedDuration,
           formattedPace: formattedPace,
@@ -587,7 +423,6 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
               performanceData = List.generate(5, (index) => 0.0);
             });
           },
-          userName: _userName, // Pass the actual username
         );
       default:
         return _buildInitialScreen();
@@ -595,7 +430,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
   }
 
   Widget _buildInitialScreen() {
-    // PENTING: Menghapus Scaffold di sini untuk menghindari nested Scaffold
+    // Removed Scaffold here as requested
     return Column(
       children: [
         Expanded(
@@ -610,16 +445,14 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _isLoading 
-                      ? CircularProgressIndicator(color: primaryGreen) 
-                      : Text(
-                          'Hi, $_userName!',
-                          style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
+                      Text(
+                        'Hi, Yesaya!',
+                        style: GoogleFonts.poppins(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
                         ),
+                      ),
                       CircleAvatar(
                         radius: 20,
                         backgroundImage: const AssetImage('assets/images/profile.png'),
@@ -672,7 +505,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
                 
                 // Workout type selector
                 WorkoutNavbar(
-                  currentWorkoutType: 'Running',
+                  currentWorkoutType: 'Walking',
                   onWorkoutTypeChanged: (newType) {
                     // Pass the type change to the parent
                     if (widget.onWorkoutTypeChanged != null) {
@@ -680,43 +513,6 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
                     }
                   },
                 ),
-                
-                // Authentication status
-                _isLoggedIn 
-                ? Container() // Hide if logged in
-                : InkWell(
-                    onTap: () {
-                      // TODO: Navigate to login screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please log in to track your workouts'),
-                          duration: Duration(seconds: 3),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade100,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.error_outline, size: 16, color: Colors.red.shade800),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Authentication required',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.red.shade800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 
                 // Permission info - Now clickable
                 GestureDetector(
@@ -839,27 +635,13 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
           ),
         ),
           
-        // GO button - Modified to check login and location permission
+        // GO button - Modified to check location permission
         Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12.0),
             child: InkWell(
               onTap: () async {
-                // First check if user is logged in
-                bool isLoggedIn = await AuthHelper.isLoggedIn();
-                if (!isLoggedIn) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please log in to track your running activity'),
-                        duration: Duration(seconds: 3),
-                      ),
-                    );
-                  }
-                  return;
-                }
-                
-                // Then check location permission
+                // First check location permission
                 bool hasPermission = await _requestLocationPermission();
                 
                 if (!hasPermission) {

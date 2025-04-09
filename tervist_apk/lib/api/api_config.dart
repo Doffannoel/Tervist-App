@@ -12,6 +12,9 @@ class ApiConfig {
   static Uri get resetPassword => Uri.parse('$baseUrl/auth/reset-password/');
   static Uri get verifyOtp => Uri.parse('$baseUrl/auth/verify-otp/');
   static Uri get profile => Uri.parse('$baseUrl/auth/profile/');
+  
+  // Debugging endpoint to check token validity
+  static Uri get tokenVerify => Uri.parse('$baseUrl/auth/token/verify/');
 
   // ---------------- API (Fitness Data) ----------------
   static Uri get nutritionalTarget =>

@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
-// import 'home_screen.dart';
-// import 'menu_screen.dart';
-// import 'profile_screen.dart';
-import '/screens/workout/workout_module.dart';
 
 class AppNavigationBar extends StatelessWidget {
   final int currentIndex;
-  final Function(int) onTap;
+  final Function(int)? onTap;
 
   const AppNavigationBar({
-    super.key,
+    Key? key,
     required this.currentIndex,
-    required this.onTap,
-  });
+    this.onTap,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -38,28 +34,28 @@ class AppNavigationBar extends StatelessWidget {
             activeIcon: Icons.home,
             inactiveIcon: Icons.home_outlined,
             label: 'Home',
-            onTap: () => onTap(0),
+            onTap: () => _handleTap(context, 0),
           ),
           _buildNavItem(
             isActive: currentIndex == 1,
             activeIcon: Icons.restaurant,
             inactiveIcon: Icons.restaurant_outlined,
             label: 'Nutrition',
-            onTap: () => onTap(1),
+            onTap: () => _handleTap(context, 1),
           ),
           _buildNavItem(
             isActive: currentIndex == 2,
             activeIcon: Icons.directions_run,
             inactiveIcon: Icons.directions_run_outlined,
             label: 'Workout',
-            onTap: () => onTap(2),
+            onTap: () => _handleTap(context, 2),
           ),
           _buildNavItem(
             isActive: currentIndex == 3,
             activeIcon: Icons.person,
             inactiveIcon: Icons.person_outlined,
             label: 'Profile',
-            onTap: () => onTap(3),
+            onTap: () => _handleTap(context, 3),
           ),
         ],
       ),
@@ -116,5 +112,23 @@ class AppNavigationBar extends StatelessWidget {
         ),
       ),
     );
+  }
+  
+  void _handleTap(BuildContext context, int index) {
+    if (onTap != null) {
+      onTap!(index);
+    } else {
+      _handleNavigation(context, index);
+    }
+  }
+  
+  void _handleNavigation(BuildContext context, int index) {
+    // Jika sudah berada di tab yang sama, tidak perlu melakukan apa-apa
+    if (index == currentIndex) return;
+    
+    // Pop semua halaman sampai kembali ke navigasi utama
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
   }
 }

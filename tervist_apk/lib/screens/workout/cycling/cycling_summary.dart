@@ -1,57 +1,184 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
-import 'share_screen_treadmill.dart';
+import '../follow_me_button.dart';
+import '../share_screen.dart';
 
-class TreadmillSummary extends StatelessWidget {
+class CyclingSummary extends StatefulWidget {
   final double distance;
   final String formattedDuration;
   final String formattedPace;
   final int calories;
   final int steps;
+  final List<LatLng> routePoints;
+  final List<Marker> markers;
+  final List<Polyline> polylines;
   final Color primaryGreen;
   final VoidCallback onBackToHome;
+  final Duration duration;
 
-  const TreadmillSummary({
+  const CyclingSummary({
     super.key,
     required this.distance,
     required this.formattedDuration,
     required this.formattedPace,
     required this.calories,
     required this.steps,
+    required this.routePoints,
+    required this.markers,
+    required this.polylines,
     required this.primaryGreen,
     required this.onBackToHome,
+    required this.duration,
   });
 
   @override
+  State<CyclingSummary> createState() => _CyclingSummaryState();
+}
+
+class _CyclingSummaryState extends State<CyclingSummary> {
+  final MapController _mapController = MapController();
+  final List<double> paceData = [0.5, 0.7, 0.4, 0.6, 0.5]; // Fixed pace data for summary
+  bool _isFollowingUser = true; // Default state for the follow button
+
+  LatLng _calculateMapCenter() {
+    if (widget.routePoints.isEmpty) {
+      return const LatLng(-7.767, 110.378); // Default center
+    }
+    
+    double latSum = 0;
+    double lngSum = 0;
+    
+    for (var point in widget.routePoints) {
+      latSum += point.latitude;
+      lngSum += point.longitude;
+    }
+    
+    return LatLng(
+      latSum / widget.routePoints.length,
+      lngSum / widget.routePoints.length,
+    );
+  }
+
+  // Toggle follow mode - In summary view this centers on the route
+  void _toggleFollowMode() {
+    setState(() {
+      _isFollowingUser = !_isFollowingUser;
+      
+      // If enabling follow mode, center the map on the route
+      if (_isFollowingUser) {
+        _mapController.move(_calculateMapCenter(), _mapController.camera.zoom);
+      }
+    });
+  }
+
+  // Helper method to build bar with label for pace chart
+  Widget _buildBarWithLabel(String timeLabel, String kmLabel, double height) {
+    return Column(
+      children: [
+        // Time label at top
+        Text(
+          timeLabel,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Bar
+        Container(
+          width: 20,
+          height: height * 0.7, // Scale height
+          decoration: BoxDecoration(
+            color: widget.primaryGreen,
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Km label at bottom
+        Text(
+          kmLabel,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Ensure we have valid polylines even if empty
+    final List<Polyline> displayPolylines = widget.polylines.isEmpty || widget.routePoints.isEmpty ? 
+      [
+        Polyline(
+          points: [const LatLng(-7.767, 110.378)], // Use default point if empty
+          color: Colors.transparent,
+          strokeWidth: 0,
+        )
+      ] : 
+      widget.polylines;
+      
+    // Ensure we have valid markers even if empty
+    final List<Marker> displayMarkers = widget.markers.isEmpty ? 
+      [
+        Marker(
+          point: const LatLng(-7.767, 110.378),
+          width: 80,
+          height: 80,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.location_on,
+                color: Colors.blue,
+                size: 30,
+              ),
+            ),
+          ),
+        )
+      ] : 
+      widget.markers;
+
     return Scaffold(
       appBar: AppBar(
-
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: onBackToHome,
+          onPressed: widget.onBackToHome,
         ),
         actions: [
-          // Share button
+          // Share button - adapted from treadmill_summary.dart
           IconButton(
-            icon: Image.asset(
-              'assets/images/sharebutton.png',
-              width: 60,
-              height: 60,
-
+            icon: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey[100],
+              ),
+              child: Icon(
+                Icons.share,
+                color: Colors.black87,
+                size: 20,
+              ),
             ),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => ShareScreen(
-                    distance: distance,
-                    formattedDuration: formattedDuration,
-                    formattedPace: formattedPace,
-                    calories: calories,
-                    steps: steps,
-                    activityType: 'Treadmill',
+                    distance: widget.distance,
+                    formattedDuration: widget.formattedDuration,
+                    formattedPace: widget.formattedPace,
+                    calories: widget.calories,
+                    steps: widget.steps,
+                    activityType: 'Outdoor cycling', // Changed from Treadmill
                     workoutDate: DateTime.now(),
                     userName: 'Yesaya',
                   ),
@@ -68,22 +195,63 @@ class TreadmillSummary extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Add treadmill image before the text
+              // Map container instead of treadmill image
               Container(
                 width: double.infinity,
                 height: 500,
                 margin: const EdgeInsets.only(bottom: 8.0),
-                child: Image.asset(
-                  'assets/images/treadmill.png',
-                  fit: BoxFit.contain,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16.0),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16.0),
+                  child: Stack(
+                    children: [
+                      // Map with completed route
+                      FlutterMap(
+                        mapController: _mapController,
+                        options: MapOptions(
+                          initialCenter: _calculateMapCenter(),
+                          initialZoom: 14,
+                          interactionOptions: const InteractionOptions(
+                            enableMultiFingerGestureRace: true,
+                          ),
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.example.cycling_app',
+                          ),
+                          PolylineLayer(
+                            polylines: displayPolylines,
+                          ),
+                          MarkerLayer(
+                            markers: displayMarkers,
+                          ),
+                        ],
+                      ),
+                      
+                      // Follow me button
+                      Positioned(
+                        right: 16,
+                        bottom: 16,
+                        child: FollowMeButton(
+                          isFollowing: _isFollowingUser,
+                          onPressed: _toggleFollowMode,
+                          activeColor: widget.primaryGreen,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               
-              // Tervist | Treadmill text
+              // Tervist | Outdoor cycling text
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Text(
-                  'Tervist | Treadmill',
+                  'Tervist | Outdoor cycling',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -113,7 +281,7 @@ class TreadmillSummary extends StatelessWidget {
                             textBaseline: TextBaseline.alphabetic,
                             children: [
                               Text(
-                                "4,89",
+                                widget.distance.toStringAsFixed(2),
                                 style: GoogleFonts.poppins(
                                   fontSize: 40,
                                   fontWeight: FontWeight.bold,
@@ -162,7 +330,7 @@ class TreadmillSummary extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                '12/02/25 8:32 AM',
+                                '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateTime.now().hour}:${DateTime.now().minute}',
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   color: Colors.grey,
@@ -184,7 +352,7 @@ class TreadmillSummary extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "01:18:02",
+                                widget.formattedDuration,
                                 style: GoogleFonts.poppins(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w600,
@@ -205,7 +373,7 @@ class TreadmillSummary extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "15'58\"",
+                                widget.formattedPace,
                                 style: GoogleFonts.poppins(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w600,
@@ -243,7 +411,7 @@ class TreadmillSummary extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Calories title with icon - FIXED OVERFLOW
+                            // Calories title with icon
                             Row(
                               children: [
                                 Icon(
@@ -271,7 +439,7 @@ class TreadmillSummary extends StatelessWidget {
                             Row(
                               children: [
                                 Text(
-                                  '286',
+                                  '${widget.calories}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 28,
                                     fontWeight: FontWeight.bold,
@@ -307,7 +475,7 @@ class TreadmillSummary extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Steps title with icon - FIXED POTENTIAL OVERFLOW
+                            // Steps title with icon
                             Row(
                               children: [
                                 Icon(
@@ -333,7 +501,7 @@ class TreadmillSummary extends StatelessWidget {
                             const SizedBox(height: 16),
                             // Steps value
                             Text(
-                              '5.234',
+                              '${widget.steps}',
                               style: GoogleFonts.poppins(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
@@ -376,7 +544,7 @@ class TreadmillSummary extends StatelessWidget {
                         ),
                       ),
                       
-                      // Pace indicator at bottom right - UPDATED to match image
+                      // Pace indicator at bottom right
                       Container(
                         alignment: Alignment.bottomRight,
                         margin: const EdgeInsets.only(top: 8),
@@ -384,20 +552,20 @@ class TreadmillSummary extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // Running icon
+                            // cycling icon
                             Container(
                               width: 24,
                               height: 24,
                               child: Icon(
-                                Icons.directions_run,
+                                Icons.directions_bike,
                                 color: Colors.black,
                                 size: 24,
                               ),
                             ),
                             const SizedBox(width: 4),
-                            // Pace text - making it bolder and larger to match the image
+                            // Pace text
                             Text(
-                              'Pace',
+                              'Max Speed',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -415,41 +583,6 @@ class TreadmillSummary extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  // Helper method to build bar with label
-  Widget _buildBarWithLabel(String timeLabel, String kmLabel, double height) {
-    return Column(
-      children: [
-        // Time label at top
-        Text(
-          timeLabel,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            color: Colors.grey,
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Bar
-        Container(
-          width: 20,
-          height: height * 0.7, // Scale height
-          decoration: BoxDecoration(
-            color: primaryGreen,
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Km label at bottom
-        Text(
-          kmLabel,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-      ],
     );
   }
 }
