@@ -10,6 +10,21 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/license.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/notice.txt'
+        exclude("META-INF/*.kotlin_module")
+        exclude 'assets/flutter_assets/packages/font_awesome_flutter/lib/fonts/fa-brands-400.ttf'
+        exclude 'assets/flutter_assets/packages/font_awesome_flutter/lib/fonts/fa-regular-400.ttf'
+        exclude 'assets/flutter_assets/packages/font_awesome_flutter/lib/fonts/fa-solid-900.ttf'
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8

@@ -2,27 +2,26 @@ from django.conf import settings
 from django.db import models
 from authentication.models import CustomUser
 from django.utils import timezone
+from decimal import Decimal
 
 class NutritionalTarget(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
-    calorie_target = models.FloatField(default=0.0)  # Total calories to consume per day
-    protein_target = models.FloatField(default=0.0)  # Protein target per day in grams
-    carbs_target = models.FloatField(default=0.0)  # Carbs target per day in grams
-    fats_target = models.FloatField(default=0.0)  # Fats target per day in grams
-    steps_goal = models.IntegerField(default=0)  # Step goal per day based on activity level
-    calories_burned_goal = models.FloatField(default=0.0)  # Calories burned goal based on TDEE
+    calorie_target = models.FloatField(default=0.0)
+    protein_target = models.FloatField(default=0.0)
+    carbs_target = models.FloatField(default=0.0)
+    fats_target = models.FloatField(default=0.0)
+    steps_goal = models.IntegerField(default=0)
+    calories_burned_goal = models.FloatField(default=0.0)
 
     def calculate_targets(self, manual_data=None):
         """Calculate and update targets based on user data or manual input."""
         if self.user:
-            # Use data from the authenticated user
             user = self.user
         elif manual_data:
-            # Use the manual input data
             class TempUser:
                 def __init__(self, data):
-                    self.weight = float(data.get('weight', 0))
-                    self.height = float(data.get('height', 0))
+                    self.weight = Decimal(str(data.get('weight', 0)))
+                    self.height = Decimal(str(data.get('height', 0)))
                     self.age = int(data.get('age', 25))
                     self.gender = data.get('gender', 'Male')
                     self.activity_level = data.get('activity_level', 'Low Active')
@@ -33,54 +32,55 @@ class NutritionalTarget(models.Model):
             print("ERROR: No user data available for calculation")
             return
 
-        # BMR calculation based on user's data
-        bmr = 10 * user.weight + 6.25 * user.height - 5 * user.age
+        # Convert user values ke Decimal supaya gak bentrok
+        weight = Decimal(str(user.weight))
+        height = Decimal(str(user.height))
+        age = Decimal(str(user.age))
+
+        bmr = Decimal('10') * weight + Decimal('6.25') * height - Decimal('5') * age
         if user.gender == 'Male':
-            bmr += 5  # Adjustment for males
+            bmr += Decimal('5')
         else:
-            bmr -= 161  # Adjustment for females
+            bmr -= Decimal('161')
 
-        # Activity multiplier based on the user's activity level
         activity_multipliers = {
-            'Sedentary': 1.2,
-            'Low Active': 1.375,
-            'Active': 1.55,
-            'Very Active': 1.725,
+            'Sedentary': Decimal('1.2'),
+            'Low Active': Decimal('1.375'),
+            'Active': Decimal('1.55'),
+            'Very Active': Decimal('1.725'),
         }
+        multiplier = activity_multipliers.get(user.activity_level, Decimal('1.2'))
+        tdee = bmr * multiplier
 
-        tdee = bmr * activity_multipliers.get(user.activity_level, 1.2)  # Total Daily Energy Expenditure
-
-        # Adjust based on goal (Weight Gain, Weight Loss, Maintain Weight)
+        # Calorie target based on goal
         if user.goal == 'Weight Gain':
-            self.calorie_target = tdee + 500  # Add 500 calories for weight gain
+            calorie_target = tdee + Decimal('500')
         elif user.goal == 'Weight Loss':
-            self.calorie_target = tdee - 500  # Subtract 500 calories for weight loss
+            calorie_target = tdee - Decimal('500')
         else:
-            self.calorie_target = tdee  # Maintain current weight
+            calorie_target = tdee
 
-        # Calculate the nutritional targets based on TDEE
-        self.protein_target = tdee * 0.15 / 4  # 15% of TDEE for protein (in grams, 1g protein = 4 calories)
-        self.carbs_target = tdee * 0.55 / 4  # 55% of TDEE for carbohydrates (in grams, 1g carbs = 4 calories)
-        self.fats_target = tdee * 0.30 / 9  # 30% of TDEE for fats (in grams, 1g fat = 9 calories)
+        # Assign to model fields
+        self.calorie_target = float(calorie_target)
+        self.protein_target = float(calorie_target * Decimal('0.15') / Decimal('4'))
+        self.carbs_target = float(calorie_target * Decimal('0.55') / Decimal('4'))
+        self.fats_target = float(calorie_target * Decimal('0.30') / Decimal('9'))
+        self.calories_burned_goal = float(tdee * Decimal('0.75'))
 
-        # Set the daily step goal based on activity level
         step_goals = {
             'Sedentary': 5000,
             'Low Active': 7500,
             'Active': 10000,
             'Very Active': 12000,
         }
-        self.steps_goal = step_goals.get(user.activity_level, 10000)  # Default to 10,000 steps if undefined
-
-        # Set the daily calories burned goal based on TDEE (calories burned through activity)
-        self.calories_burned_goal = tdee * 0.75  # Assume the goal is 75% of TDEE for active users (you can adjust this logic)
+        self.steps_goal = step_goals.get(user.activity_level, 10000)
 
         self.save()
 
     def __str__(self):
         if self.user:
-            return f"{self.user.username} - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
-        return f"Unknown User - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g, Step Goal: {self.steps_goal} steps, Calories Burned Goal: {self.calories_burned_goal} kcal"
+            return f"{self.user.username} - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g"
+        return f"Unknown User - Calorie: {self.calorie_target} kcal, Protein: {self.protein_target}g, Carbs: {self.carbs_target}g, Fats: {self.fats_target}g"
 
     
 class FoodDatabase(models.Model):

@@ -2,22 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class CalendarPopup extends StatefulWidget {
-  const CalendarPopup({super.key});
+  final DateTime? initialSelectedDate;
+  final Function(DateTime)? onDateSelected;
+
+  const CalendarPopup({
+    super.key,
+    this.initialSelectedDate,
+    this.onDateSelected,
+  });
 
   @override
   State<CalendarPopup> createState() => _CalendarPopupState();
 }
 
 class _CalendarPopupState extends State<CalendarPopup> {
-  DateTime selectedDate = DateTime(2025, 2, 18);
-  DateTime currentMonth = DateTime(2025, 2);
+  late DateTime selectedDate;
+  late DateTime currentMonth;
 
   List<int> markedDates = [5, 7, 9, 10, 15];
+
+  @override
+  void initState() {
+    super.initState();
+    // Use the initialSelectedDate if provided, otherwise use default
+    selectedDate = widget.initialSelectedDate ?? DateTime(2025, 2, 18);
+
+    // Set the current month based on the selected date
+    currentMonth = DateTime(selectedDate.year, selectedDate.month);
+  }
 
   void _changeMonth(int offset) {
     setState(() {
       currentMonth = DateTime(currentMonth.year, currentMonth.month + offset);
     });
+  }
+
+  void _selectDate(DateTime date) {
+    setState(() {
+      selectedDate = date;
+    });
+
+    // Call the onDateSelected callback if provided
+    if (widget.onDateSelected != null) {
+      widget.onDateSelected!(date);
+    } else {
+      // If no callback provided, just return the date and close dialog
+      Navigator.pop(context, date);
+    }
   }
 
   int _daysInMonth(DateTime month) {
@@ -33,7 +64,7 @@ class _CalendarPopupState extends State<CalendarPopup> {
     final firstWeekday =
         DateTime(currentMonth.year, currentMonth.month, 1).weekday % 7;
     final weeks = 6; // Fixed 6 rows to ensure consistent height
-    final now = DateTime(2025, 2, 20);
+    final now = DateTime.now();
 
     return Dialog(
       backgroundColor: Colors.white,
@@ -131,27 +162,35 @@ class _CalendarPopupState extends State<CalendarPopup> {
                           now.day == dateNum;
                       bool isMarked = markedDates.contains(dateNum);
 
-                      return Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(color: Colors.red, width: 2)
-                              : isToday
-                                  ? Border.all(color: Colors.black, width: 1)
-                                  : isMarked
-                                      ? Border.all(color: Colors.red, width: 1)
-                                      : Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Center(
-                          child: Text(
-                            isValid ? dateNum.toString() : '',
-                            style: TextStyle(
-                              color: isSelected ? Colors.red : Colors.black,
-                              fontWeight: isSelected || isToday
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                      return GestureDetector(
+                        onTap: isValid
+                            ? () => _selectDate(DateTime(
+                                currentMonth.year, currentMonth.month, dateNum))
+                            : null,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: isSelected
+                                ? Border.all(color: Colors.red, width: 2)
+                                : isToday
+                                    ? Border.all(color: Colors.black, width: 1)
+                                    : isMarked
+                                        ? Border.all(
+                                            color: Colors.red, width: 1)
+                                        : Border.all(
+                                            color: Colors.grey.shade300),
+                          ),
+                          child: Center(
+                            child: Text(
+                              isValid ? dateNum.toString() : '',
+                              style: TextStyle(
+                                color: isSelected ? Colors.red : Colors.black,
+                                fontWeight: isSelected || isToday
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
                             ),
                           ),
                         ),

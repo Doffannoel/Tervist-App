@@ -14,22 +14,73 @@ from rest_framework.views import APIView
 from django.db.models import Avg, Sum, Count
 from calendar import monthrange
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.decorators import action 
+from rest_framework.exceptions import ValidationError
+
+
 
 class NutritionalTargetView(viewsets.ModelViewSet):
     queryset = NutritionalTarget.objects.all()
     serializer_class = NutritionalTargetSerializer
     permission_classes = [permissions.AllowAny]
-    
+
     def perform_create(self, serializer):
-        nutritional_target = serializer.save()
         if self.request.user.is_authenticated:
-            nutritional_target.user = self.request.user
-            nutritional_target.save()
+            if NutritionalTarget.objects.filter(user=self.request.user).exists():
+                raise ValidationError("Target already exists for this user")
+            nutritional_target = serializer.save(user=self.request.user)
             nutritional_target.calculate_targets()
         else:
-            # Gunakan data dari request langsung
+            nutritional_target = serializer.save()
             nutritional_target.calculate_targets(manual_data=self.request.data)
 
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def daily_summary(self, request):
+        user = request.user
+        print("✅ DAILY SUMMARY HIT by", user.email)
+        date_str = request.GET.get('date')
+        if not date_str:
+            return Response({'error': 'Date is required'}, status=400)
+
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({'error': 'Invalid date format'}, status=400)
+
+        # Get target
+        target = NutritionalTarget.objects.filter(user=user).first()
+        if not target:
+            return Response({'error': 'No target set'}, status=404)
+
+        # Get intake
+        intake_qs = FoodIntake.objects.filter(user=user, date=date)
+        total_calories = sum(
+            i.manual_calories or (i.food_data.calories if i.food_data else 0) for i in intake_qs
+        )
+        total_protein = sum(
+            i.manual_protein or (i.food_data.protein if i.food_data else 0) for i in intake_qs
+        )
+        total_carbs = sum(
+            i.manual_carbs or (i.food_data.carbs if i.food_data else 0) for i in intake_qs
+        )
+        total_fats = sum(
+            i.manual_fats or (i.food_data.fat if i.food_data else 0) for i in intake_qs
+        )
+
+        response_data = {
+            "calorie_target": target.calorie_target,
+            "protein_target": target.protein_target,
+            "carbs_target": target.carbs_target,
+            "fats_target": target.fats_target,
+            "calories_consumed": total_calories,
+            "protein_consumed": total_protein,
+            "carbs_consumed": total_carbs,
+            "fats_consumed": total_fats,
+        }
+
+        print("📦 DAILY SUMMARY RESPONSE:", response_data)
+        return Response(response_data, status=status.HTTP_200_OK)
+    
 class FoodIntakeView(viewsets.ModelViewSet):
     queryset = FoodIntake.objects.all()
     serializer_class = FoodIntakeSerializer
@@ -110,7 +161,6 @@ class FoodIntakeView(viewsets.ModelViewSet):
             # Update Nutritional Target
             try:
                 nt = NutritionalTarget.objects.get(user=user)
-                nt.calorie_target -= calories
                 nt.save()
                 
                 print(f"Updated Nutritional Target. Remaining Calories: {nt.calorie_target}")
@@ -130,15 +180,21 @@ class FoodIntakeView(viewsets.ModelViewSet):
         )
 
     def list(self, request):
-        # Existing search functionality
+        user = request.user
         search_query = request.GET.get('search', None)
+        date_filter = request.GET.get('date', None)
+
         if search_query:
             food_items = FoodDatabase.objects.filter(name__icontains=search_query)
             return Response(FoodDatabaseSerializer(food_items, many=True).data)
-        else:
-            # List user's food intakes
-            food_intakes = FoodIntake.objects.filter(user=request.user)
-            return Response(FoodIntakeSerializer(food_intakes, many=True).data)
+
+        food_intakes = FoodIntake.objects.filter(user=user)
+
+        if date_filter:
+            food_intakes = food_intakes.filter(date=date_filter)
+
+        return Response(FoodIntakeSerializer(food_intakes, many=True).data)
+
 
 
 class DailyStepsView(viewsets.ModelViewSet):
@@ -351,27 +407,26 @@ class CyclingActivityViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+
 class WeeklyNutritionSummaryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        print("DEBUG: User = ", request.user)
-        print("DEBUG: Authenticated? ", request.user.is_authenticated)
         user = request.user
         today = timezone.now().date()
-        week_ago = today - timezone.timedelta(days=6)  # 7 hari terakhir
+        week_ago = today - timezone.timedelta(days=6)
 
         # Ambil semua makanan dalam 7 hari terakhir
         food_logs = FoodIntake.objects.filter(user=user, date__range=[week_ago, today])
 
-        # Siapkan struktur: Senin - Minggu (default 0)
+        # Siapkan struktur Senin - Minggu default 0
         daily_totals = { (week_ago + timezone.timedelta(days=i)): 0 for i in range(7) }
 
         for entry in food_logs:
             calories = entry.manual_calories or (entry.food_data.calories if entry.food_data else 0)
             daily_totals[entry.date] += calories
 
-        # Buat array data siap frontend
+        # Buat array untuk frontend
         data = []
         for day, cal in daily_totals.items():
             data.append({
@@ -379,25 +434,26 @@ class WeeklyNutritionSummaryView(APIView):
                 "calories": round(cal)
             })
 
-        # Ambil goal harian
+        # Ambil target kalori harian
         target = NutritionalTarget.objects.filter(user=user).first()
         calorie_goal = target.calorie_target if target else 0
         total_eaten = sum(d['calories'] for d in data)
         weekly_goal = calorie_goal * 7
-        net = total_eaten - weekly_goal
-        print("FOOD LOG COUNT", food_logs.count())
-        print("DATES IN FOOD LOG", list(food_logs.values_list('date', flat=True)))  # 
+
+        if calorie_goal > 0:
+            net = total_eaten - weekly_goal
+            net_average = net / 7
+        else:
+            net = 0
+            net_average = 0
 
         return Response({
             "week_data": data,
             "goal": round(calorie_goal),
             "total_eaten": round(total_eaten),
             "net_difference": round(net),
-            "net_average": round(net / 7) if calorie_goal else 0,
-            
+            "net_average": round(net_average),
         })
-    
-    
 
 class RunningStatsView(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]  # ganti AllowAny
@@ -517,6 +573,14 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     def get_object(self):
         # Selalu mengembalikan user yang sedang login
         return self.request.user
+    
+    def perform_update(self, serializer):
+        user = serializer.save()
+        try:
+            target = NutritionalTarget.objects.get(user=user)
+            target.calculate_targets()  # hitung ulang target otomatis saat user update profil
+        except NutritionalTarget.DoesNotExist:
+            pass
     
 class ReminderViewSet(viewsets.ModelViewSet):
     serializer_class = ReminderSerializer

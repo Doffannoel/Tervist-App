@@ -3,7 +3,7 @@ class ApiConfig {
   // terus cari IPv4 Address.
 
   static const String baseUrl =
-      'http://192.168.174.66:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
+      'http://192.168.1.9:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
 
   // ---------------- AUTHENTICATION ----------------
   static Uri get signup => Uri.parse('$baseUrl/auth/signup/');
@@ -27,12 +27,12 @@ class ApiConfig {
   static Uri get weeklyNutritionSummary =>
       Uri.parse('$baseUrl/api/nutrition-weekly-summary/');
   static Uri get monthlySummary => Uri.parse('$baseUrl/api/monthly-summary/');
+  static Uri dailySummary(String date) =>
+      Uri.parse('$baseUrl/api/nutritional-target/daily_summary/?date=$date');
 
   // NEW: Reminder API endpoint
   static Uri get reminders => Uri.parse('$baseUrl/api/reminders/');
 
   // Other constants
   static const int timeoutDuration = 15; // Seconds
-
-
 }

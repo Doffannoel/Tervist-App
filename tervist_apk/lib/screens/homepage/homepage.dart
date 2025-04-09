@@ -15,8 +15,11 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   // State variables
+  late AnimationController _animationController;
+  late Animation<double> _progressAnimation;
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
@@ -29,7 +32,29 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+
+    // Inisialisasi animation controller
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500), // 1.5 detik
+    );
+
+    // Animation untuk progress calorie budget
+    _progressAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
     _initializeHomePage();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeHomePage() async {
@@ -78,6 +103,9 @@ class _HomePageState extends State<HomePage> {
         _dashboardData = results[0];
         _userProfileData = results[1];
         _isLoading = false;
+
+        // Mulai animasi setelah data dimuat
+        _animationController.forward();
       });
     } catch (e) {
       _handleDataFetchError(e);
@@ -352,24 +380,7 @@ class _HomePageState extends State<HomePage> {
   }
 
 // Metode untuk menghitung kalori yang dikonsumsi
-  int _calculateConsumedCalories(Map<String, dynamic> data) {
-    int totalConsumed = 0;
-    Map<String, dynamic> categorizedFood = data['categorized_food'] ?? {};
-
-    for (var category in categorizedFood.keys) {
-      List<dynamic> meals = categorizedFood[category] ?? [];
-      for (var meal in meals) {
-        if (meal['food_data'] != null &&
-            meal['food_data']['calories'] != null) {
-          totalConsumed += int.parse(meal['food_data']['calories'].toString());
-        } else if (meal['manual_calories'] != null) {
-          totalConsumed += int.parse(meal['manual_calories'].toString());
-        }
-      }
-    }
-
-    return totalConsumed;
-  }
+  // Removed redundant local declaration of _calculateConsumedCalories
 
   // Method untuk meal summary
   Widget _buildMealSummary(Map<String, dynamic> data) {
@@ -451,13 +462,33 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Method untuk kolom makanan
+// Method untuk kolom makanan dengan warna yang diperbarui
   Widget _buildMealColumn(
       String label, int calories, String imagePath, bool isActive) {
+    // Tentukan warna berdasarkan label makanan
+    Color mealColor;
+    switch (label) {
+      case 'Breakfast':
+        mealColor = const Color(0xFF425E8E); // Warna untuk Breakfast
+        break;
+      case 'Lunch':
+        mealColor = const Color(0xFF587DBD); // Warna untuk Lunch
+        break;
+      case 'Dinner':
+        mealColor = const Color(0xFF00A991); // Warna untuk Dinner
+        break;
+      case 'Snack':
+        mealColor = const Color(0xFF007F6D); // Warna untuk Snack
+        break;
+      default:
+        mealColor = const Color(0xFF828282); // Warna default
+    }
+
     return Column(
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
             fontFamily: 'Poppins',
@@ -492,8 +523,8 @@ class _HomePageState extends State<HomePage> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color:
-                  isActive ? const Color(0xFF425E8E) : const Color(0xFF828282),
+              // Gunakan warna yang ditentukan jika aktif, jika tidak gunakan warna abu-abu
+              color: isActive ? mealColor : const Color(0xFF828282),
               width: 3,
             ),
           ),
@@ -507,7 +538,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Method untuk steps card
+ // Method untuk steps card dengan animasi
   Widget _buildStepsCard(Map<String, dynamic> data) {
     final totalSteps = data['total_steps'] ?? 0;
     final stepsGoal = data['steps_goal'] ?? 10000;
@@ -535,49 +566,67 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const Spacer(),
-                Text(
-                  totalSteps.toString(),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Color(0xFF587DBD),
-                  ),
+                TweenAnimationBuilder<int>(
+                  tween: IntTween(begin: 0, end: totalSteps),
+                  duration: const Duration(milliseconds: 1500),
+                  builder: (context, value, child) {
+                    return Text(
+                      value.toString(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFF587DBD),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Stack(
-                children: [
-                  Container(
-                    height: 8,
-                    color: Colors.grey.shade200,
-                  ),
-                  Row(
+              child: AnimatedBuilder(
+                animation: _progressAnimation,
+                builder: (context, child) {
+                  final animatedProgress = progress * _progressAnimation.value;
+                  return Stack(
                     children: [
-                      Expanded(
-                        flex: (progress * 100 * 0.75).toInt().clamp(0, 100),
-                        child: Container(
-                            color: const Color(0xFF587DBD), height: 8),
+                      Container(
+                        height: 8,
+                        color: Colors.grey.shade200,
                       ),
-                      Expanded(
-                        flex: (progress * 100 * 0.25).toInt().clamp(0, 100),
-                        child: Container(
-                            color: const Color(0xFF2CC2A1), height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: (animatedProgress * 100 * 0.75).toInt().clamp(0, 100),
+                            child: Container(
+                                color: const Color(0xFF587DBD), height: 8),
+                          ),
+                          Expanded(
+                            flex: (animatedProgress * 100 * 0.25).toInt().clamp(0, 100),
+                            child: Container(
+                                color: const Color(0xFF2CC2A1), height: 8),
+                          ),
+                          Expanded(
+                            flex:
+                                100 - ((animatedProgress * 100).toInt().clamp(0, 100) as int),
+                            child: Container(color: Colors.transparent, height: 8),
+                          )
+                        ],
                       ),
-                      Expanded(
-                        flex:
-                            100 - (progress * 100).toInt().clamp(0, 100) as int,
-                        child: Container(color: Colors.transparent, height: 8),
-                      )
                     ],
-                  ),
-                ],
+                  );
+                },
               ),
             ),
             const SizedBox(height: 8),
-            Text('$percentProgress% of daily goal ($stepsGoal steps)'),
+            AnimatedBuilder(
+              animation: _progressAnimation,
+              builder: (context, child) {
+                final animatedPercent = (progress * 100 * _progressAnimation.value).toInt();
+                return Text('$animatedPercent% of daily goal ($stepsGoal steps)');
+              },
+            ),
             const SizedBox(height: 12),
             Text('Distance: $distance km'),
             Text('Avg. Pace: $pace'),
@@ -587,7 +636,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Method untuk calories burned card
+   // Method untuk calories burned card dengan animasi
   Widget _buildCaloriesBurnedCard(Map<String, dynamic> data) {
     final totalCaloriesBurned = data['total_calories_burned'] ?? 0;
     final caloriesBurnedGoal = data['calories_burned_goal'] ?? 1000;
@@ -617,49 +666,67 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const Spacer(),
-                Text(
-                  totalCaloriesBurned.toString(),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Color(0xFFFF8800),
-                  ),
+                TweenAnimationBuilder<int>(
+                  tween: IntTween(begin: 0, end: totalCaloriesBurned),
+                  duration: const Duration(milliseconds: 1500),
+                  builder: (context, value, child) {
+                    return Text(
+                      value.toString(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFFFF8800),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Stack(
-                children: [
-                  Container(
-                    height: 8,
-                    color: Colors.grey.shade200,
-                  ),
-                  Row(
+              child: AnimatedBuilder(
+                animation: _progressAnimation,
+                builder: (context, child) {
+                  final animatedProgress = progress * _progressAnimation.value;
+                  return Stack(
                     children: [
-                      Expanded(
-                        flex: (progress * 100 * 0.55).toInt().clamp(0, 100),
-                        child: Container(
-                            color: const Color(0xFFFF8800), height: 8),
+                      Container(
+                        height: 8,
+                        color: Colors.grey.shade200,
                       ),
-                      Expanded(
-                        flex: (progress * 100 * 0.45).toInt().clamp(0, 100),
-                        child: Container(
-                            color: const Color(0xFF2CC2A1), height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: (animatedProgress * 100 * 0.55).toInt().clamp(0, 100),
+                            child: Container(
+                                color: const Color(0xFFFF8800), height: 8),
+                          ),
+                          Expanded(
+                            flex: (animatedProgress * 100 * 0.45).toInt().clamp(0, 100),
+                            child: Container(
+                                color: const Color(0xFF2CC2A1), height: 8),
+                          ),
+                          Expanded(
+                            flex:
+                                100 - ((animatedProgress * 100).toInt().clamp(0, 100) as int),
+                            child: Container(color: Colors.transparent, height: 8),
+                          )
+                        ],
                       ),
-                      Expanded(
-                        flex:
-                            100 - (progress * 100).toInt().clamp(0, 100) as int,
-                        child: Container(color: Colors.transparent, height: 8),
-                      )
                     ],
-                  ),
-                ],
+                  );
+                },
               ),
             ),
             const SizedBox(height: 8),
-            Text('$percentProgress% of daily goal ($caloriesBurnedGoal kcal)'),
+            AnimatedBuilder(
+              animation: _progressAnimation,
+              builder: (context, child) {
+                final animatedPercent = (progress * 100 * _progressAnimation.value).toInt();
+                return Text('$animatedPercent% of daily goal ($caloriesBurnedGoal kcal)');
+              },
+            ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -668,16 +735,28 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text('Exercise', style: TextStyle(fontSize: 12)),
-                    Text('$exerciseCalories kcal',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    TweenAnimationBuilder<int>(
+                      tween: IntTween(begin: 0, end: exerciseCalories),
+                      duration: const Duration(milliseconds: 1200),
+                      builder: (context, value, child) {
+                        return Text('$value kcal',
+                            style: const TextStyle(fontWeight: FontWeight.bold));
+                      },
+                    ),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     const Text('BMR', style: TextStyle(fontSize: 12)),
-                    Text('$bmrCalories kcal',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    TweenAnimationBuilder<int>(
+                      tween: IntTween(begin: 0, end: bmrCalories),
+                      duration: const Duration(milliseconds: 1200),
+                      builder: (context, value, child) {
+                        return Text('$value kcal',
+                            style: const TextStyle(fontWeight: FontWeight.bold));
+                      },
+                    ),
                   ],
                 ),
               ],
@@ -687,6 +766,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
 
   // Method untuk heart dan workout row
   Widget _buildHeartWorkoutRow() {
@@ -866,17 +946,44 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Method untuk Calorie Budget
+// Method untuk Calorie Budget dengan 4 warna
   Widget _buildCalorieBudget(Map<String, dynamic> data) {
+    int _calculateConsumedCalories(Map<String, dynamic> data) {
+      int totalConsumed = 0;
+      Map<String, dynamic> categorizedFood = data['categorized_food'] ?? {};
+  
+      for (var category in categorizedFood.keys) {
+        List<dynamic> meals = categorizedFood[category] ?? [];
+        for (var meal in meals) {
+          if (meal['food_data'] != null &&
+              meal['food_data']['calories'] != null) {
+            totalConsumed += int.parse(meal['food_data']['calories'].toString());
+          } else if (meal['manual_calories'] != null) {
+            totalConsumed += int.parse(meal['manual_calories'].toString());
+          }
+        }
+      }
+  
+      return totalConsumed;
+    }
+
     final totalBudget = data['calorie_target'] ?? 1236;
     final consumedCalories = _calculateConsumedCalories(data);
     final caloriesLeft =
         totalBudget - consumedCalories > 0 ? totalBudget - consumedCalories : 0;
 
+    // Hitung persentase kalori yang dikonsumsi
     double progress = totalBudget > 0 ? consumedCalories / totalBudget : 0;
-    if (progress > 1.0) progress = 1.0;
+    if (progress > 1.0) progress = 1.0; // Batasi maksimal 100%
 
-    double darkBlueProgress = progress * 0.55;
-    double lightBlueProgress = progress * 0.45;
+    // Bagi progress menjadi 4 segmen dengan warna berbeda
+    // Setiap segmen mendapatkan 25% dari total progress
+    double segment1Progress = progress >= 0.25 ? 0.25 : progress;
+    double segment2Progress =
+        progress >= 0.50 ? 0.25 : (progress > 0.25 ? progress - 0.25 : 0);
+    double segment3Progress =
+        progress >= 0.75 ? 0.25 : (progress > 0.50 ? progress - 0.50 : 0);
+    double segment4Progress = progress > 0.75 ? progress - 0.75 : 0;
 
     return Column(
       children: [
@@ -911,6 +1018,7 @@ class _HomePageState extends State<HomePage> {
         Stack(
           alignment: Alignment.center,
           children: [
+            // Background circle (light gray)
             SizedBox(
               height: 180,
               width: 180,
@@ -921,24 +1029,28 @@ class _HomePageState extends State<HomePage> {
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.grey.shade300),
               ),
             ),
+
+            // Segment 1 - Dark Blue (425E8E) - First 25%
             SizedBox(
               height: 180,
               width: 180,
               child: CircularProgressIndicator(
-                value: darkBlueProgress,
+                value: segment1Progress,
                 strokeWidth: 28,
                 backgroundColor: Colors.transparent,
                 valueColor:
                     const AlwaysStoppedAnimation<Color>(Color(0xFF425E8E)),
               ),
             ),
+
+            // Segment 2 - Medium Blue (587DBD) - Second 25%
             SizedBox(
               height: 180,
               width: 180,
               child: Transform.rotate(
-                angle: 2 * pi * darkBlueProgress,
+                angle: 2 * 3.14159 * 0.25, // Rotate to start at 25%
                 child: CircularProgressIndicator(
-                  value: lightBlueProgress,
+                  value: segment2Progress,
                   strokeWidth: 28,
                   backgroundColor: Colors.transparent,
                   valueColor:
@@ -946,6 +1058,40 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
+
+            // Segment 3 - Teal (00A991) - Third 25%
+            SizedBox(
+              height: 180,
+              width: 180,
+              child: Transform.rotate(
+                angle: 2 * 3.14159 * 0.50, // Rotate to start at 50%
+                child: CircularProgressIndicator(
+                  value: segment3Progress,
+                  strokeWidth: 28,
+                  backgroundColor: Colors.transparent,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Color(0xFF00A991)),
+                ),
+              ),
+            ),
+
+            // Segment 4 - Dark Green (007F6D) - Last 25%
+            SizedBox(
+              height: 180,
+              width: 180,
+              child: Transform.rotate(
+                angle: 2 * 3.14159 * 0.75, // Rotate to start at 75%
+                child: CircularProgressIndicator(
+                  value: segment4Progress,
+                  strokeWidth: 28,
+                  backgroundColor: Colors.transparent,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Color(0xFF007F6D)),
+                ),
+              ),
+            ),
+
+            // Center text
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -963,6 +1109,15 @@ class _HomePageState extends State<HomePage> {
                     fontSize: 18,
                     fontWeight: FontWeight.normal,
                     fontFamily: 'Poppins',
+                  ),
+                ),
+                const Text(
+                  'kcal',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                    fontFamily: 'Poppins',
+                    color: Colors.grey,
                   ),
                 ),
               ],
@@ -992,4 +1147,4 @@ class _HomePageState extends State<HomePage> {
       ],
     );
   }
-}
+
