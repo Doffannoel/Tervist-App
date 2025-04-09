@@ -1,10 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-<<<<<<< Updated upstream
 from .views import CyclingActivityViewSet, CyclingStatsView, NutritionalTargetView, FoodIntakeView, DailyStepsView, CaloriesBurnedView, DashboardView, ReminderViewSet, RunningActivityView, RunningStatsView, UserProfileViewSet, WeeklyNutritionSummaryView, MonthlySummaryView
-=======
-from .views import CyclingActivityViewSet, CyclingStatsView, NutritionalTargetView, FoodIntakeView, DailyStepsView, CaloriesBurnedView, DashboardView, RunningActivityView, RunningStatsView, UserProfileViewSet, WeeklyNutritionSummaryView, MonthlySummaryView
->>>>>>> Stashed changes
 
 # Membuat router untuk viewsets
 router = DefaultRouter()
@@ -18,10 +14,7 @@ router.register(r'dashboard', DashboardView, basename='dashboard')
 router.register(r'running-stats', RunningStatsView, basename='running-stats') 
 router.register(r'cycling-stats', CyclingStatsView, basename='cycling-stats')
 router.register(r'profile-update', UserProfileViewSet, basename='profile-update')
-<<<<<<< Updated upstream
 router.register(r'reminders', ReminderViewSet, basename='reminders')
-=======
->>>>>>> Stashed changes
 
 
 

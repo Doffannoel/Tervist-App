@@ -261,6 +261,23 @@ class _UserDataPageState extends State<UserDataPage> {
                                 await prefs.setString(
                                     'access_token', token); // Save the token
 
+                                if (nutritionalData != null) {
+                                  final saveTargetResponse = await http.post(
+                                    Uri.parse(
+                                        '${ApiConfig.baseUrl}/api/nutritional-target/'),
+                                    headers: {
+                                      'Authorization': 'Bearer $token',
+                                      'Content-Type': 'application/json',
+                                    },
+                                    body: jsonEncode(nutritionalData),
+                                  );
+
+                                  print(
+                                      "DEBUG: Save NutritionalTarget response code: ${saveTargetResponse.statusCode}");
+                                  print(
+                                      "DEBUG: Save NutritionalTarget response body: ${saveTargetResponse.body}");
+                                }
+
                                 // Navigate to HomePage after successful login
                                 Navigator.pushReplacement(
                                   context,

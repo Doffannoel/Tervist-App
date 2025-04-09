@@ -7,13 +7,20 @@ import 'package:http/http.dart' as http;
 import 'package:tervist_apk/api/api_config.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
 =======
+import 'package:tervist_apk/api/notification_service.dart';
 import 'package:tervist_apk/screens/main_navigation.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:tervist_apk/api/api_config.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
 import 'package:tervist_apk/screens/workout/workout_module.dart';
 >>>>>>> Stashed changes
+
+void main() async {
+  // Ensure Flutter is initialized before calling any platform methods
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize notifications service
+  await NotificationService().init();
 
 void main() async {
   // Ensure Flutter is initialized before calling any platform methods
@@ -46,6 +53,8 @@ class MyApp extends StatelessWidget {
       return true;
     } else {
       // Token tidak valid, hapus dari SharedPreferences
+      await prefs.remove(
+          'access_token'); // Changed from 'token' to 'access_token' to match your other code
 <<<<<<< Updated upstream
       await prefs.remove(
           'access_token'); // Changed from 'token' to 'access_token' to match your other code

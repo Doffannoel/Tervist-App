@@ -167,6 +167,9 @@ class CaloriesBurned(models.Model):
     exercise_calories = models.IntegerField(null=True, blank=True)  # Kalori terbakar dari olahraga
     bmr_calories = models.IntegerField(null=True,blank=True)  # Kalori terbakar dari BMR
     total_calories = models.IntegerField(null=True,  blank=True)  # Total kalori yang terbakar
+    exercise_calories = models.IntegerField(null=True, blank=True)  # Kalori terbakar dari olahraga
+    bmr_calories = models.IntegerField(null=True,blank=True)  # Kalori terbakar dari BMR
+    total_calories = models.IntegerField(null=True,  blank=True)  # Total kalori yang terbakar
     date = models.DateField(default=timezone.now)
 
     def __str__(self):
@@ -263,4 +266,27 @@ class Reminder(models.Model):
         return f"{self.user.username} - {self.meal_type} at {self.time.strftime('%H:%M')}"
 =======
         return f"{self.user.username} - {self.date} - {self.distance_km}km"
+    
+
+class Reminder(models.Model):
+    MEAL_CHOICES = [
+        ('Breakfast', 'Breakfast'),
+        ('Lunch', 'Lunch'),
+        ('Dinner', 'Dinner'),
+        ('Snack', 'Snack'),
+    ]
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    meal_type = models.CharField(max_length=20, choices=MEAL_CHOICES)
+    time = models.TimeField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        # Ensure each user can have only one reminder per meal type
+        unique_together = ('user', 'meal_type')
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.meal_type} at {self.time.strftime('%H:%M')}"
 >>>>>>> Stashed changes

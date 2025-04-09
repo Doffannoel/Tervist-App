@@ -1,15 +1,20 @@
 class ApiConfig {
   // Ganti IP address di sini saat development lokal Ipake IP address dari komputer kalian di terminal dengan perintah ipconfig (Windows) atau ifconfig (Linux/Mac)
   // terus cari IPv4 Address.
-  
-  static const String baseUrl = 'http://192.168.17.189:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
+
+  static const String baseUrl =
+      'http://192.168.174.66:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
 
   // ---------------- AUTHENTICATION ----------------
   static Uri get signup => Uri.parse('$baseUrl/auth/signup/');
   static Uri get login => Uri.parse('$baseUrl/auth/login/');
   static Uri get forgotPassword => Uri.parse('$baseUrl/auth/forgot-password/');
   static Uri get resetPassword => Uri.parse('$baseUrl/auth/reset-password/');
+  static Uri get verifyOtp => Uri.parse('$baseUrl/auth/verify-otp/');
   static Uri get profile => Uri.parse('$baseUrl/auth/profile/');
+  
+  // Debugging endpoint to check token validity
+  static Uri get tokenVerify => Uri.parse('$baseUrl/auth/token/verify/');
 
   // ---------------- API (Fitness Data) ----------------
   static Uri get nutritionalTarget =>
@@ -26,13 +31,11 @@ class ApiConfig {
       Uri.parse('$baseUrl/api/nutrition-weekly-summary/');
   static Uri get monthlySummary => Uri.parse('$baseUrl/api/monthly-summary/');
 
-<<<<<<< Updated upstream
-    // NEW: Reminder API endpoint
+  // NEW: Reminder API endpoint
   static Uri get reminders => Uri.parse('$baseUrl/api/reminders/');
 
   // Other constants
   static const int timeoutDuration = 15; // Seconds
-=======
->>>>>>> Stashed changes
+
 
 }

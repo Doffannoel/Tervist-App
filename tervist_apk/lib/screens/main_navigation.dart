@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tervist_apk/screens/homepage/homepage.dart';
 import 'package:tervist_apk/screens/nutritions/nutrition_main.dart';
+import 'package:tervist_apk/screens/nutritions/selected_food_page.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
 import 'package:tervist_apk/screens/profile/userprofile_page.dart';
 import 'package:tervist_apk/screens/workout/workout_module.dart';
 import 'package:tervist_apk/widgets/navigation_bar.dart';
-// pastikan ini ada
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -19,6 +19,7 @@ class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   bool _checkingToken = true;
 
+  // Use a key for each page to maintain state
   final List<Widget> _pages = const [
     HomePage(),
     NutritionMainPage(),
@@ -41,7 +42,10 @@ class _MainNavigationState extends State<MainNavigation> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+          MaterialPageRoute(
+            builder: (_) => const OnboardingScreen(),
+            settings: const RouteSettings(name: 'OnboardingScreen'),
+          ),
         );
       }
     } else {

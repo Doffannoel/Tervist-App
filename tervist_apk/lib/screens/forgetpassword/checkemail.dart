@@ -1,8 +1,11 @@
 // check_email_page.dart
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tervist_apk/api/api_config.dart';
 import './changepassword.dart';
+import 'package:http/http.dart' as http;
 
 class CheckEmailPage extends StatefulWidget {
   final String email;
@@ -177,14 +180,28 @@ class _CheckEmailPageState extends State<CheckEmailPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     final otp = getFullOTP();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChangePasswordPage(otp: otp),
-                      ),
+
+                    final response = await http.post(
+                      ApiConfig.verifyOtp,
+                      headers: {'Content-Type': 'application/json'},
+                      body: jsonEncode({'otp': otp}),
                     );
+
+                    if (response.statusCode == 200) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChangePasswordPage(otp: otp),
+                        ),
+                      );
+                    } else {
+                      final detail = jsonDecode(response.body)['detail'];
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(detail ?? 'Invalid OTP')),
+                      );
+                    }
                   },
                   style: _buttonStyle(),
                   child: const Text(

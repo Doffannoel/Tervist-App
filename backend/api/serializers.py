@@ -1,11 +1,7 @@
 from rest_framework import serializers
 
 from authentication.models import CustomUser
-<<<<<<< Updated upstream
 from .models import  CyclingActivity, DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget, Reminder, RunningActivity
-=======
-from .models import  CyclingActivity, DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget, RunningActivity
->>>>>>> Stashed changes
 
 class NutritionalTargetSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
@@ -61,7 +57,6 @@ class RunningStatsSerializer(serializers.Serializer):
     year_to_date = serializers.DictField()
 
 class UserProfileSerializer(serializers.ModelSerializer):
-<<<<<<< Updated upstream
     remaining_calories = serializers.SerializerMethodField()
 
     class Meta:
@@ -76,20 +71,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return obj.calorie_target - obj.total_calories_consumed
     
     
-=======
-    class Meta:
-        model = CustomUser
-        fields = [
-            'username', 'bio', 'city', 'state', 'birthday',
-            'gender', 'weight'
-        ]
-
->>>>>>> Stashed changes
 class CyclingActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = CyclingActivity
         fields = '__all__'
-<<<<<<< Updated upstream
         read_only_fields = ['user', 'calories_burned']
 
 class ReminderSerializer(serializers.ModelSerializer):
@@ -99,6 +84,3 @@ class ReminderSerializer(serializers.ModelSerializer):
         model = Reminder
         fields = ['id', 'user', 'meal_type', 'time', 'is_active', 'created_at', 'updated_at']
         read_only_fields = ['user', 'created_at', 'updated_at']
-=======
-        read_only_fields = ['user', 'calories_burned']
->>>>>>> Stashed changes
