@@ -8,19 +8,23 @@ import 'running_timestamp.dart';
 import 'running_summary.dart';
 import '../map_service.dart';
 import '../workout_countdown.dart';
-import '../treadmill/treadmill_tracker_screen.dart';
-import '../walking/walking_tracker_screen.dart';
+import '../workout_navbar.dart';
 import 'package:flutter/scheduler.dart'; // Import for Ticker
 import '../location_permission_handler.dart'; // Import the permission handler
-import '/widgets/navigation_bar.dart'; // Import the navigation bar widget
 import '../follow_me_button.dart'; // Import the follow me button widget
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-// Weather Service
-
+import '../weather_service.dart'; 
+import '/api/running_service.dart';
+import '/api/auth_helper.dart'; // Import AuthHelper
 
 class RunningTrackerScreen extends StatefulWidget {
-  const RunningTrackerScreen({super.key});
+  final Function(String)? onWorkoutTypeChanged;
+  
+  const RunningTrackerScreen({
+    super.key, 
+    this.onWorkoutTypeChanged,
+  });
   
   @override
   State<RunningTrackerScreen> createState() => _RunningTrackerScreenState();
@@ -44,6 +48,11 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
   final LocationPermissionHandler _locationPermissionHandler = LocationPermissionHandler();
   bool _locationPermissionChecked = false;
   
+  // User profile info
+  String _userName = "User"; // Default value until loaded
+  bool _isLoggedIn = false;
+  bool _isLoading = true;
+  
   // Workout metrics
   double distance = 0.0; // Start with 0
   Duration duration = const Duration(seconds: 0); // Start with 0
@@ -57,8 +66,108 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
   List<Marker> markers = [];
   List<Polyline> polylines = [];
 
-  final Color primaryGreen = const Color(0xFF4CB9A0);
-  double celsiusTemp = 28.0; // Temperature value
+  final Color primaryGreen = const Color(0xFF4CB9A0); // Temperature value
+
+  final RunningService _runningService = RunningService();
+
+  void stopWorkout() async {
+    _timer?.cancel();
+    
+    // Stop session in MapService
+    MapService.stopSession();
+    
+    // Calculate pace in minutes per km
+    double paceMinutes = 0;
+    if (distance > 0) {
+      paceMinutes = duration.inSeconds / 60 / distance;
+    }
+    
+    // Verify authentication status first
+    try {
+      // Check if we have a valid token
+      bool isAuthenticated = await AuthHelper.isLoggedIn();
+      
+      if (!isAuthenticated) {
+        print('Authentication failed - user may need to log in again');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Authentication error - please log in again'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        // Still proceed to save the workout but expect it might fail
+      }
+      
+      // Print key values before saving
+      print('Saving running activity:');
+      print('- Distance: $distance km');
+      print('- Duration: ${duration.inSeconds} seconds');
+      print('- Pace: $paceMinutes min/km');
+      print('- Calories: $calories');
+      print('- Steps: $steps');
+      
+      // Save running activity to backend
+      bool saved = await _runningService.saveRunningActivity(
+        distanceKm: distance,
+        timeSeconds: duration.inSeconds,
+        pace: paceMinutes,
+        caloriesBurned: calories,
+        steps: steps,
+        date: DateTime.now(),
+      );
+      
+      if (saved) {
+        print('Running activity successfully saved to backend');
+        
+        // Show success message
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Aktivitas lari berhasil disimpan'),
+              backgroundColor: primaryGreen,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        print('Failed to save running activity');
+        
+        // Show error message
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal menyimpan aktivitas lari - periksa koneksi internet'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error saving running activity: $e');
+      
+      // Show error message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      // Always update UI state regardless of whether the save succeeded
+      setState(() {
+        isWorkoutActive = false;
+        isPaused = false;
+        currentStep = 2; // Move to summary screen
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -77,6 +186,57 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
     
     // Initialize map data
     _initializeMapData();
+    
+    // Load user profile
+    _loadUserProfile();
+  }
+  
+  // Load user profile data including username
+  Future<void> _loadUserProfile() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Check authentication status
+      bool isLoggedIn = await AuthHelper.isLoggedIn();
+      
+      if (isLoggedIn) {
+        // Try to get username from AuthHelper
+        String? storedName = await AuthHelper.getUserName();
+        
+        if (storedName != null && storedName.isNotEmpty) {
+          setState(() {
+            _userName = storedName;
+            _isLoggedIn = true;
+          });
+        } else {
+          // If not in AuthHelper, try to fetch from API
+          String? apiName = await _runningService.getUserName();
+          
+          if (apiName != null && apiName.isNotEmpty) {
+            setState(() {
+              _userName = apiName;
+              _isLoggedIn = true;
+            });
+            
+            // Save it for future use
+            await AuthHelper.saveUserName(apiName);
+          }
+        }
+      } else {
+        setState(() {
+          _isLoggedIn = false;
+          _userName = "Guest";
+        });
+      }
+    } catch (e) {
+      print('Error loading user profile: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   // Check location permission status
@@ -182,6 +342,21 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
 
   // Start workout after ensuring location permission
   Future<void> startWorkoutWithPermissionCheck() async {
+    // First check authentication
+    bool isLoggedIn = await AuthHelper.isLoggedIn();
+    if (!isLoggedIn) {
+      // Show login required message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please log in to track your running activity'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
     bool hasPermission = await _requestLocationPermission();
     
     if (!hasPermission) {
@@ -198,7 +373,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
     }
     
     if (!isWorkoutActive) {
-      // PERBAIKAN MASALAH #1: Reset route history and start session when GO is pressed
+      // Reset route history and start session when GO is pressed
       MapService.startSession();
       
       setState(() {
@@ -213,7 +388,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen> with Single
     }
   }
 
-void pauseWorkout() {
+  void pauseWorkout() {
     if (isWorkoutActive && !isPaused) {
       setState(() {
         isPaused = true;
@@ -225,7 +400,7 @@ void pauseWorkout() {
     }
   }
 
-void resumeWorkout() {
+  void resumeWorkout() {
     if (isWorkoutActive && isPaused) {
       setState(() {
         isPaused = false;
@@ -235,19 +410,6 @@ void resumeWorkout() {
       // Tell MapService tracking is resumed
       MapService.setPaused(false);
     }
-  }
-
-  void stopWorkout() {
-    _timer?.cancel();
-    
-    // Stop session in MapService
-    MapService.stopSession();
-    
-    setState(() {
-      isWorkoutActive = false;
-      isPaused = false;
-      currentStep = 2; // Move to summary screen
-    });
   }
 
   void _startTimer() {
@@ -295,7 +457,7 @@ void resumeWorkout() {
     // Update steps per minute
     stepsPerMinute = 160; // Common running cadence
     
-    // PERBAIKAN MASALAH #3: Update performance data for pace graph
+    // Update performance data for pace graph
     // Only update if workout is active
     if (isWorkoutActive && currentStep == 1) {
       // Calculate current pace
@@ -373,9 +535,11 @@ void resumeWorkout() {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: _buildCurrentStep(),
       ),
+      
     );
   }
 
@@ -399,384 +563,356 @@ void resumeWorkout() {
           onStop: stopWorkout,
         );
       case 2:
-  return RunningSummary(
-    distance: distance,
-    formattedDuration: formattedDuration,
-    formattedPace: formattedPace,
-    calories: calories,
-    steps: steps,
-    routePoints: routePoints,
-    markers: markers,
-    polylines: polylines,
-    primaryGreen: primaryGreen,
-    // Add this new required parameter
-    duration: duration,
-    onBackToHome: () {
-      setState(() {
-        currentStep = 0; // Back to initial screen
-        
-        // Reset workout metrics
-        distance = 0.0;
-        duration = const Duration(seconds: 0);
-        calories = 0;
-        steps = 0;
-        stepsPerMinute = 0;
-        performanceData = List.generate(5, (index) => 0.0);
-      });
-    },
-  );
+        return RunningSummary(
+          distance: distance,
+          formattedDuration: formattedDuration,
+          formattedPace: formattedPace,
+          calories: calories,
+          steps: steps,
+          routePoints: routePoints,
+          markers: markers,
+          polylines: polylines,
+          primaryGreen: primaryGreen,
+          duration: duration,
+          onBackToHome: () {
+            setState(() {
+              currentStep = 0; // Back to initial screen
+              
+              // Reset workout metrics
+              distance = 0.0;
+              duration = const Duration(seconds: 0);
+              calories = 0;
+              steps = 0;
+              stepsPerMinute = 0;
+              performanceData = List.generate(5, (index) => 0.0);
+            });
+          },
+          userName: _userName, // Pass the actual username
+        );
       default:
         return _buildInitialScreen();
     }
   }
 
   Widget _buildInitialScreen() {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // App bar with profile image
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10.0, bottom: 10.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Hi, Yesaya!',
+    // PENTING: Menghapus Scaffold di sini untuk menghindari nested Scaffold
+    return Column(
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // App bar with profile image
+                Padding(
+                  padding: const EdgeInsets.only(top: 10.0, bottom: 10.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _isLoading 
+                      ? CircularProgressIndicator(color: primaryGreen) 
+                      : Text(
+                          'Hi, $_userName!',
                           style: GoogleFonts.poppins(
                             fontSize: 24,
                             fontWeight: FontWeight.w600,
                             color: Colors.black,
                           ),
                         ),
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundImage: const AssetImage('assets/images/profile.png'),
-                          backgroundColor: Colors.grey[300],
-                        ),
-                      ],
-                    ),
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundImage: const AssetImage('assets/images/profile.png'),
+                        backgroundColor: Colors.grey[300],
+                      ),
+                    ],
                   ),
-                  
-                  // Distance and weather
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Distance section
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Distance label with icon
-                            Row(
-                              children: [
-                                Text(
-                                  'Distance >',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // Distance value
-                            Text(
-                              '0.00 KM', // Always start with 0.00 in initial screen
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                        // Weather information
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.amber[50],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
+                ),
+                
+                // Distance and weather
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Distance section
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Distance label with icon
+                          Row(
                             children: [
-                              Icon(Icons.wb_sunny, color: Colors.amber, size: 14),
-                              const SizedBox(width: 4),
                               Text(
-                                '${celsiusTemp.toStringAsFixed(0)}°C Sunny',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.amber[800],
+                                'Distance >',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Workout type selector
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildWorkoutTypeButton('Outdoor\nrunning', true),
-                        _buildWorkoutTypeButton('Walking', false),
-                        _buildWorkoutTypeButton('Treadmill', false),
-                        _buildWorkoutTypeButton('Outdoor\ncycling', false),
-                      ],
-                    ),
-                  ),
-                  
-                  // Permission info - Now clickable
-                  GestureDetector(
-                    onTap: _requestLocationPermission,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 8.0, bottom: 10.0),
-                      child: Row(
-                        children: [
+                          // Distance value
                           Text(
-                            'Please allow location permission',
+                            '0.00 KM', // Always start with 0.00 in initial screen
                             style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.black54,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          Container(
-                            width: 14,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              shape: BoxShape.circle,
+                        ],
+                      ),
+                      
+                      // Weather information
+                      const WeatherWidget(),
+                    ],
+                  ),
+                ),
+                
+                // Workout type selector
+                WorkoutNavbar(
+                  currentWorkoutType: 'Running',
+                  onWorkoutTypeChanged: (newType) {
+                    // Pass the type change to the parent
+                    if (widget.onWorkoutTypeChanged != null) {
+                      widget.onWorkoutTypeChanged!(newType);
+                    }
+                  },
+                ),
+                
+                // Authentication status
+                _isLoggedIn 
+                ? Container() // Hide if logged in
+                : InkWell(
+                    onTap: () {
+                      // TODO: Navigate to login screen
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please log in to track your workouts'),
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.error_outline, size: 16, color: Colors.red.shade800),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Authentication required',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.red.shade800,
                             ),
-                            child: Icon(Icons.question_mark, color: Colors.white, size: 10),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  
-                  // Map display with follow me button
-                  Expanded(
-                    child: Stack(
+                
+                // Permission info - Now clickable
+                GestureDetector(
+                  onTap: _requestLocationPermission,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8.0, bottom: 10.0),
+                    child: Row(
                       children: [
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
-                                spreadRadius: 1,
-                                blurRadius: 5,
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(4),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: FlutterMap(
-                              mapController: _mapController,
-                              options: MapOptions(
-                                initialCenter: MapService.defaultCenter, // Use default center initially
-                                initialZoom: 15,
-                                // Add interactiveFlags to prevent bounds error
-                                interactionOptions: const InteractionOptions(
-                                  enableMultiFingerGestureRace: true,
-                                ),
-                              ),
-                              children: [
-                                TileLayer(
-                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                  userAgentPackageName: 'com.example.app',
-                                ),
-                                // Always include at least one valid point in polylines
-                                PolylineLayer(
-                                  polylines: polylines.isEmpty ? 
-                                    [
-                                      Polyline(
-                                        points: [MapService.defaultCenter], // Include default center
-                                        color: Colors.transparent, // Make it invisible initially
-                                        strokeWidth: 0,
-                                      ),
-                                    ] : polylines,
-                                ),
-                                MarkerLayer(
-                                  markers: markers.isEmpty ? 
-                                    [
-                                      Marker(
-                                        point: MapService.defaultCenter,
-                                        width: 60,
-                                        height: 60,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.withOpacity(0.3),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Center(
-                                            child: Icon(
-                                              Icons.location_on,
-                                              color: Colors.blue,
-                                              size: 30,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ] : markers,
-                                ),
-                              ],
-                            ),
+                        Text(
+                          'Please allow location permission',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.black54,
                           ),
                         ),
-                        
-                        // Follow Me Button
-                        Positioned(
-                          right: 10,
-                          bottom: 10,
-                          child: FollowMeButton(
-                            isFollowing: _isFollowingUser,
-                            onPressed: _toggleFollowMode,
-                            activeColor: primaryGreen,
+                        const SizedBox(width: 4),
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: const BoxDecoration(
+                            color: Colors.black,
+                            shape: BoxShape.circle,
                           ),
+                          child: const Icon(Icons.question_mark, color: Colors.white, size: 10),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-            
-          // GO button - Modified to check location permission
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
-              child: InkWell(
-                onTap: () async {
-                  // First check location permission
-                  bool hasPermission = await _requestLocationPermission();
-                  
-                  if (!hasPermission) {
-                    // Show dialog if permission is not granted
-                    if (context.mounted) {
-                      await _locationPermissionHandler.showLocationServicesDisabledDialog(context);
-                    }
-                    return;
-                  }
-                  
-                  // If permission granted, proceed with countdown and workout
-                  if (context.mounted) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => WorkoutCountdown(
-                          onCountdownComplete: () {
-                            Navigator.of(context).pop(); // Pop the countdown screen
-                            startWorkoutWithPermissionCheck(); // Start the workout when countdown finishes
-                          },
+                ),
+                
+                // Map display with follow me button
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 5,
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: FlutterMap(
+                            mapController: _mapController,
+                            options: MapOptions(
+                              initialCenter: MapService.defaultCenter, // Use default center initially
+                              initialZoom: 15,
+                              // Add interactiveFlags to prevent bounds error
+                              interactionOptions: const InteractionOptions(
+                                enableMultiFingerGestureRace: true,
+                              ),
+                            ),
+                            children: [
+                              TileLayer(
+                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                userAgentPackageName: 'com.example.app',
+                              ),
+                              // Always include at least one valid point in polylines
+                              PolylineLayer(
+                                polylines: polylines.isEmpty ? 
+                                  [
+                                    Polyline(
+                                      points: [MapService.defaultCenter], // Include default center
+                                      color: Colors.transparent, // Make it invisible initially
+                                      strokeWidth: 0,
+                                    ),
+                                  ] : polylines,
+                              ),
+                              MarkerLayer(
+                                markers: markers.isEmpty ? 
+                                  [
+                                    Marker(
+                                      point: MapService.defaultCenter,
+                                      width: 60,
+                                      height: 60,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.withOpacity(0.3),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.location_on,
+                                            color: Colors.blue,
+                                            size: 30,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ] : markers,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    );
-                  }
-                },
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: primaryGreen,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: primaryGreen.withOpacity(0.5),
-                        blurRadius: 10,
-                        spreadRadius: 1,
+                      
+                      // Follow Me Button
+                      Positioned(
+                        right: 10,
+                        bottom: 10,
+                        child: FollowMeButton(
+                          isFollowing: _isFollowingUser,
+                          onPressed: _toggleFollowMode,
+                          activeColor: primaryGreen,
+                        ),
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Text(
-                      'GO',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                ),
+              ],
+            ),
+          ),
+        ),
+          
+        // GO button - Modified to check login and location permission
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: InkWell(
+              onTap: () async {
+                // First check if user is logged in
+                bool isLoggedIn = await AuthHelper.isLoggedIn();
+                if (!isLoggedIn) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please log in to track your running activity'),
+                        duration: Duration(seconds: 3),
                       ),
+                    );
+                  }
+                  return;
+                }
+                
+                // Then check location permission
+                bool hasPermission = await _requestLocationPermission();
+                
+                if (!hasPermission) {
+                  // Show dialog if permission is not granted
+                  if (context.mounted) {
+                    await _locationPermissionHandler.showLocationServicesDisabledDialog(context);
+                  }
+                  return;
+                }
+                
+                // If permission granted, proceed with countdown and workout
+                if (context.mounted) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => WorkoutCountdown(
+                        onCountdownComplete: () {
+                          Navigator.of(context).pop(); // Pop the countdown screen
+                          startWorkoutWithPermissionCheck(); // Start the workout when countdown finishes
+                        },
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: primaryGreen,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryGreen.withOpacity(0.5),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    'GO',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
                   ),
                 ),
               ),
             ),
           ),
-          
-          // Bottom navigation bar - Replaced with AppNavigationBar
-          AppNavigationBar(
-            currentIndex: 2, // Workout tab is selected
-            onTap: (index) {
-              // Handle navigation
-              // Navigation logic would go here
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWorkoutTypeButton(String label, bool isSelected) {
-    bool isRunning = label.contains('running');
-    bool isTreadmill = label.contains('Treadmill');
-    
-    return InkWell(
-      onTap: () {
-        if (isTreadmill && !isSelected) {
-          // Navigate to TreadmillTrackerScreen if treadmill is selected
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const TreadmillTrackerScreen()),
-          );
-        }
-        // If already on running screen, no need to navigate
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Column(
-          children: [
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? Colors.black : Colors.grey[600],
-              ),
-            ),
-            if (isSelected)
-              Container(
-                margin: const EdgeInsets.only(top: 2),
-                height: 2,
-                width: 60,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(1),
-                ),
-              ),
-          ],
         ),
-      ),
+      ],
     );
   }
 }

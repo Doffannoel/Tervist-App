@@ -1,149 +1,46 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-<<<<<<< Updated upstream
-import 'package:tervist_apk/api/notification_service.dart';
-import 'package:tervist_apk/screens/main_navigation.dart';
-import 'package:http/http.dart' as http;
 import 'package:tervist_apk/api/api_config.dart';
-import 'package:tervist_apk/screens/onboarding_screen.dart';
-=======
-import 'package:tervist_apk/api/notification_service.dart';
-import 'package:tervist_apk/screens/main_navigation.dart';
-import 'package:http/http.dart' as http;
-import 'package:tervist_apk/api/api_config.dart';
-import 'package:tervist_apk/screens/onboarding_screen.dart';
-import 'package:tervist_apk/screens/workout/workout_module.dart';
->>>>>>> Stashed changes
+import 'dart:math' as math;
 
-void main() async {
-  // Ensure Flutter is initialized before calling any platform methods
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize notifications service
-  await NotificationService().init();
-
-void main() async {
-  // Ensure Flutter is initialized before calling any platform methods
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize notifications service
-  await NotificationService().init();
-
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  Future<bool> isLoggedIn() async {
+class ApiService {
+  // Fungsi untuk mendapatkan data dashboard
+  Future<Map<String, dynamic>> fetchDashboardData() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access_token');
 
-    if (token == null) return false;
+    if (token == null) {
+      throw Exception('User is not authenticated');
+    }
 
+        print('Fetching dashboard with token: ${token.substring(0, math.min(10, token.length))}...'); // Debug logging tanpa menampilkan seluruh token
+        
     final response = await http.get(
-      ApiConfig.profile,
-      headers: {'Authorization': 'Bearer $token'},
+      ApiConfig.dashboard,
+      headers: {
+        'Authorization':
+            'Bearer $token', // Menggunakan 'Bearer' sesuai dengan JWTAuthentication
+        'Content-Type': 'application/json',
+      },
     );
 
-    debugPrint('Profile response status: ${response.statusCode}');
-    debugPrint('Profile response body: ${response.body}');
+    print('Dashboard response status: ${response.statusCode}');
+
+    // Hanya tampilkan sebagian dari response jika terlalu besar
+    if (response.body.length > 500) {
+      print(
+          'Dashboard response preview: ${response.body.substring(0, 500)}...');
+    } else {
+      print('Dashboard response body: ${response.body}');
+    }
 
     if (response.statusCode == 200) {
-      return true;
+      return json.decode(response.body);
+    } else if (response.statusCode == 401) {
+      throw Exception('Session expired. Please log in again.');
     } else {
-      // Token tidak valid, hapus dari SharedPreferences
-      await prefs.remove(
-          'access_token'); // Changed from 'token' to 'access_token' to match your other code
-<<<<<<< Updated upstream
-      await prefs.remove(
-          'access_token'); // Changed from 'token' to 'access_token' to match your other code
-=======
-      await prefs.remove('token');
->>>>>>> Stashed changes
-      return false;
+      throw Exception('Failed to load dashboard data: ${response.statusCode}');
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-<<<<<<< HEAD
-      title: 'Flutter Demo',
-      theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
-          primarySwatch: Colors.blue),
-      home:
-          WorkoutModule(), // kalo mau ganti disini OnboardingScreen to WorkoutModule
-=======
-      home: FutureBuilder<bool>(
-        future: isLoggedIn(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          } else {
-            return snapshot.data == true
-                ? const MainNavigation()
-                : const OnboardingScreen();
-          }
-        },
-      ),
->>>>>>> a621e5e94dc9f26f49192f54e7b0a0c86fa6bdb2
-    );
-  }
 }
-// void main() {
-//   runApp(const MyApp());
-// }
-
-// class MyApp extends StatelessWidget {
-//   const MyApp({super.key});
-
-//   Future<bool> isLoggedIn() async {
-//     final prefs = await SharedPreferences.getInstance();
-//     final token = prefs.getString('access_token');
-
-//     if (token == null) return false;
-
-//     final response = await http.get(
-//       ApiConfig.profile,
-//       headers: {'Authorization': 'Bearer $token'},
-//     );
-
-//     debugPrint('Profile response status: ${response.statusCode}');
-//     debugPrint('Profile response body: ${response.body}');
-
-//     if (response.statusCode == 200) {
-//       return true;
-//     } else {
-//       // Token tidak valid, hapus dari SharedPreferences
-//       await prefs.remove('token');
-//       return false;
-//     }
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       debugShowCheckedModeBanner: false,
-//       home: FutureBuilder<bool>(
-//         future: isLoggedIn(),
-//         builder: (context, snapshot) {
-//           if (snapshot.connectionState == ConnectionState.waiting) {
-//             return const Scaffold(
-//               body: Center(child: CircularProgressIndicator()),
-//             );
-//           } else {
-//             return snapshot.data == true
-//                 ? const MainNavigation()
-//                 : const OnboardingScreen();
-//           }
-//         },
-//       ),
-//     );
-//   }
-// }

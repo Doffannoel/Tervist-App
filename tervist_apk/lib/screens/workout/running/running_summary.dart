@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import '../follow_me_button.dart';
 import '../share_screen.dart';
+import '/api/auth_helper.dart'; // Import for user data
+import 'package:intl/intl.dart'; // Import for date formatting
 
 class RunningSummary extends StatefulWidget {
   final double distance;
@@ -18,6 +20,7 @@ class RunningSummary extends StatefulWidget {
   final Color primaryGreen;
   final VoidCallback onBackToHome;
   final Duration duration;
+  final String userName; // Add username parameter
 
   const RunningSummary({
     super.key,
@@ -32,6 +35,7 @@ class RunningSummary extends StatefulWidget {
     required this.primaryGreen,
     required this.onBackToHome,
     required this.duration,
+    this.userName = "User", // Default to "User" if not provided
   });
 
   @override
@@ -42,6 +46,45 @@ class _RunningSummaryState extends State<RunningSummary> {
   final MapController _mapController = MapController();
   final List<double> paceData = [0.5, 0.7, 0.4, 0.6, 0.5]; // Fixed pace data for summary
   bool _isFollowingUser = true; // Default state for the follow button
+  String _userName = "User"; // Default username
+  DateTime _currentDateTime = DateTime.now(); // Current date and time
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  // Load user data if needed
+  Future<void> _loadUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // If username is provided in widget, use it
+      if (widget.userName.isNotEmpty && widget.userName != "User") {
+        setState(() {
+          _userName = widget.userName;
+        });
+      } else {
+        // Otherwise try to get it from AuthHelper
+        String? storedName = await AuthHelper.getUserName();
+        if (storedName != null && storedName.isNotEmpty) {
+          setState(() {
+            _userName = storedName;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   LatLng _calculateMapCenter() {
     if (widget.routePoints.isEmpty) {
@@ -111,6 +154,10 @@ class _RunningSummaryState extends State<RunningSummary> {
 
   @override
   Widget build(BuildContext context) {
+    // Format date and time
+    String formattedDate = DateFormat('dd/MM/yyyy').format(_currentDateTime);
+    String formattedTime = DateFormat('HH:mm').format(_currentDateTime);
+    
     // Ensure we have valid polylines even if empty
     final List<Polyline> displayPolylines = widget.polylines.isEmpty || widget.routePoints.isEmpty ? 
       [
@@ -178,9 +225,12 @@ class _RunningSummaryState extends State<RunningSummary> {
                     formattedPace: widget.formattedPace,
                     calories: widget.calories,
                     steps: widget.steps,
-                    activityType: 'Outdoor Running', // Changed from Treadmill
-                    workoutDate: DateTime.now(),
-                    userName: 'Yesaya',
+                    activityType: 'Outdoor Running',
+                    workoutDate: _currentDateTime,
+                    userName: _userName, // Use dynamically loaded username
+                    routePoints: widget.routePoints,
+                    polylines: widget.polylines,
+                    markers: widget.markers,
                   ),
                 ),
               );
@@ -322,15 +372,24 @@ class _RunningSummaryState extends State<RunningSummary> {
                                   ),
                                 ),
                               ),
-                              Text(
-                                'Yesaya',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
+                              _isLoading
+                              ? SizedBox(
+                                  width: 50,
+                                  height: 10,
+                                  child: LinearProgressIndicator(
+                                    backgroundColor: Colors.grey[200],
+                                    valueColor: AlwaysStoppedAnimation<Color>(widget.primaryGreen),
+                                  ),
+                                )
+                              : Text(
+                                  _userName,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                              ),
                               Text(
-                                '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateTime.now().hour}:${DateTime.now().minute}',
+                                '$formattedDate $formattedTime',
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   color: Colors.grey,

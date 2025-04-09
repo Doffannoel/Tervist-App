@@ -4,30 +4,30 @@ import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'walking_timestamp.dart';
-import 'walking_summary.dart';
+import 'cycling_timestamp.dart';
+import 'cycling_summary.dart';
 import '../map_service.dart';
 import '../workout_countdown.dart';
 import '../workout_navbar.dart';
-import 'package:flutter/scheduler.dart';
-import '../location_permission_handler.dart';
-import '../follow_me_button.dart';
+import 'package:flutter/scheduler.dart'; // Import for Ticker
+import '../location_permission_handler.dart'; // Import the permission handler
+import '../follow_me_button.dart'; // Import the follow me button widget
 import '../weather_service.dart';
+ // Added import for navigation bar
 
-
-class WalkingTrackerScreen extends StatefulWidget {
+class CyclingTrackerScreen extends StatefulWidget {
   final Function(String)? onWorkoutTypeChanged;
   
-  const WalkingTrackerScreen({
+  const CyclingTrackerScreen({
     super.key,
     this.onWorkoutTypeChanged,
   });
   
   @override
-  State<WalkingTrackerScreen> createState() => _WalkingTrackerScreenState();
+  State<CyclingTrackerScreen> createState() => _CyclingTrackerScreenState();
 }
 
-class _WalkingTrackerScreenState extends State<WalkingTrackerScreen> with SingleTickerProviderStateMixin {
+class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with SingleTickerProviderStateMixin {
   int currentStep = 0; // 0: initial, 1: workout tracking, 2: summary
   bool isWorkoutActive = false;
   bool isPaused = false;
@@ -189,7 +189,7 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen> with Single
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Aplikasi memerlukan izin lokasi untuk melacak aktivitas jalan Anda'),
+            content: Text('Aplikasi memerlukan izin lokasi untuk melacak aktivitas bersepeda Anda'),
             duration: Duration(seconds: 3),
           ),
         );
@@ -283,17 +283,18 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen> with Single
       }
     }
     
-    // Steps calculation (about 100 steps per minute for walking, less than running)
-    final stepsPerSecond = 100.0 / 60.0;
-    final newStepsCount = steps + stepsPerSecond.round();
+    // For cycling, we don't really count steps but rather pedal strokes
+    // Using a cadence of about 80 rpm for average cycling
+    final strokesToCount = 80.0 / 60.0; // strokes per second
+    final newStepsCount = steps + strokesToCount.round();
     
     // Calculate calories (using a simple approximation)
-    // Walking burns less calories than running, around 300 kcal per hour
-    final caloriesPerSecond = 300.0 / 3600.0;
+    // Cycling burns around 400-500 kcal per hour
+    final caloriesPerSecond = 450.0 / 3600.0;
     final newCalories = (newDuration.inSeconds * caloriesPerSecond).round();
     
-    // Update steps per minute
-    stepsPerMinute = 100; // Common walking cadence
+    // Update steps (pedal strokes) per minute
+    stepsPerMinute = 80; // Common cycling cadence
     
     // Update performance data for pace graph
     if (isWorkoutActive && currentStep == 1) {
@@ -375,7 +376,7 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen> with Single
       body: SafeArea(
         child: _buildCurrentStep(),
       ),
-      
+
     );
   }
 
@@ -384,7 +385,7 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen> with Single
       case 0:
         return _buildInitialScreen();
       case 1:
-        return walkingTimestamp(
+        return CyclingTimestamp(
           distance: distance,
           formattedDuration: formattedDuration,
           formattedPace: formattedPace,
@@ -399,7 +400,7 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen> with Single
           onStop: stopWorkout,
         );
       case 2:
-        return walkingSummary(
+        return CyclingSummary(
           distance: distance,
           formattedDuration: formattedDuration,
           formattedPace: formattedPace,
@@ -505,7 +506,7 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen> with Single
                 
                 // Workout type selector
                 WorkoutNavbar(
-                  currentWorkoutType: 'Walking',
+                  currentWorkoutType: 'Cycling',
                   onWorkoutTypeChanged: (newType) {
                     // Pass the type change to the parent
                     if (widget.onWorkoutTypeChanged != null) {
@@ -532,11 +533,11 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen> with Single
                         Container(
                           width: 14,
                           height: 14,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: Colors.black,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.question_mark, color: Colors.white, size: 10),
+                          child: Icon(Icons.question_mark, color: Colors.white, size: 10),
                         ),
                       ],
                     ),

@@ -494,28 +494,4 @@ class _UserDataPageState extends State<UserDataPage> {
       ),
     );
   }
-<<<<<<< Updated upstream
-<<<<<<< HEAD
-
-  Widget _infoTile({required String title, required String value}) {
-    return Column(
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: GoogleFonts.poppins(fontSize: 12),
-        ),
-      ],
-    );
-  }
 }
-=======
-}
->>>>>>> a621e5e94dc9f26f49192f54e7b0a0c86fa6bdb2
-=======
-}
->>>>>>> Stashed changes

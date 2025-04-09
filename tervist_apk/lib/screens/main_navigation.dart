@@ -71,18 +71,27 @@ class _MainNavigationState extends State<MainNavigation> {
       );
     }
 
-    return Scaffold(
-<<<<<<< Updated upstream
-      backgroundColor: const Color(0xFFF1F7F6),
-=======
->>>>>>> Stashed changes
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
-      bottomNavigationBar: AppNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
+    return WillPopScope(
+      // Handle back button presses
+      onWillPop: () async {
+        if (_currentIndex != 0) {
+          // If not on home tab, go to home tab
+          setState(() {
+            _currentIndex = 0;
+          });
+          return false;
+        }
+        return true; // Allow app to exit if on home tab
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _pages,
+        ),
+        bottomNavigationBar: AppNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: _onTabTapped,
+        ),
       ),
     );
   }

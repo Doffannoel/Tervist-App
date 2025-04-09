@@ -1,47 +1,75 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:tervist_apk/api/api_config.dart';
-import 'package:tervist_apk/models/running_activity.dart';
-import 'package:tervist_apk/api/auth_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '/api/api_config.dart';
+import '/models/running_activity.dart';
+import '/api/auth_helper.dart'; // Import AuthHelper
 
 class RunningService {
-  // Save running activity to the backend
+  // Fungsi untuk mengirim data aktivitas lari ke backend
   Future<bool> saveRunningActivity({
     required double distanceKm,
     required int timeSeconds,
     required double pace,
     required int caloriesBurned,
     required int steps,
-    DateTime? activityDate,
+    DateTime? date,
   }) async {
     try {
-      // Get auth token
-      final String? token = await AuthHelper.getToken();
+      // Get token using AuthHelper for consistency
+      final token = await AuthHelper.getToken();
       
-      if (token == null) {
-        return false; // User not authenticated
+      // Also get access_token from SharedPreferences as fallback
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+      
+      // Use token from AuthHelper first, then fallback to access_token
+      final authToken = token ?? accessToken;
+      
+      // Log token status for debugging
+      print('Running service token check:');
+      print('- AuthHelper token: ${token != null ? 'Present' : 'Not found'}');
+      print('- SharedPrefs access_token: ${accessToken != null ? 'Present' : 'Not found'}');
+      
+      if (authToken == null) {
+        print('User is not authenticated - no valid token found');
+        return false;
       }
-
+      
+      // Prepare request data
+      final requestData = {
+        'distance_km': distanceKm,
+        'time_seconds': timeSeconds,
+        'pace': pace,
+        'calories_burned': caloriesBurned,
+        'steps': steps,
+        'date': date?.toIso8601String().split('T')[0] ?? 
+                DateTime.now().toIso8601String().split('T')[0],
+      };
+      
+      // Log request data for debugging
+      print('Sending running activity data:');
+      print(requestData);
+      
       final response = await http.post(
         ApiConfig.runningActivity,
         headers: {
+          'Authorization': 'Bearer $authToken',
           'Content-Type': 'application/json',
-          'Authorization': 'Token $token',
         },
-        body: jsonEncode({
-          'distance_km': distanceKm,
-          'time_seconds': timeSeconds,
-          'pace': pace,
-          'calories_burned': caloriesBurned,
-          'steps': steps,
-          'date': activityDate?.toIso8601String().split('T')[0] ?? DateTime.now().toIso8601String().split('T')[0],
-        }),
+        body: json.encode(requestData),
       );
-
+      
+      // Detailed logging of response
+      print('Running activity response status: ${response.statusCode}');
+      print('Running activity response body: ${response.body}');
+      
       if (response.statusCode == 201 || response.statusCode == 200) {
+        print('Running activity successfully saved to backend');
         return true;
       } else {
-        print('Failed to save running activity: ${response.body}');
+        print('Failed to save running activity: ${response.statusCode}');
+        print('Error response: ${response.body}');
         return false;
       }
     } catch (e) {
@@ -50,63 +78,74 @@ class RunningService {
     }
   }
 
-  // Get user's running activities
-  Future<List<RunningActivity>> getRunningActivities() async {
+  // Fungsi untuk mendapatkan username dari token (profile)
+  Future<String?> getUserName() async {
     try {
-      // Get auth token
-      final String? token = await AuthHelper.getToken();
+      // Use AuthHelper for consistent token management
+      final token = await AuthHelper.getToken();
       
-      if (token == null) {
-        return []; // User not authenticated
+      // Fallback to SharedPreferences if needed
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+      
+      final authToken = token ?? accessToken;
+      
+      if (authToken == null) {
+        print('User is not authenticated - no valid token found');
+        return null;
       }
-
+      
+      print('Fetching user profile with token');
+      
       final response = await http.get(
-        ApiConfig.runningActivity,
+        ApiConfig.profile,
         headers: {
-          'Authorization': 'Token $token',
+          'Authorization': 'Bearer $authToken',
+          'Content-Type': 'application/json',
         },
       );
-
+      
+      print('Profile response status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => RunningActivity.fromJson(json)).toList();
+        final Map<String, dynamic> data = json.decode(response.body);
+        return data['username'] ?? 'User';
       } else {
-        print('Failed to fetch running activities: ${response.body}');
-        return [];
+        print('Failed to fetch user profile: ${response.body}');
+        return null;
       }
     } catch (e) {
-      print('Error fetching running activities: $e');
-      return [];
+      print('Error fetching user profile: $e');
+      return null;
     }
   }
-
-  // Get running statistics
-  Future<Map<String, dynamic>> getRunningStats() async {
+  
+  // Add function to verify authentication status
+  Future<bool> verifyAuthentication() async {
     try {
-      // Get auth token and user ID
-      final String? token = await AuthHelper.getToken();
-      final int? userId = await AuthHelper.getUserId();
+      final token = await AuthHelper.getToken();
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
       
-      if (token == null || userId == null) {
-        return {}; // User not authenticated
+      final authToken = token ?? accessToken;
+      
+      if (authToken == null) {
+        return false;
       }
-
+      
+      // Test authentication with a simple profile request
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/api/running-stats/?user_id=$userId'),
+        ApiConfig.profile,
         headers: {
-          'Authorization': 'Token $token',
+          'Authorization': 'Bearer $authToken',
+          'Content-Type': 'application/json',
         },
       );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        print('Failed to fetch running stats: ${response.body}');
-        return {};
-      }
+      
+      return response.statusCode == 200;
     } catch (e) {
-      print('Error fetching running stats: $e');
-      return {};
+      print('Authentication verification error: $e');
+      return false;
     }
   }
 }

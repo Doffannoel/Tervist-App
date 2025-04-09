@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import '../follow_me_button.dart';
 import '../share_screen.dart';
 
-class walkingSummary extends StatefulWidget {
+class CyclingSummary extends StatefulWidget {
   final double distance;
   final String formattedDuration;
   final String formattedPace;
@@ -19,7 +19,7 @@ class walkingSummary extends StatefulWidget {
   final VoidCallback onBackToHome;
   final Duration duration;
 
-  const walkingSummary({
+  const CyclingSummary({
     super.key,
     required this.distance,
     required this.formattedDuration,
@@ -35,10 +35,10 @@ class walkingSummary extends StatefulWidget {
   });
 
   @override
-  State<walkingSummary> createState() => _walkingSummaryState();
+  State<CyclingSummary> createState() => _CyclingSummaryState();
 }
 
-class _walkingSummaryState extends State<walkingSummary> {
+class _CyclingSummaryState extends State<CyclingSummary> {
   final MapController _mapController = MapController();
   final List<double> paceData = [0.5, 0.7, 0.4, 0.6, 0.5]; // Fixed pace data for summary
   bool _isFollowingUser = true; // Default state for the follow button
@@ -152,16 +152,8 @@ class _walkingSummaryState extends State<walkingSummary> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: widget.onBackToHome,
         ),
-        title: const Text(
-          'Outdoor walking',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
         actions: [
-          // Share button
+          // Share button - adapted from treadmill_summary.dart
           IconButton(
             icon: Container(
               width: 40,
@@ -186,7 +178,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                     formattedPace: widget.formattedPace,
                     calories: widget.calories,
                     steps: widget.steps,
-                    activityType: 'Outdoor Walking',
+                    activityType: 'Outdoor cycling', // Changed from Treadmill
                     workoutDate: DateTime.now(),
                     userName: 'Yesaya',
                   ),
@@ -203,7 +195,7 @@ class _walkingSummaryState extends State<walkingSummary> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Map container
+              // Map container instead of treadmill image
               Container(
                 width: double.infinity,
                 height: 500,
@@ -229,7 +221,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                         children: [
                           TileLayer(
                             urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.example.walking_app',
+                            userAgentPackageName: 'com.example.cycling_app',
                           ),
                           PolylineLayer(
                             polylines: displayPolylines,
@@ -255,11 +247,11 @@ class _walkingSummaryState extends State<walkingSummary> {
                 ),
               ),
               
-              // Tervist | Outdoor Walking text
+              // Tervist | Outdoor cycling text
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Text(
-                  'Tervist | Outdoor Walking',
+                  'Tervist | Outdoor cycling',
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -488,7 +480,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                               children: [
                                 Icon(
                                   Icons.directions_walk,
-                                  color: widget.primaryGreen,
+                                  color: Colors.blue[400],
                                   size: 20,
                                 ),
                                 const SizedBox(width: 8),
@@ -513,7 +505,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                               style: GoogleFonts.poppins(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
-                                color: widget.primaryGreen,
+                                color: Colors.blue[400],
                               ),
                             ),
                           ],
@@ -543,11 +535,11 @@ class _walkingSummaryState extends State<walkingSummary> {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            _buildBarWithLabel("20'54\"", "1", 100),
-                            _buildBarWithLabel("19'32\"", "2", 90),
-                            _buildBarWithLabel("22'41\"", "3", 60),
-                            _buildBarWithLabel("18'12\"", "4", 130),
-                            _buildBarWithLabel("21'03\"", "5", 110),
+                            _buildBarWithLabel("14'24\"", "1", 100),
+                            _buildBarWithLabel("14'12\"", "2", 90),
+                            _buildBarWithLabel("13'21\"", "3", 60),
+                            _buildBarWithLabel("16'02\"", "4", 130),
+                            _buildBarWithLabel("20'22\"", "5", 110),
                           ],
                         ),
                       ),
@@ -560,11 +552,12 @@ class _walkingSummaryState extends State<walkingSummary> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
+                            // cycling icon
                             Container(
                               width: 24,
                               height: 24,
                               child: Icon(
-                                Icons.directions_walk,
+                                Icons.directions_bike,
                                 color: Colors.black,
                                 size: 24,
                               ),
@@ -572,7 +565,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                             const SizedBox(width: 4),
                             // Pace text
                             Text(
-                              'Pace',
+                              'Max Speed',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -583,41 +576,6 @@ class _walkingSummaryState extends State<walkingSummary> {
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ),
-              
-              // Share Button
-              Padding(
-                padding: const EdgeInsets.only(bottom: 24.0),
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ShareScreen(
-                          distance: widget.distance,
-                          formattedDuration: widget.formattedDuration,
-                          formattedPace: widget.formattedPace,
-                          calories: widget.calories,
-                          steps: widget.steps,
-                          activityType: 'Outdoor Walking',
-                          workoutDate: DateTime.now(),
-                          userName: 'Yesaya',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.share),
-                  label: const Text('Share Workout'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.primaryGreen,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    minimumSize: const Size(double.infinity, 50),
                   ),
                 ),
               ),

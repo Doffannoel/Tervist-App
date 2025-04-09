@@ -64,61 +64,117 @@ class WeatherService {
   }
 
   /// Map OpenWeatherMap icon codes to corresponding Flutter icons
-  static IconData getWeatherIcon(String iconCode) {
-    switch (iconCode) {
-      case '01d': return Icons.wb_sunny; // clear sky day
-      case '01n': return Icons.nightlight_round; // clear sky night
-      case '02d': return Icons.cloud_outlined; // few clouds day
-      case '02n': return Icons.cloud_outlined; // few clouds night
-      case '03d':
-      case '03n': return Icons.cloud; // scattered clouds
-      case '04d':
-      case '04n': return Icons.cloud_queue; // broken clouds
-      case '09d':
-      case '09n': return Icons.grain; // shower rain
-      case '10d':
-      case '10n': return Icons.beach_access; // rain
-      case '11d':
-      case '11n': return Icons.flash_on; // thunderstorm
-      case '13d':
-      case '13n': return Icons.ac_unit; // snow
-      case '50d':
-      case '50n': return Icons.cloud_outlined; // mist
-      default: return Icons.wb_sunny;
-    }
+ static IconData getWeatherIcon(String iconCode) {
+  switch (iconCode) {
+    // Clear sky
+    case '01d': return Icons.wb_sunny; // clear sky day
+    case '01n': return Icons.nightlight_round; // clear sky night
+    
+    // Few clouds
+    case '02d': return Icons.cloud_outlined; // few clouds day 
+    case '02n': return Icons.nights_stay; // few clouds night
+    
+    // Scattered clouds
+    case '03d': return Icons.cloud; // scattered clouds day
+    case '03n': return Icons.cloud; // scattered clouds night
+    
+    // Broken clouds
+    case '04d': return Icons.cloud_queue; // broken clouds day
+    case '04n': return Icons.cloud_queue; // broken clouds night
+    
+    // Shower rain
+    case '09d': return Icons.grain; // shower rain day
+    case '09n': return Icons.grain; // shower rain night
+    
+    // Rain
+    case '10d': return Icons.water_drop; // rain day
+    case '10n': return Icons.water; // rain night
+    
+    // Thunderstorm
+    case '11d': return Icons.flash_on; // thunderstorm day
+    case '11n': return Icons.flash_on; // thunderstorm night
+    
+    // Snow
+    case '13d': return Icons.ac_unit; // snow day
+    case '13n': return Icons.ac_unit; // snow night
+    
+    // Mist
+    case '50d': return Icons.cloud_outlined; // mist day
+    case '50n': return Icons.cloud_outlined; // mist night
+    
+    default: return Icons.wb_sunny;
   }
+}
   
   /// Get background color based on weather condition
   static Color getWeatherBackgroundColor(String iconCode) {
-    if (iconCode.startsWith('01')) {
-      return Colors.amber.shade50; // Clear sky
-    } else if (iconCode.startsWith('02') || iconCode.startsWith('03') || iconCode.startsWith('04')) {
-      return Colors.blue.shade50; // Cloudy
-    } else if (iconCode.startsWith('09') || iconCode.startsWith('10')) {
-      return Colors.blueGrey.shade50; // Rain
-    } else if (iconCode.startsWith('11')) {
-      return Colors.deepPurple.shade50; // Thunderstorm
-    } else if (iconCode.startsWith('13')) {
-      return Colors.lightBlue.shade50; // Snow
-    } else {
-      return Colors.grey.shade50; // Mist or default
+    // For day conditions
+    if (iconCode.endsWith('d')) {
+      if (iconCode.startsWith('01')) {
+        return Colors.amber.shade50; // Clear sky - day
+      } else if (iconCode.startsWith('02') || iconCode.startsWith('03') || iconCode.startsWith('04')) {
+        return Colors.blue.shade50; // Cloudy - day
+      } else if (iconCode.startsWith('09') || iconCode.startsWith('10')) {
+        return Colors.blueGrey.shade50; // Rain - day
+      } else if (iconCode.startsWith('11')) {
+        return Colors.deepPurple.shade50; // Thunderstorm - day
+      } else if (iconCode.startsWith('13')) {
+        return Colors.lightBlue.shade50; // Snow - day
+      } else {
+        return Colors.grey.shade50; // Mist or default - day
+      }
+    }
+    // For night conditions 
+    else {
+      if (iconCode.startsWith('01')) {
+        return Colors.indigo.shade100; // Clear sky - night
+      } else if (iconCode.startsWith('02') || iconCode.startsWith('03') || iconCode.startsWith('04')) {
+        return Colors.blueGrey.shade100; // Cloudy - night
+      } else if (iconCode.startsWith('09') || iconCode.startsWith('10')) {
+        return Colors.blueGrey.shade200; // Rain - night
+      } else if (iconCode.startsWith('11')) {
+        return Colors.deepPurple.shade100; // Thunderstorm - night
+      } else if (iconCode.startsWith('13')) {
+        return Colors.blue.shade100; // Snow - night
+      } else {
+        return Colors.grey.shade200; // Mist or default - night
+      }
     }
   }
   
   /// Get text color based on weather condition
   static Color getWeatherTextColor(String iconCode) {
-    if (iconCode.startsWith('01')) {
-      return Colors.amber.shade800; // Clear sky
-    } else if (iconCode.startsWith('02') || iconCode.startsWith('03') || iconCode.startsWith('04')) {
-      return Colors.blue.shade800; // Cloudy
-    } else if (iconCode.startsWith('09') || iconCode.startsWith('10')) {
-      return Colors.blueGrey.shade800; // Rain
-    } else if (iconCode.startsWith('11')) {
-      return Colors.deepPurple.shade800; // Thunderstorm
-    } else if (iconCode.startsWith('13')) {
-      return Colors.lightBlue.shade800; // Snow
-    } else {
-      return Colors.grey.shade800; // Mist or default
+    // For day conditions
+    if (iconCode.endsWith('d')) {
+      if (iconCode.startsWith('01')) {
+        return Colors.amber.shade800; // Clear sky - day
+      } else if (iconCode.startsWith('02') || iconCode.startsWith('03') || iconCode.startsWith('04')) {
+        return Colors.blue.shade800; // Cloudy - day
+      } else if (iconCode.startsWith('09') || iconCode.startsWith('10')) {
+        return Colors.blueGrey.shade800; // Rain - day
+      } else if (iconCode.startsWith('11')) {
+        return Colors.deepPurple.shade800; // Thunderstorm - day
+      } else if (iconCode.startsWith('13')) {
+        return Colors.lightBlue.shade800; // Snow - day
+      } else {
+        return Colors.grey.shade800; // Mist or default - day
+      }
+    }
+    // For night conditions
+    else {
+      if (iconCode.startsWith('01')) {
+        return Colors.indigo.shade800; // Clear sky - night
+      } else if (iconCode.startsWith('02') || iconCode.startsWith('03') || iconCode.startsWith('04')) {
+        return Colors.blueGrey.shade800; // Cloudy - night
+      } else if (iconCode.startsWith('09') || iconCode.startsWith('10')) {
+        return Colors.blueGrey.shade900; // Rain - night
+      } else if (iconCode.startsWith('11')) {
+        return Colors.deepPurple.shade900; // Thunderstorm - night
+      } else if (iconCode.startsWith('13')) {
+        return Colors.blue.shade800; // Snow - night
+      } else {
+        return Colors.grey.shade900; // Mist or default - night
+      }
     }
   }
 }
@@ -167,6 +223,7 @@ class WeatherWidget extends StatefulWidget {
   final bool showDetails;
   final double iconSize;
   final double fontSize;
+  final bool compactMode;
 
   const WeatherWidget({
     Key? key, 
@@ -176,16 +233,16 @@ class WeatherWidget extends StatefulWidget {
     this.showDetails = false,
     this.iconSize = 14,
     this.fontSize = 12,
+    this.compactMode = false,
   }) : super(key: key);
 
   @override
-  _WeatherWidgetState createState() => _WeatherWidgetState();
+  State<WeatherWidget> createState() => _WeatherWidgetState();
 }
 
 class _WeatherWidgetState extends State<WeatherWidget> {
   WeatherData? _weatherData;
   bool _isLoading = true;
-  Timer? _refreshTimer;
   StreamSubscription? _weatherSubscription;
 
   @override
@@ -206,7 +263,6 @@ class _WeatherWidgetState extends State<WeatherWidget> {
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
     _weatherSubscription?.cancel();
     super.dispose();
   }
@@ -244,7 +300,7 @@ class _WeatherWidgetState extends State<WeatherWidget> {
       return _buildWeatherContainer(
         icon: Icons.refresh,
         temperature: '...',
-        description: 'Loading...',
+        description: 'Loading',
       );
     }
 
@@ -283,14 +339,28 @@ class _WeatherWidgetState extends State<WeatherWidget> {
     
     final Color iconColor = widget.iconColor ?? textColor;
     
+    // Compact mode just shows the icon and temperature
+    if (widget.compactMode) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: iconColor, size: widget.iconSize),
+          const SizedBox(width: 4),
+          Text(
+            temperature,
+            style: TextStyle(
+              fontSize: widget.fontSize,
+              color: textColor,
+            ),
+          ),
+        ],
+      );
+    }
+    
     Widget content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon, 
-          color: iconColor, 
-          size: widget.iconSize
-        ),
+        Icon(icon, color: iconColor, size: widget.iconSize),
         const SizedBox(width: 4),
         Text(
           '$temperature $description',
