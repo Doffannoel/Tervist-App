@@ -1,46 +1,66 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tervist_apk/api/notification_service.dart';
+import 'package:tervist_apk/screens/main_navigation.dart';
+import 'package:http/http.dart' as http;
 import 'package:tervist_apk/api/api_config.dart';
-import 'dart:math' as math;
+import 'package:tervist_apk/screens/onboarding_screen.dart';
 
-class ApiService {
-  // Fungsi untuk mendapatkan data dashboard
-  Future<Map<String, dynamic>> fetchDashboardData() async {
+void main() async {
+  // Ensure Flutter is initialized before calling any platform methods
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize notifications service
+  await NotificationService().init();
+
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access_token');
 
-    if (token == null) {
-      throw Exception('User is not authenticated');
-    }
+    if (token == null) return false;
 
-        print('Fetching dashboard with token: ${token.substring(0, math.min(10, token.length))}...'); // Debug logging tanpa menampilkan seluruh token
-        
     final response = await http.get(
-      ApiConfig.dashboard,
-      headers: {
-        'Authorization':
-            'Bearer $token', // Menggunakan 'Bearer' sesuai dengan JWTAuthentication
-        'Content-Type': 'application/json',
-      },
+      ApiConfig.profile,
+      headers: {'Authorization': 'Bearer $token'},
     );
 
-    print('Dashboard response status: ${response.statusCode}');
-
-    // Hanya tampilkan sebagian dari response jika terlalu besar
-    if (response.body.length > 500) {
-      print(
-          'Dashboard response preview: ${response.body.substring(0, 500)}...');
-    } else {
-      print('Dashboard response body: ${response.body}');
-    }
+    debugPrint('Profile response status: ${response.statusCode}');
+    debugPrint('Profile response body: ${response.body}');
 
     if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401) {
-      throw Exception('Session expired. Please log in again.');
+      return true;
     } else {
-      throw Exception('Failed to load dashboard data: ${response.statusCode}');
+      // Token tidak valid, hapus dari SharedPreferences
+      await prefs.remove(
+          'access_token'); // Changed from 'token' to 'access_token' to match your other code
+      return false;
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: FutureBuilder<bool>(
+        future: isLoggedIn(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          } else {
+            return snapshot.data == true
+                ? const MainNavigation()
+                : const OnboardingScreen();
+          }
+        },
+      ),
+    );
   }
 }
