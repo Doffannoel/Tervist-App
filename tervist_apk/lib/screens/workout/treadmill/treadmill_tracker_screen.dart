@@ -389,211 +389,213 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
   }
 
   void _showBottomSheetPhonePosition(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.6,
-          decoration: const BoxDecoration(
-            color: Color(0xFFF0F4F7),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(30),
-              topRight: Radius.circular(30),
-            ),
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        decoration: const BoxDecoration(
+          color: Color(0xFFF0F4F7),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with back button
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 5.0),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.black,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                          size: 20,
-                        ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with back button
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 5.0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.black,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 20,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Text(
+                  ),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
                       'Where should you put your phone?',
                       style: GoogleFonts.poppins(
-                        fontSize: 18,
+                        fontSize: 16, // Reduced from 18
                         fontWeight: FontWeight.w600,
                         color: Colors.black,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              
-              // Recommended section
-              Padding(
-                padding: const EdgeInsets.fromLTRB(30.0, 20.0, 30.0, 0.0),
-                child: Text(
-                  'Recommended',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
                   ),
+                ],
+              ),
+            ),
+            
+            // Recommended section
+            Padding(
+              padding: const EdgeInsets.fromLTRB(30.0, 20.0, 30.0, 0.0),
+              child: Text(
+                'Recommended',
+                style: GoogleFonts.poppins(
+                  fontSize: 16, // Reduced from 18
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
                 ),
               ),
-              
-              // Backpack option
-              Padding(
-                padding: const EdgeInsets.fromLTRB(30.0, 10.0, 30.0, 0.0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF4CB9A0), // Green circle
-                        shape: BoxShape.circle,
-                      ),
+            ),
+            
+            // Backpack option
+            Padding(
+              padding: const EdgeInsets.fromLTRB(30.0, 10.0, 30.0, 0.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4CB9A0), // Green circle
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Backpack',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // In your hand option
-              Padding(
-                padding: const EdgeInsets.fromLTRB(30.0, 15.0, 30.0, 0.0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF4CB9A0), // Green circle
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'In your hand',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Don't section
-              Padding(
-                padding: const EdgeInsets.fromLTRB(30.0, 25.0, 30.0, 0.0),
-                child: Text(
-                  'Don\'t',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
                   ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Backpack',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16, // Reduced from 18
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // In your hand option
+            Padding(
+              padding: const EdgeInsets.fromLTRB(30.0, 15.0, 30.0, 0.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4CB9A0), // Green circle
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'In your hand',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16, // Reduced from 18
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Don't section
+            Padding(
+              padding: const EdgeInsets.fromLTRB(30.0, 25.0, 30.0, 0.0),
+              child: Text(
+                'Don\'t',
+                style: GoogleFonts.poppins(
+                  fontSize: 16, // Reduced from 18
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
                 ),
               ),
-              
-              // Treadmill option (don't)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(30.0, 10.0, 30.0, 0.0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE74C3C), // Red circle
-                        shape: BoxShape.circle,
-                      ),
+            ),
+            
+            // Treadmill option (don't)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(30.0, 10.0, 30.0, 0.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE74C3C), // Red circle
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Treadmill',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Treadmill',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16, // Reduced from 18
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              
-              const Spacer(),
-              
-              // Got it button
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Center(
-                  child: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 40.0),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        // Show countdown then start workout
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => WorkoutCountdown(
-                              onCountdownComplete: () {
-                                Navigator.of(context).pop();
-                                startWorkout();
-                              },
-                            ),
+            ),
+            
+            const Spacer(),
+            
+            // Got it button
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Center(
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(horizontal: 40.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // Show countdown then start workout
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => WorkoutCountdown(
+                            onCountdownComplete: () {
+                              Navigator.of(context).pop();
+                              startWorkout();
+                            },
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        elevation: 4,
-                        padding: const EdgeInsets.symmetric(vertical: 15.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
                         ),
-                        shadowColor: Colors.black26,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      elevation: 4,
+                      padding: const EdgeInsets.symmetric(vertical: 15.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
                       ),
-                      child: Text(
-                        'Got it',
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      shadowColor: Colors.black26,
+                    ),
+                    child: Text(
+                      'Got it',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18, // Reduced from 20
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 }
