@@ -1,11 +1,12 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CyclingActivityViewSet, CyclingStatsView, NutritionalTargetView, FoodIntakeView, DailyStepsView, CaloriesBurnedView, DashboardView, ReminderViewSet, RunningActivityView, RunningStatsView, UserProfileViewSet, WeeklyNutritionSummaryView, MonthlySummaryView
+from .views import CyclingActivityViewSet, CyclingStatsView, FoodDatabaseViewSet, NutritionalTargetView, FoodIntakeView, DailyStepsView, CaloriesBurnedView, DashboardView, ReminderViewSet, RunningActivityView, RunningStatsView, UserProfileViewSet, WeeklyNutritionSummaryView, MonthlySummaryView
 
 # Membuat router untuk viewsets
 router = DefaultRouter()
 router.register(r'nutritional-target', NutritionalTargetView, basename='nutritional-target')
 router.register(r'food-intake', FoodIntakeView, basename='food-intake')  # Pencarian otomatis dalam list() di viewset
+router.register(r'food-database', FoodDatabaseViewSet, basename='food-database')
 router.register(r'daily-steps', DailyStepsView, basename='daily-steps')
 router.register(r'calories-burned', CaloriesBurnedView, basename='calories-burned')
 router.register(r'running-activity', RunningActivityView, basename='running-activity')

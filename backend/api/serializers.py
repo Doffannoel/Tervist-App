@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from authentication.models import CustomUser
-from .models import  CyclingActivity, DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, NutritionalTarget, Reminder, RunningActivity
+from .models import  CyclingActivity, DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, FoodMeasurement, FoodMeasurement, NutritionalTarget, Reminder, RunningActivity
 
 class NutritionalTargetSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
@@ -24,7 +24,21 @@ class CaloriesBurnedSerializer(serializers.ModelSerializer):
         model = CaloriesBurned
         fields = ['id', 'user', 'exercise_calories', 'bmr_calories', 'total_calories', 'date']  # Menambahkan 'id'
 
+class FoodMeasurementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FoodMeasurement
+        fields = [
+            'id', 'label', 'gram_equivalent',
+            'calories', 'protein', 'carbs', 'fat',
+            'saturated_fat','monounsaturated_fat', 'polyunsaturated_fat',
+            'dietary_fiber', 'total_sugars', 'cholesterol',
+            'sodium', 'potassium', 'vitamin_a', 'vitamin_c', 'calcium', 'iron',
+        ]
+
+
 class FoodDatabaseSerializer(serializers.ModelSerializer):
+    measurements = FoodMeasurementSerializer(many=True, read_only=True)
+
     class Meta:
         model = FoodDatabase
         fields = '__all__'

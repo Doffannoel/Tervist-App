@@ -1,13 +1,19 @@
 from django import forms
 from django.contrib import admin
-from .models import CyclingActivity, FoodDatabase, DailySteps, CaloriesBurned, FoodIntake, NutritionalTarget, RunningActivity
+from .models import CyclingActivity, FoodDatabase, DailySteps, CaloriesBurned, FoodIntake, FoodMeasurement, NutritionalTarget, RunningActivity
 
-# Registrasi model FoodDatabase
+class FoodMeasurementInline(admin.TabularInline):
+    model = FoodMeasurement
+    extra = 1  # jumlah form kosong yang muncul otomatis
+
+class FoodMeasurementInline(admin.TabularInline):
+    model = FoodMeasurement
+    extra = 1
+
 @admin.register(FoodDatabase)
 class FoodDatabaseAdmin(admin.ModelAdmin):
-    list_display = ['name', 'measurement', 'calories', 'protein', 'carbs', 'fat']
-    search_fields = ['name']
-    list_filter = ['measurement']
+    list_display = ['name']
+    inlines = [FoodMeasurementInline]
 
 @admin.register(FoodIntake)
 class FoodIntakeAdmin(admin.ModelAdmin):

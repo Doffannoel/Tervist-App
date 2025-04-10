@@ -1,6 +1,6 @@
 from collections import defaultdict
 from django.db import IntegrityError
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, filters
 from datetime import datetime, timedelta
 from django.db.models import Sum
 from rest_framework.response import Response
@@ -54,18 +54,11 @@ class NutritionalTargetView(viewsets.ModelViewSet):
 
         # Get intake
         intake_qs = FoodIntake.objects.filter(user=user, date=date)
-        total_calories = sum(
-            i.manual_calories or (i.food_data.calories if i.food_data else 0) for i in intake_qs
-        )
-        total_protein = sum(
-            i.manual_protein or (i.food_data.protein if i.food_data else 0) for i in intake_qs
-        )
-        total_carbs = sum(
-            i.manual_carbs or (i.food_data.carbs if i.food_data else 0) for i in intake_qs
-        )
-        total_fats = sum(
-            i.manual_fats or (i.food_data.fat if i.food_data else 0) for i in intake_qs
-        )
+        total_calories = sum(i.manual_calories or 0 for i in intake_qs)
+        total_protein = sum(i.manual_protein or 0 for i in intake_qs)
+        total_carbs = sum(i.manual_carbs or 0 for i in intake_qs)
+        total_fats = sum(i.manual_fats or 0 for i in intake_qs)
+
 
         response_data = {
             "calorie_target": target.calorie_target,
@@ -81,6 +74,13 @@ class NutritionalTargetView(viewsets.ModelViewSet):
         print("📦 DAILY SUMMARY RESPONSE:", response_data)
         return Response(response_data, status=status.HTTP_200_OK)
     
+class FoodDatabaseViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = FoodDatabase.objects.all()
+    serializer_class = FoodDatabaseSerializer
+    permission_classes = [permissions.AllowAny]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
+    
 class FoodIntakeView(viewsets.ModelViewSet):
     queryset = FoodIntake.objects.all()
     serializer_class = FoodIntakeSerializer
@@ -89,95 +89,84 @@ class FoodIntakeView(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user
         data = self.request.data
-        
-        # Debugging print statements
-        print("Food Intake Creation Data:")
+
+        print("🔥 Food Intake Creation Data:")
         print(f"User: {user.username}")
         print(f"Input Data: {data}")
-        
-        # Determine meal type if not provided
+
+        # Tentukan meal_type otomatis kalau gak dikirim
         meal_type = data.get('meal_type')
         if not meal_type:
             current_time = datetime.now().time()
-            if current_time >= datetime.strptime("06:00", "%H:%M").time() and current_time < datetime.strptime("10:00", "%H:%M").time():
+            if datetime.strptime("06:00", "%H:%M").time() <= current_time < datetime.strptime("10:00", "%H:%M").time():
                 meal_type = "Breakfast"
-            elif current_time >= datetime.strptime("10:00", "%H:%M").time() and current_time < datetime.strptime("15:00", "%H:%M").time():
+            elif datetime.strptime("10:00", "%H:%M").time() <= current_time < datetime.strptime("15:00", "%H:%M").time():
                 meal_type = "Lunch"
-            elif current_time >= datetime.strptime("15:00", "%H:%M").time() and current_time < datetime.strptime("20:00", "%H:%M").time():
+            elif datetime.strptime("15:00", "%H:%M").time() <= current_time < datetime.strptime("20:00", "%H:%M").time():
                 meal_type = "Dinner"
             else:
                 meal_type = "Snack"
-        
-        # Prepare instance data
+
+        # Siapkan data dasar
         instance_data = {
             'user': user,
             'meal_type': meal_type,
             'date': data.get('date', timezone.now().date()),
             'time': data.get('time', timezone.now().time())
         }
-        
-        # Handle food data from database
+
         food_data_id = data.get('food_data_id')
+        measurement_id = data.get('measurement_id')
+        serving_size = data.get('serving_size', 1.0)
+
+        try:
+            serving_size = float(serving_size)
+        except (ValueError, TypeError):
+            serving_size = 1.0
+
         manual_calories = data.get('manual_calories')
-        
+
         try:
             if food_data_id:
-                # Scenario 1: Food from database
                 food_data = FoodDatabase.objects.get(id=food_data_id)
                 instance_data['food_data'] = food_data
-                calories = food_data.calories
-                
-                # Optional: Adjust for serving size if needed
-                serving_size = data.get('serving_size', 1)
-                try:
-                    serving_size = float(serving_size)
-                    calories *= serving_size
-                except (ValueError, TypeError):
-                    pass
-                
-                print(f"Database Food Selected: {food_data.name}")
-                print(f"Calories: {calories}")
-                
-                # Create instance with food data
-                instance = serializer.save(**instance_data)
-            
+
+                # Ambil measurement
+                if measurement_id:
+                    measurement = food_data.measurements.get(id=measurement_id)
+                else:
+                    measurement = food_data.measurements.first()
+
+                if measurement:
+                    instance_data['manual_calories'] = measurement.calories * serving_size
+                    instance_data['manual_protein'] = measurement.protein * serving_size
+                    instance_data['manual_carbs'] = measurement.carbs * serving_size
+                    instance_data['manual_fats'] = measurement.fat * serving_size
+
             elif manual_calories is not None:
-                # Scenario 2: Manual calories input
+                # Mode input manual
                 instance_data['manual_calories'] = float(manual_calories)
-                calories = float(manual_calories)
-                
-                print(f"Manual Calories Input: {calories}")
-                
-                # Create instance with manual calories
-                instance = serializer.save(**instance_data)
-            
+                instance_data['manual_protein'] = float(data.get('manual_protein', 0))
+                instance_data['manual_carbs'] = float(data.get('manual_carbs', 0))
+                instance_data['manual_fats'] = float(data.get('manual_fats', 0))
+
             else:
-                # No calories provided
-                return Response(
-                    {"error": "Either food from database or manual calories are required"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Update Nutritional Target
+                return Response({"error": "Harus pilih makanan atau isi kalori manual"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # ✅ Simpan instance-nya
+            instance = serializer.save(**instance_data)
+
+            # Optional: perbarui target kalau pakai formula dinamis
             try:
                 nt = NutritionalTarget.objects.get(user=user)
                 nt.save()
-                
-                print(f"Updated Nutritional Target. Remaining Calories: {nt.calorie_target}")
-            
             except NutritionalTarget.DoesNotExist:
-                print("No Nutritional Target found for user")
-            
-            return Response(
-                self.get_serializer(instance).data, 
-                status=status.HTTP_201_CREATED
-            )
-        
+                print("❌ User belum punya nutritional target")
+
+            return Response(self.get_serializer(instance).data, status=status.HTTP_201_CREATED)
+
         except FoodDatabase.DoesNotExist:
-            return Response(
-                {"error": "Selected food item not found in database"},
-                status=status.HTTP_400_BAD_REQUEST
-        )
+            return Response({"error": "Makanan tidak ditemukan"}, status=status.HTTP_400_BAD_REQUEST)
 
     def list(self, request):
         user = request.user
@@ -194,7 +183,6 @@ class FoodIntakeView(viewsets.ModelViewSet):
             food_intakes = food_intakes.filter(date=date_filter)
 
         return Response(FoodIntakeSerializer(food_intakes, many=True).data)
-
 
 
 class DailyStepsView(viewsets.ModelViewSet):
@@ -319,8 +307,10 @@ class DashboardView(viewsets.ViewSet):
 
         for food in serialized_food:
             meal_type = food.get("meal_type")
-            if meal_type in categorized_food:
-                categorized_food[meal_type].append(food)
+            meal_type_clean = str(meal_type).capitalize().strip()
+            if meal_type_clean in categorized_food:
+                categorized_food[meal_type_clean].append(food)
+
         
         for meal_type, items in categorized_food.items():
             print(f"{meal_type} items: {len(items)}")
@@ -423,7 +413,7 @@ class WeeklyNutritionSummaryView(APIView):
         daily_totals = { (week_ago + timezone.timedelta(days=i)): 0 for i in range(7) }
 
         for entry in food_logs:
-            calories = entry.manual_calories or (entry.food_data.calories if entry.food_data else 0)
+            calories = entry.manual_calories or 0
             daily_totals[entry.date] += calories
 
         # Buat array untuk frontend
