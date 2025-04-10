@@ -3,7 +3,7 @@ class ApiConfig {
   // terus cari IPv4 Address.
 
   static const String baseUrl =
-      'http://192.168.1.9:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
+      'http://192.168.20.189:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
 
   // ---------------- AUTHENTICATION ----------------
   static Uri get signup => Uri.parse('$baseUrl/auth/signup/');

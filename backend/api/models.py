@@ -250,4 +250,4 @@ class Reminder(models.Model):
         unique_together = ('user', 'meal_type')
     
     def __str__(self):
-        return f"{self.user.username} - {self.meal_type} at {self.time.strftime('%H:%M')}"
+              return f"{self.user.username} - {self.meal_type} at {self.time.strftime('%H:%M')}"
