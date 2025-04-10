@@ -143,7 +143,7 @@ class FoodIntake(models.Model):
 
 class DailySteps(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,null=True, blank=True)
-    steps = models.IntegerField()
+    steps = models.IntegerField(default=0)
     date = models.DateField(default=timezone.now)
 
     

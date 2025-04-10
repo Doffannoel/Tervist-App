@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib import admin
-from .models import CyclingActivity, FoodDatabase, DailySteps, CaloriesBurned, FoodIntake, FoodMeasurement, NutritionalTarget, RunningActivity
+from .models import CyclingActivity, DailySteps, FoodDatabase, CaloriesBurned, FoodIntake, FoodMeasurement, NutritionalTarget, RunningActivity
 
 class FoodMeasurementInline(admin.TabularInline):
     model = FoodMeasurement
