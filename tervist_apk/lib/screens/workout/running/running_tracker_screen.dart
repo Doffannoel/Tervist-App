@@ -630,7 +630,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF1F7F6),
       body: SafeArea(
         child: _buildCurrentStep(),
       ),

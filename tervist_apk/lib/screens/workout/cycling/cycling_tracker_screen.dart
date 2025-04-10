@@ -370,15 +370,15 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
     return "$paceWholeMinutes'${paceSeconds.toString().padLeft(2, '0')}\"";
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: _buildCurrentStep(),
-      ),
-
-    );
-  }
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: const Color(0xFFF1F7F6),
+    body: SafeArea(
+      child: _buildCurrentStep(),
+    ),
+  );
+}
 
   Widget _buildCurrentStep() {
     switch (currentStep) {
