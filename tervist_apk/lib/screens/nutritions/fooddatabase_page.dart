@@ -5,7 +5,7 @@ import '../../models/food_database.dart';
 import 'food_detail_page.dart';
 
 class FoodDatabasePage extends StatefulWidget {
-  const FoodDatabasePage({Key? key}) : super(key: key);
+  const FoodDatabasePage({super.key});
 
   @override
   State<FoodDatabasePage> createState() => _FoodDatabasePageState();
@@ -121,7 +121,7 @@ class _FoodDatabasePageState extends State<FoodDatabasePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xffF1F7F6),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -145,7 +145,7 @@ class _FoodDatabasePageState extends State<FoodDatabasePage> {
               const SizedBox(height: 20),
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F7),
+                  color: const Color(0xFFE2E8EF),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: TextField(
@@ -178,18 +178,22 @@ class _FoodDatabasePageState extends State<FoodDatabasePage> {
                             side: const BorderSide(color: Colors.black),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.edit,
-                                  color: Colors.black, size: 18),
-                              const SizedBox(width: 8),
-                              Text('Log empty meal',
-                                  style: GoogleFonts.poppins(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 16)),
-                            ],
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 20.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.edit,
+                                    color: Colors.black, size: 18),
+                                const SizedBox(width: 70),
+                                Text('Log empty meal',
+                                    style: GoogleFonts.poppins(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14)),
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -280,11 +284,10 @@ class FoodItem extends StatelessWidget {
   final VoidCallback onTapLog;
 
   const FoodItem(
-      {Key? key,
+      {super.key,
       required this.food,
       required this.onTapDetail,
-      required this.onTapLog})
-      : super(key: key);
+      required this.onTapLog});
 
   @override
   Widget build(BuildContext context) {

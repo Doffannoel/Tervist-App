@@ -214,7 +214,6 @@ class DashboardView(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
     
     def list(self, request):
-        # Cek header dan authentikasi
         auth_header = request.META.get('HTTP_AUTHORIZATION', '')
         user = request.user if request.user.is_authenticated else None
         
@@ -224,12 +223,10 @@ class DashboardView(viewsets.ViewSet):
         if user:
             print(f"User ID: {user.id}, Username: {user.username}, Email: {user.email}")
         
-        # Get today's date
         today = timezone.now().date()
         print(f"Filtering data for date: {today}")
         
         if user is None:
-            # Return default data for unauthorized users
             return Response({
                 "message": "Please log in to view your personalized dashboard",
                 "calorie_target": 1236,
@@ -248,54 +245,41 @@ class DashboardView(viewsets.ViewSet):
                     "Snack": []
                 }
             }, status=status.HTTP_200_OK)
-        
-        # Get the total steps for today (from DailySteps and RunningActivity)
+
+        # Total langkah cuma dari DailySteps (biar gak double sama RunningActivity)
         steps_data = DailySteps.objects.filter(user=user, date=today)
         total_steps = steps_data.aggregate(Sum('steps'))['steps__sum'] or 0
         print(f"Steps from DailySteps: {total_steps} (records: {steps_data.count()})")
-        
-        running_steps_data = RunningActivity.objects.filter(user=user, date=today)
-        total_running_steps = running_steps_data.aggregate(Sum('steps'))['steps__sum'] or 0
-        print(f"Steps from RunningActivity: {total_running_steps} (records: {running_steps_data.count()})")
-        
-        total_steps += total_running_steps
-        
-        # Get distance and pace information
-        distance_km = running_steps_data.aggregate(Sum('distance_km'))['distance_km__sum'] or 0
-        print(f"Total distance: {distance_km} km")
-        
-        # Get average pace (jika ada beberapa aktivitas, ini akan jadi rata-rata tertimbang)
-        pace = "14 min/km"  # Default value
-        if running_steps_data.exists() and distance_km > 0:
-            total_time_seconds = running_steps_data.aggregate(Sum('time_seconds'))['time_seconds__sum'] or 0
-            avg_pace_minutes = (total_time_seconds / 60) / distance_km if distance_km > 0 else 0
-            pace = f"{int(avg_pace_minutes)} min/km"
-        print(f"Average pace: {pace}")
 
-        # Get calories burned information
+        # Total kalori cuma dari CaloriesBurned (tanpa tambah dari RunningActivity)
         calories_burned_data = CaloriesBurned.objects.filter(user=user, date=today)
         total_calories_burned = calories_burned_data.aggregate(Sum('total_calories'))['total_calories__sum'] or 0
         print(f"Calories from CaloriesBurned: {total_calories_burned} (records: {calories_burned_data.count()})")
-        
-        total_running_calories_burned = running_steps_data.aggregate(Sum('calories_burned'))['calories_burned__sum'] or 0
-        print(f"Calories from RunningActivity: {total_running_calories_burned}")
-        
-        total_calories_burned += total_running_calories_burned
-        
-        # Get exercise and BMR breakdown if available
+
+        # Jarak dan pace tetap ambil dari RunningActivity
+        running_steps_data = RunningActivity.objects.filter(user=user, date=today)
+        distance_km = running_steps_data.aggregate(Sum('distance_km'))['distance_km__sum'] or 0
+        print(f"Total distance: {distance_km} km")
+
+        pace = "14 min/km"
+        if running_steps_data.exists() and distance_km > 0:
+            total_time_seconds = running_steps_data.aggregate(Sum('time_seconds'))['time_seconds__sum'] or 0
+            avg_pace_minutes = (total_time_seconds / 60) / distance_km
+            pace = f"{int(avg_pace_minutes)} min/km"
+        print(f"Average pace: {pace}")
+
+        # Breakdown kalori (exercise & BMR)
         exercise_calories = calories_burned_data.aggregate(Sum('exercise_calories'))['exercise_calories__sum'] or 0
         bmr_calories = calories_burned_data.aggregate(Sum('bmr_calories'))['bmr_calories__sum'] or 0
         print(f"Exercise calories: {exercise_calories}, BMR calories: {bmr_calories}")
 
-        # Get nutritional target data
+        # Target nutrisi
         nutritional_target = NutritionalTarget.objects.filter(user=user).first()
         nutritional_target_data = NutritionalTargetSerializer(nutritional_target).data if nutritional_target else {}
         print(f"Nutritional target: {nutritional_target_data}")
 
-        # Get and categorize food intake
+        # Data makanan
         food_intake_data = FoodIntake.objects.filter(user=user, date=today)
-        print(f"Food intake records: {food_intake_data.count()}")
-        
         serialized_food = FoodIntakeSerializer(food_intake_data, many=True).data
 
         categorized_food = {
@@ -306,32 +290,27 @@ class DashboardView(viewsets.ViewSet):
         }
 
         for food in serialized_food:
-            meal_type = food.get("meal_type")
-            meal_type_clean = str(meal_type).capitalize().strip()
-            if meal_type_clean in categorized_food:
-                categorized_food[meal_type_clean].append(food)
-
+            meal_type = str(food.get("meal_type", "")).capitalize().strip()
+            if meal_type in categorized_food:
+                categorized_food[meal_type].append(food)
         
         for meal_type, items in categorized_food.items():
             print(f"{meal_type} items: {len(items)}")
 
-        # Prepare the response data
         response_data = {
             "nutritional_target": nutritional_target_data,
             "total_steps": total_steps,
             "steps_goal": nutritional_target.steps_goal if nutritional_target else 10000,
-            "distance_km": distance_km or 1.7,  # Default to 1.7 if no data
+            "distance_km": distance_km or 1.7,
             "pace": pace,
-            
             "calories_burned_goal": nutritional_target.calories_burned_goal if nutritional_target else 1000,
             "total_calories_burned": total_calories_burned,
-            "exercise_calories": exercise_calories or 286,  # Default to 286 if no data
-            "bmr_calories": bmr_calories or 200,  # Default to 200 if no data
-            
+            "exercise_calories": exercise_calories or 286,
+            "bmr_calories": bmr_calories or 200,
             "calorie_target": nutritional_target.calorie_target if nutritional_target else 1236,
             "categorized_food": categorized_food,
         }
-        
+
         print(f"Response prepared with {len(response_data)} keys")
         return Response(response_data, status=status.HTTP_200_OK)
 
@@ -347,44 +326,62 @@ class RunningActivityView(viewsets.ModelViewSet):
             distance = serializer.validated_data['distance_km']
             time = serializer.validated_data['time_seconds']
             steps = serializer.validated_data['steps']
-            calories_burned = self.calculate_calories_burned(distance, time, steps)  # Calculate calories
+            calories_burned = self.calculate_calories_burned(distance, time, steps)
 
-            # Save RunningActivity
             running_activity = serializer.save(
                 user=user,
                 calories_burned=calories_burned
             )
-            running_activity.calculate_pace()  # Calculate pace after saving the data
+            running_activity.calculate_pace()
 
-            # Update DailySteps (add steps from the running activity)
+            # Update steps and calories burned in DailySteps and CaloriesBurned
             self.update_daily_steps(user, steps)
-
-            # Update CaloriesBurned (add calories from the running activity)
             self.update_calories_burned(user, calories_burned)
+
         else:
             serializer.save()
 
     def update_daily_steps(self, user, steps):
-        """Update the DailySteps model with the steps from the running activity"""
         today = timezone.now().date()
+
+        # Update DailySteps for today
         daily_steps, created = DailySteps.objects.get_or_create(user=user, date=today)
-        daily_steps.steps += steps  # Add the steps from the running activity
+
+        # If new DailySteps entry, set steps, otherwise add to the existing ones
+        if created:
+            daily_steps.steps = steps
+        else:
+            daily_steps.steps += steps  # Accumulate steps if already exists
+
         daily_steps.save()
 
     def update_calories_burned(self, user, calories_burned):
-        """Update the CaloriesBurned model with the calories burned from the running activity"""
         today = timezone.now().date()
-        calories_burned_model, created = CaloriesBurned.objects.get_or_create(user=user, date=today)
-        calories_burned_model.total_calories += calories_burned  # Add the calories burned from the running activity
-        calories_burned_model.save()
+
+        # Update CaloriesBurned for today
+        calories_obj, created = CaloriesBurned.objects.get_or_create(user=user, date=today)
+
+        # If new CaloriesBurned entry, set total_calories, otherwise add to the existing ones
+        if created:
+            calories_obj.total_calories = calories_burned
+        else:
+            calories_obj.total_calories += calories_burned  # Accumulate calories if already exists
+
+        calories_obj.save()
 
     def calculate_calories_burned(self, distance, time, steps):
-        """Calculate calories burned based on distance, time, and steps."""
-        # Example calculation: MET value of 5 for moderate activity (e.g., walking or running)
         MET = 5.0
-        weight = self.request.user.weight  # Ensure the user profile has weight data
-        calories = (weight * MET * time) / 60  # Basic estimation based on weight and time
+        weight = getattr(self.request.user, 'weight', 60) or 60  # fallback
+        weight = float(weight)
+        time_minutes = float(time) / 60.0
+
+        if time <= 0 or weight <= 0:
+            return 1
+
+        # Rumus yang bener
+        calories = ((MET * weight * 3.5) / 200) * time_minutes
         return round(calories)
+
     
 class CyclingActivityViewSet(viewsets.ModelViewSet):
     queryset = CyclingActivity.objects.all()

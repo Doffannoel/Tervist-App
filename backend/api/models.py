@@ -143,7 +143,7 @@ class FoodIntake(models.Model):
 
 class DailySteps(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,null=True, blank=True)
-    steps = models.IntegerField()
+    steps = models.IntegerField(default=0)
     date = models.DateField(default=timezone.now)
 
     
@@ -250,4 +250,4 @@ class Reminder(models.Model):
         unique_together = ('user', 'meal_type')
     
     def __str__(self):
-        return f"{self.user.username} - {self.meal_type} at {self.time.strftime('%H:%M')}"
+              return f"{self.user.username} - {self.meal_type} at {self.time.strftime('%H:%M')}"

@@ -1,4 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:tervist_apk/api/api_config.dart';
 
 class AuthHelper {
   static const String TOKEN_KEY = 'auth_token';
@@ -73,10 +75,20 @@ class AuthHelper {
   }
 
   // Check if user is logged in
-  static Future<bool> isLoggedIn() async {
+static Future<bool> isLoggedIn() async {
     final token = await getToken();
-    return token != null && token.isNotEmpty;
+    if (token == null) return false;
+
+    final response = await http.get(
+      ApiConfig.profile,
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    return response.statusCode == 200;
   }
+
   
   // Get authentication headers for API requests
   static Future<Map<String, String>> getAuthHeaders() async {
@@ -90,4 +102,16 @@ class AuthHelper {
       };
     }
   }
+
+  static Future<void> saveProfilePicture(String url) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('profile_picture', url);
+  }
+
+  static Future<String?> getProfilePicture() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('profile_picture');
+  }
+
 }
+

@@ -120,12 +120,17 @@ class _HomePageState extends State<HomePage>
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-      ).timeout(const Duration(seconds: 15));
+      );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else if (response.statusCode == 401) {
-        throw Exception('Session expired. Please log in again.');
+        final data = json.decode(response.body);
+
+        // Pastikan data terbaru menggantikan data lama
+        setState(() {
+          _dashboardData = data; // Update dengan data terbaru
+        });
+
+        return data;
       } else {
         throw Exception('Failed to load dashboard: ${response.body}');
       }
@@ -541,7 +546,7 @@ class _HomePageState extends State<HomePage>
 
   // Method untuk steps card dengan animasi
   Widget _buildStepsCard(Map<String, dynamic> data) {
-    final totalSteps = data['total_steps'] ?? 0;
+    final totalSteps = _dashboardData?['total_steps'] ?? 0;
     final stepsGoal = data['steps_goal'] ?? 10000;
     final progress = stepsGoal > 0 ? (totalSteps / stepsGoal) : 0;
     final percentProgress = (progress * 100).toInt();
@@ -647,7 +652,7 @@ class _HomePageState extends State<HomePage>
 
   // Method untuk calories burned card dengan animasi
   Widget _buildCaloriesBurnedCard(Map<String, dynamic> data) {
-    final totalCaloriesBurned = data['total_calories_burned'] ?? 0;
+    final totalCaloriesBurned = _dashboardData?['total_calories_burned'] ?? 0;
     final caloriesBurnedGoal = data['calories_burned_goal'] ?? 1000;
     final progress =
         caloriesBurnedGoal > 0 ? (totalCaloriesBurned / caloriesBurnedGoal) : 0;
@@ -741,7 +746,7 @@ class _HomePageState extends State<HomePage>
                 final animatedPercent =
                     (progress * 100 * _progressAnimation.value).toInt();
                 return Text(
-                    '$animatedPercent% of daily goal ($caloriesBurnedGoal kcal)');
+                    '${animatedPercent.ceil()}% of daily goal (${caloriesBurnedGoal.ceil()} kcal)');
               },
             ),
             const SizedBox(height: 16),
@@ -980,7 +985,6 @@ Widget _buildCalorieBudget(Map<String, dynamic> data) {
         } else if (meal['manual_calories'] != null) {
           totalConsumed +=
               double.tryParse(meal['manual_calories'].toString())?.round() ?? 0;
-
         }
       }
     }

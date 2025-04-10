@@ -13,51 +13,54 @@ class AppNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      height: 60,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildNavItem(
-            isActive: currentIndex == 0,
-            activeIcon: Icons.home,
-            inactiveIcon: Icons.home_outlined,
-            label: 'Home',
-            onTap: () => _handleTap(context, 0),
-          ),
-          _buildNavItem(
-            isActive: currentIndex == 1,
-            activeIcon: Icons.restaurant,
-            inactiveIcon: Icons.restaurant_outlined,
-            label: 'Nutrition',
-            onTap: () => _handleTap(context, 1),
-          ),
-          _buildNavItem(
-            isActive: currentIndex == 2,
-            activeIcon: Icons.directions_run,
-            inactiveIcon: Icons.directions_run_outlined,
-            label: 'Workout',
-            onTap: () => _handleTap(context, 2),
-          ),
-          _buildNavItem(
-            isActive: currentIndex == 3,
-            activeIcon: Icons.person,
-            inactiveIcon: Icons.person_outlined,
-            label: 'Profile',
-            onTap: () => _handleTap(context, 3),
-          ),
-        ],
+      color: const Color(0xFFF1F7F6), // Background color
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white, // Navigation bar container color
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildNavItem(
+              isActive: currentIndex == 0,
+              activeIcon: Icons.home,
+              inactiveIcon: Icons.home_outlined,
+              label: 'Home',
+              onTap: () => _handleTap(context, 0),
+            ),
+            _buildNavItem(
+              isActive: currentIndex == 1,
+              activeIcon: Icons.restaurant,
+              inactiveIcon: Icons.restaurant_outlined,
+              label: 'Nutrition',
+              onTap: () => _handleTap(context, 1),
+            ),
+            _buildNavItem(
+              isActive: currentIndex == 2,
+              activeIcon: Icons.directions_run,
+              inactiveIcon: Icons.directions_run_outlined,
+              label: 'Workout',
+              onTap: () => _handleTap(context, 2),
+            ),
+            _buildNavItem(
+              isActive: currentIndex == 3,
+              activeIcon: Icons.person,
+              inactiveIcon: Icons.person_outlined,
+              label: 'Profile',
+              onTap: () => _handleTap(context, 3),
+            ),
+          ],
+        ),
       ),
     );
   }
