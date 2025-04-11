@@ -4,6 +4,7 @@ import 'package:tervist_apk/api/notification_service.dart';
 import 'package:tervist_apk/screens/main_navigation.dart';
 import 'package:http/http.dart' as http;
 import 'package:tervist_apk/api/api_config.dart';
+import 'package:tervist_apk/screens/nutritions/nutrition_main.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
 
 void main() async {
@@ -57,7 +58,7 @@ class MyApp extends StatelessWidget {
           } else {
             return snapshot.data == true
                 ? const MainNavigation()
-                : const OnboardingScreen();
+                : const NutritionMainPage();
           }
         },
       ),

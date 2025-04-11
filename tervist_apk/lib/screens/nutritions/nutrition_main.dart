@@ -50,7 +50,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
   }
 
   // Fetch nutritional targets and consumption data
-Future<void> getDailySummary() async {
+  Future<void> getDailySummary() async {
     setState(() {
       _isLoading = true;
     });
@@ -129,7 +129,7 @@ Future<void> getDailySummary() async {
   }
 
   // Fetch food intake data
-Future<void> _fetchFoodIntake() async {
+  Future<void> _fetchFoodIntake() async {
     try {
       final response = await _nutritionService.getFoodIntake(_selectedDate);
       final List<Map<String, dynamic>> foodData = [];
@@ -823,6 +823,7 @@ Future<void> _fetchFoodIntake() async {
   }
 
   // Build nutrient info pill for food items
+  // Build nutrient info pill for food items
   Widget _buildNutrientInfo(String label, String value, Color color) {
     return Row(
       children: [
@@ -832,13 +833,16 @@ Future<void> _fetchFoodIntake() async {
             color: color.withOpacity(0.2),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+          child: Image.asset(
+            label == 'P'
+                ? 'assets/images/protein.png'
+                : label == 'C'
+                    ? 'assets/images/carb.png'
+                    : label == 'F'
+                        ? 'assets/images/fat.png'
+                        : 'assets/images/fat.png',
+            height: 12,
+            width: 12,
           ),
         ),
         const SizedBox(width: 4),
