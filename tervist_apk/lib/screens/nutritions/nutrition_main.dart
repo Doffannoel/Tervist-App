@@ -5,6 +5,7 @@ import 'package:tervist_apk/screens/nutritions/fooddatabase_page.dart';
 import 'package:tervist_apk/widgets/calendar_popup.dart';
 import 'package:intl/intl.dart';
 import 'scanfood.dart';
+import 'package:tervist_apk/screens/nutritions/streak_popup_dialog.dart';
 
 class NutritionMainPage extends StatefulWidget {
   const NutritionMainPage({super.key});

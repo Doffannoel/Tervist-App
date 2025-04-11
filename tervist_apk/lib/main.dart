@@ -5,6 +5,7 @@ import 'package:tervist_apk/screens/main_navigation.dart';
 import 'package:http/http.dart' as http;
 import 'package:tervist_apk/api/api_config.dart';
 import 'package:tervist_apk/screens/nutritions/nutrition_main.dart';
+import 'package:tervist_apk/screens/nutritions/streak_popup_dialog.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
 
 void main() async {
