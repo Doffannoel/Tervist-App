@@ -5,6 +5,7 @@ import 'package:tervist_apk/screens/nutritions/fooddatabase_page.dart';
 import 'package:tervist_apk/widgets/calendar_popup.dart';
 import 'package:intl/intl.dart';
 import 'scanfood.dart';
+import 'package:tervist_apk/screens/nutritions/streak_popup_dialog.dart';
 
 class NutritionMainPage extends StatefulWidget {
   const NutritionMainPage({super.key});
@@ -50,7 +51,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
   }
 
   // Fetch nutritional targets and consumption data
-Future<void> getDailySummary() async {
+  Future<void> getDailySummary() async {
     setState(() {
       _isLoading = true;
     });
@@ -129,7 +130,7 @@ Future<void> getDailySummary() async {
   }
 
   // Fetch food intake data
-Future<void> _fetchFoodIntake() async {
+  Future<void> _fetchFoodIntake() async {
     try {
       final response = await _nutritionService.getFoodIntake(_selectedDate);
       final List<Map<String, dynamic>> foodData = [];
@@ -772,11 +773,18 @@ Future<void> _fetchFoodIntake() async {
                   fontSize: 16,
                 ),
               ),
-              Text(
-                food['time'] ?? '',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  food['time'] ?? '',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ],
@@ -826,20 +834,16 @@ Future<void> _fetchFoodIntake() async {
   Widget _buildNutrientInfo(String label, String value, Color color) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
+        Image.asset(
+          label == 'P'
+              ? 'assets/images/protein.png'
+              : label == 'C'
+                  ? 'assets/images/carb.png'
+                  : label == 'F'
+                      ? 'assets/images/fat.png'
+                      : 'assets/images/fat.png',
+          height: 16,
+          width: 16,
         ),
         const SizedBox(width: 4),
         Text(
