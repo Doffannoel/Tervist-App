@@ -772,11 +772,18 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                   fontSize: 16,
                 ),
               ),
-              Text(
-                food['time'] ?? '',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  food['time'] ?? '',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ],
@@ -823,27 +830,19 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
   }
 
   // Build nutrient info pill for food items
-  // Build nutrient info pill for food items
   Widget _buildNutrientInfo(String label, String value, Color color) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Image.asset(
-            label == 'P'
-                ? 'assets/images/protein.png'
-                : label == 'C'
-                    ? 'assets/images/carb.png'
-                    : label == 'F'
-                        ? 'assets/images/fat.png'
-                        : 'assets/images/fat.png',
-            height: 12,
-            width: 12,
-          ),
+        Image.asset(
+          label == 'P'
+              ? 'assets/images/protein.png'
+              : label == 'C'
+                  ? 'assets/images/carb.png'
+                  : label == 'F'
+                      ? 'assets/images/fat.png'
+                      : 'assets/images/fat.png',
+          height: 16,
+          width: 16,
         ),
         const SizedBox(width: 4),
         Text(
