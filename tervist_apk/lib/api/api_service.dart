@@ -14,8 +14,9 @@ class ApiService {
       throw Exception('User is not authenticated');
     }
 
-        print('Fetching dashboard with token: ${token.substring(0, math.min(10, token.length))}...'); // Debug logging tanpa menampilkan seluruh token
-        
+    print(
+        'Fetching dashboard with token: ${token.substring(0, math.min(10, token.length))}...'); // Debug logging tanpa menampilkan seluruh token
+
     final response = await http.get(
       ApiConfig.dashboard,
       headers: {

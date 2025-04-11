@@ -6,7 +6,7 @@ import '../../models/food_database.dart';
 class FoodDetailPage extends StatefulWidget {
   final FoodDatabase food;
 
-  const FoodDetailPage({Key? key, required this.food}) : super(key: key);
+  const FoodDetailPage({super.key, required this.food});
 
   @override
   State<FoodDetailPage> createState() => _FoodDetailPageState();
@@ -100,7 +100,8 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: List.generate(widget.food.measurements.length, (index) {
+                  children:
+                      List.generate(widget.food.measurements.length, (index) {
                     return Padding(
                       padding: const EdgeInsets.only(right: 10),
                       child: MeasurementButton(
@@ -238,15 +239,16 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
               color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.local_fire_department, color: Colors.black, size: 20),
+            child: const Icon(Icons.local_fire_department,
+                color: Colors.black, size: 20),
           ),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Calories', 
+              Text('Calories',
                   style: GoogleFonts.poppins(
-                    fontSize: 14, 
+                    fontSize: 14,
                     color: Colors.grey[600],
                   )),
               Row(
@@ -260,7 +262,8 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.black,
                       borderRadius: BorderRadius.circular(12),
@@ -321,7 +324,8 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     );
   }
 
-  Widget _buildMacroBox(String label, String value, IconData icon, Color color, String additionalValue) {
+  Widget _buildMacroBox(String label, String value, IconData icon, Color color,
+      String additionalValue) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
@@ -389,11 +393,11 @@ class MeasurementButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const MeasurementButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.isSelected,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -404,7 +408,9 @@ class MeasurementButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? Colors.black : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: !isSelected ? Border.all(color: Colors.grey.shade300, width: 1) : null,
+          border: !isSelected
+              ? Border.all(color: Colors.grey.shade300, width: 1)
+              : null,
         ),
         child: Text(
           label,

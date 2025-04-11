@@ -120,17 +120,12 @@ class _HomePageState extends State<HomePage>
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-      );
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        // Pastikan data terbaru menggantikan data lama
-        setState(() {
-          _dashboardData = data; // Update dengan data terbaru
-        });
-
-        return data;
+        return json.decode(response.body);
+      } else if (response.statusCode == 401) {
+        throw Exception('Session expired. Please log in again.');
       } else {
         throw Exception('Failed to load dashboard: ${response.body}');
       }
@@ -388,6 +383,7 @@ class _HomePageState extends State<HomePage>
   // Removed redundant local declaration of _calculateConsumedCalories
 
   // Method untuk meal summary
+// Method untuk meal summary dengan konsistensi perhitungan
   Widget _buildMealSummary(Map<String, dynamic> data) {
     print('Full categorized food data: ${data['categorized_food']}');
 
@@ -413,6 +409,12 @@ class _HomePageState extends State<HomePage>
     print('Calculated Dinner Calories: $dinnerCalories');
     print('Calculated Snack Calories: $snackCalories');
 
+    // Verify the total calories match what's expected in the nutrition view
+    int totalCalculatedCalories =
+        breakfastCalories + lunchCalories + dinnerCalories + snackCalories;
+    print(
+        'Total calculated calories across all meals: $totalCalculatedCalories');
+
     bool isBreakfastActive = breakfastCalories > 0;
     bool isLunchActive = lunchCalories > 0;
     bool isDinnerActive = dinnerCalories > 0;
@@ -436,7 +438,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // Method untuk menghitung kalori per tipe makanan
+// Method untuk menghitung kalori per tipe makanan - FIXED VERSION
   int _calculateMealTypeCalories(List<dynamic> meals) {
     int totalCalories = 0;
     print('Processing meals: $meals');
@@ -444,27 +446,243 @@ class _HomePageState extends State<HomePage>
     for (var meal in meals) {
       print('Current meal: $meal');
 
-      if (meal['food_data'] != null) {
-        print('Food data exists: ${meal['food_data']}');
-        if (meal['food_data']['calories'] != null) {
-          int calories =
-              int.tryParse(meal['food_data']['calories'].toString()) ?? 0;
-          print('Parsed calories from food_data: $calories');
-          totalCalories += calories;
-        }
-      }
-
+      // IMPORTANT: Only use one source of calories per meal
+      // Option 1: Use manual calories if available (priority)
       if (meal['manual_calories'] != null) {
         int manualCalories =
             double.tryParse(meal['manual_calories'].toString())?.round() ?? 0;
-
-        print('Parsed manual calories: $manualCalories');
+        print('Using manual calories only: $manualCalories');
         totalCalories += manualCalories;
+      }
+      // Option 2: Fall back to food_data measurements ONLY if manual_calories is not set
+      else if (meal['food_data'] != null) {
+        print('No manual calories, using food data: ${meal['food_data']}');
+
+        // Check if measurements exist and has items
+        if (meal['food_data']['measurements'] != null &&
+            meal['food_data']['measurements'] is List &&
+            (meal['food_data']['measurements'] as List).isNotEmpty) {
+          // Get the first measurement (usually the default one)
+          var measurement = meal['food_data']['measurements'][0];
+
+          if (measurement['calories'] != null) {
+            // Parse serving size (default to 1 if not specified)
+            double servingSize =
+                double.tryParse(meal['serving_size']?.toString() ?? '1') ?? 1.0;
+
+            double calories =
+                double.tryParse(measurement['calories'].toString()) ?? 0;
+            double calculatedCalories = calories * servingSize;
+            print(
+                'Parsed calories from measurement: $calories with serving size $servingSize = $calculatedCalories');
+            totalCalories += calculatedCalories.round();
+          }
+        }
       }
     }
 
     print('Total calories calculated: $totalCalories');
     return totalCalories;
+  }
+
+  // Method untuk Calorie Budget dengan 4 warna
+  Widget _buildCalorieBudget(Map<String, dynamic> data) {
+    int calculateConsumedCalories(Map<String, dynamic> data) {
+      int totalConsumed = 0;
+      Map<String, dynamic> categorizedFood = data['categorized_food'] ?? {};
+
+      // Only iterate through each category's meals once
+      for (var category in categorizedFood.keys) {
+        List<dynamic> meals = categorizedFood[category] ?? [];
+        // Use the _calculateMealTypeCalories method for consistent calculation
+        int categoryCalories = _calculateMealTypeCalories(meals);
+        print('Category $category calories: $categoryCalories');
+        totalConsumed += categoryCalories;
+      }
+
+      print('Total consumed calories: $totalConsumed');
+      return totalConsumed;
+    }
+
+    final totalBudget = data['calorie_target'] ?? 1236;
+    final consumedCalories = calculateConsumedCalories(data);
+    final caloriesLeft =
+        totalBudget - consumedCalories > 0 ? totalBudget - consumedCalories : 0;
+
+    // Hitung persentase kalori yang dikonsumsi
+    double progress = totalBudget > 0 ? consumedCalories / totalBudget : 0;
+    if (progress > 1.0) progress = 1.0; // Batasi maksimal 100%
+
+    // Bagi progress menjadi 4 segmen dengan warna berbeda
+    // Setiap segmen mendapatkan 25% dari total progress
+    double segment1Progress = progress >= 0.25 ? 0.25 : progress;
+    double segment2Progress =
+        progress >= 0.50 ? 0.25 : (progress > 0.25 ? progress - 0.25 : 0);
+    double segment3Progress =
+        progress >= 0.75 ? 0.25 : (progress > 0.50 ? progress - 0.50 : 0);
+    double segment4Progress = progress > 0.75 ? progress - 0.75 : 0;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Your Calorie Budget',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Poppins',
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.black),
+              ),
+              child: Text(
+                totalBudget.round().toString(),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            // Background circle (light gray)
+            SizedBox(
+              height: 180,
+              width: 180,
+              child: CircularProgressIndicator(
+                value: 1.0,
+                strokeWidth: 28,
+                backgroundColor: const Color(0xfff1f7f6),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey.shade300),
+              ),
+            ),
+
+            // Segment 1 - Dark Blue (425E8E) - First 25%
+            SizedBox(
+              height: 180,
+              width: 180,
+              child: CircularProgressIndicator(
+                value: segment1Progress,
+                strokeWidth: 28,
+                backgroundColor: Colors.transparent,
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xFF425E8E)),
+              ),
+            ),
+
+            // Segment 2 - Medium Blue (587DBD) - Second 25%
+            SizedBox(
+              height: 180,
+              width: 180,
+              child: Transform.rotate(
+                angle: 2 * 3.14159 * 0.25, // Rotate to start at 25%
+                child: CircularProgressIndicator(
+                  value: segment2Progress,
+                  strokeWidth: 28,
+                  backgroundColor: Colors.transparent,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Color(0xFF587DBD)),
+                ),
+              ),
+            ),
+
+            // Segment 3 - Teal (00A991) - Third 25%
+            SizedBox(
+              height: 180,
+              width: 180,
+              child: Transform.rotate(
+                angle: 2 * 3.14159 * 0.50, // Rotate to start at 50%
+                child: CircularProgressIndicator(
+                  value: segment3Progress,
+                  strokeWidth: 28,
+                  backgroundColor: Colors.transparent,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Color(0xFF00A991)),
+                ),
+              ),
+            ),
+
+            // Segment 4 - Dark Green (007F6D) - Last 25%
+            SizedBox(
+              height: 180,
+              width: 180,
+              child: Transform.rotate(
+                angle: 2 * 3.14159 * 0.75, // Rotate to start at 75%
+                child: CircularProgressIndicator(
+                  value: segment4Progress,
+                  strokeWidth: 28,
+                  backgroundColor: Colors.transparent,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Color(0xFF007F6D)),
+                ),
+              ),
+            ),
+
+            // Center text
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  caloriesLeft.round().toString(),
+                  style: const TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                const Text(
+                  'Left',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.normal,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                const Text(
+                  'kcal',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                    fontFamily: 'Poppins',
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Container(
+          width: double.infinity,
+          height: 1,
+          color: Colors.grey.shade300,
+        ),
+        const SizedBox(height: 6),
+        Center(
+          child: Container(
+            width: 180,
+            height: 3,
+            color: Colors.black,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          height: 1,
+          color: Colors.grey.shade300,
+        ),
+      ],
+    );
   }
 
   // Method untuk kolom makanan
@@ -546,7 +764,7 @@ class _HomePageState extends State<HomePage>
 
   // Method untuk steps card dengan animasi
   Widget _buildStepsCard(Map<String, dynamic> data) {
-    final totalSteps = _dashboardData?['total_steps'] ?? 0;
+    final totalSteps = data['total_steps'] ?? 0;
     final stepsGoal = data['steps_goal'] ?? 10000;
     final progress = stepsGoal > 0 ? (totalSteps / stepsGoal) : 0;
     final percentProgress = (progress * 100).toInt();
@@ -652,7 +870,7 @@ class _HomePageState extends State<HomePage>
 
   // Method untuk calories burned card dengan animasi
   Widget _buildCaloriesBurnedCard(Map<String, dynamic> data) {
-    final totalCaloriesBurned = _dashboardData?['total_calories_burned'] ?? 0;
+    final totalCaloriesBurned = data['total_calories_burned'] ?? 0;
     final caloriesBurnedGoal = data['calories_burned_goal'] ?? 1000;
     final progress =
         caloriesBurnedGoal > 0 ? (totalCaloriesBurned / caloriesBurnedGoal) : 0;
@@ -746,7 +964,7 @@ class _HomePageState extends State<HomePage>
                 final animatedPercent =
                     (progress * 100 * _progressAnimation.value).toInt();
                 return Text(
-                    '${animatedPercent.ceil()}% of daily goal (${caloriesBurnedGoal.ceil()} kcal)');
+                    '$animatedPercent% of daily goal (${caloriesBurnedGoal.ceil()} kcal)');
               },
             ),
             const SizedBox(height: 16),
@@ -970,205 +1188,3 @@ Widget _buildAchievementItem({
 }
 
 // Method untuk Calorie Budget
-// Method untuk Calorie Budget dengan 4 warna
-Widget _buildCalorieBudget(Map<String, dynamic> data) {
-  int calculateConsumedCalories(Map<String, dynamic> data) {
-    int totalConsumed = 0;
-    Map<String, dynamic> categorizedFood = data['categorized_food'] ?? {};
-
-    for (var category in categorizedFood.keys) {
-      List<dynamic> meals = categorizedFood[category] ?? [];
-      for (var meal in meals) {
-        if (meal['food_data'] != null &&
-            meal['food_data']['calories'] != null) {
-          totalConsumed += int.parse(meal['food_data']['calories'].toString());
-        } else if (meal['manual_calories'] != null) {
-          totalConsumed +=
-              double.tryParse(meal['manual_calories'].toString())?.round() ?? 0;
-        }
-      }
-    }
-
-    return totalConsumed;
-  }
-
-  final totalBudget = data['calorie_target'] ?? 1236;
-  final consumedCalories = calculateConsumedCalories(data);
-  final caloriesLeft =
-      totalBudget - consumedCalories > 0 ? totalBudget - consumedCalories : 0;
-
-  // Hitung persentase kalori yang dikonsumsi
-  double progress = totalBudget > 0 ? consumedCalories / totalBudget : 0;
-  if (progress > 1.0) progress = 1.0; // Batasi maksimal 100%
-
-  // Bagi progress menjadi 4 segmen dengan warna berbeda
-  // Setiap segmen mendapatkan 25% dari total progress
-  double segment1Progress = progress >= 0.25 ? 0.25 : progress;
-  double segment2Progress =
-      progress >= 0.50 ? 0.25 : (progress > 0.25 ? progress - 0.25 : 0);
-  double segment3Progress =
-      progress >= 0.75 ? 0.25 : (progress > 0.50 ? progress - 0.50 : 0);
-  double segment4Progress = progress > 0.75 ? progress - 0.75 : 0;
-
-  return Column(
-    children: [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'Your Calorie Budget',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.black),
-            ),
-            child: Text(
-              totalBudget.round().toString(),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Poppins',
-              ),
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 20),
-      Stack(
-        alignment: Alignment.center,
-        children: [
-          // Background circle (light gray)
-          SizedBox(
-            height: 180,
-            width: 180,
-            child: CircularProgressIndicator(
-              value: 1.0,
-              strokeWidth: 28,
-              backgroundColor: const Color(0xfff1f7f6),
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.grey.shade300),
-            ),
-          ),
-
-          // Segment 1 - Dark Blue (425E8E) - First 25%
-          SizedBox(
-            height: 180,
-            width: 180,
-            child: CircularProgressIndicator(
-              value: segment1Progress,
-              strokeWidth: 28,
-              backgroundColor: Colors.transparent,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFF425E8E)),
-            ),
-          ),
-
-          // Segment 2 - Medium Blue (587DBD) - Second 25%
-          SizedBox(
-            height: 180,
-            width: 180,
-            child: Transform.rotate(
-              angle: 2 * 3.14159 * 0.25, // Rotate to start at 25%
-              child: CircularProgressIndicator(
-                value: segment2Progress,
-                strokeWidth: 28,
-                backgroundColor: Colors.transparent,
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(Color(0xFF587DBD)),
-              ),
-            ),
-          ),
-
-          // Segment 3 - Teal (00A991) - Third 25%
-          SizedBox(
-            height: 180,
-            width: 180,
-            child: Transform.rotate(
-              angle: 2 * 3.14159 * 0.50, // Rotate to start at 50%
-              child: CircularProgressIndicator(
-                value: segment3Progress,
-                strokeWidth: 28,
-                backgroundColor: Colors.transparent,
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(Color(0xFF00A991)),
-              ),
-            ),
-          ),
-
-          // Segment 4 - Dark Green (007F6D) - Last 25%
-          SizedBox(
-            height: 180,
-            width: 180,
-            child: Transform.rotate(
-              angle: 2 * 3.14159 * 0.75, // Rotate to start at 75%
-              child: CircularProgressIndicator(
-                value: segment4Progress,
-                strokeWidth: 28,
-                backgroundColor: Colors.transparent,
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(Color(0xFF007F6D)),
-              ),
-            ),
-          ),
-
-          // Center text
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                caloriesLeft.round().toString(),
-                style: const TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
-                ),
-              ),
-              const Text(
-                'Left',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.normal,
-                  fontFamily: 'Poppins',
-                ),
-              ),
-              const Text(
-                'kcal',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                  fontFamily: 'Poppins',
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      const SizedBox(height: 20),
-      Container(
-        width: double.infinity,
-        height: 1,
-        color: Colors.grey.shade300,
-      ),
-      const SizedBox(height: 6),
-      Center(
-        child: Container(
-          width: 180,
-          height: 3,
-          color: Colors.black,
-        ),
-      ),
-      const SizedBox(height: 6),
-      Container(
-        width: double.infinity,
-        height: 1,
-        color: Colors.grey.shade300,
-      ),
-    ],
-  );
-}

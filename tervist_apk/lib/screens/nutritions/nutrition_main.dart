@@ -50,7 +50,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
   }
 
   // Fetch nutritional targets and consumption data
-  Future<void> getDailySummary() async {
+Future<void> getDailySummary() async {
     setState(() {
       _isLoading = true;
     });
@@ -58,6 +58,9 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
     try {
       // Get nutritional targets from API
       final response = await _nutritionService.getDailySummary(_selectedDate);
+
+      // Debug print to check response
+      print('API Response: $response');
 
       // Process response data
       setState(() {
@@ -67,18 +70,29 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
         carbsTotal = response['carbs_target']?.toInt() ?? 156;
         fatsTotal = response['fats_target']?.toInt() ?? 34;
 
+        // Print targets
+        print(
+            'Targets - Cal: $caloriesTotal, Pro: $proteinTotal, Carb: $carbsTotal, Fat: $fatsTotal');
+
         // Get consumption data
-        // This may vary based on your actual API response structure
         int caloriesConsumed = response['calories_consumed']?.toInt() ?? 349;
         int proteinConsumed = response['protein_consumed']?.toInt() ?? 16;
         int carbsConsumed = response['carbs_consumed']?.toInt() ?? 33;
         int fatsConsumed = response['fats_consumed']?.toInt() ?? 12;
+
+        // Print consumption values
+        print(
+            'Consumed - Cal: $caloriesConsumed, Pro: $proteinConsumed, Carb: $carbsConsumed, Fat: $fatsConsumed');
 
         // Calculate remaining values
         caloriesLeft = caloriesTotal - caloriesConsumed;
         proteinLeft = proteinTotal - proteinConsumed;
         carbsLeft = carbsTotal - carbsConsumed;
         fatsLeft = fatsTotal - fatsConsumed;
+
+        // Print remaining values
+        print(
+            'Left - Cal: $caloriesLeft, Pro: $proteinLeft, Carb: $carbsLeft, Fat: $fatsLeft');
 
         // Make sure we don't have negative values
         caloriesLeft = caloriesLeft < 0 ? 0 : caloriesLeft;
@@ -93,6 +107,10 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
             proteinConsumed / (proteinTotal > 0 ? proteinTotal : 1);
         carbsProgress = carbsConsumed / (carbsTotal > 0 ? carbsTotal : 1);
         fatsProgress = fatsConsumed / (fatsTotal > 0 ? fatsTotal : 1);
+
+        // Print progress values
+        print(
+            'Progress - Cal: $caloriesProgress, Pro: $proteinProgress, Carb: $carbsProgress, Fat: $fatsProgress');
 
         // Ensure progress doesn't exceed 1.0
         caloriesProgress = caloriesProgress > 1.0 ? 1.0 : caloriesProgress;
@@ -111,38 +129,71 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
   }
 
   // Fetch food intake data
-  Future<void> _fetchFoodIntake() async {
+Future<void> _fetchFoodIntake() async {
     try {
-      // Get food intake from API
       final response = await _nutritionService.getFoodIntake(_selectedDate);
-
-      // Process food intake data
       final List<Map<String, dynamic>> foodData = [];
 
+      // For manual calculation
+      double totalCalories = 0;
+      double totalProtein = 0;
+      double totalCarbs = 0;
+      double totalFats = 0;
+
       for (var item in response) {
-        // Extract food information from the response
-        // Adjust these fields based on your actual API response structure
+        // Parse serving size (default to 1 if invalid)
+        final servingSize =
+            double.tryParse(item['serving_size']?.toString() ?? '1') ?? 1;
+
+        // Get nutrition values - prefer manual values if available
+        double calories, protein, carbs, fats;
+
+        if (item['manual_calories'] != null) {
+          // Use manual values if available
+          calories = (item['manual_calories'] as num).toDouble();
+          protein = (item['manual_protein'] as num).toDouble();
+          carbs = (item['manual_carbs'] as num).toDouble();
+          fats = (item['manual_fats'] as num).toDouble();
+        } else {
+          // Use first measurement if no manual values
+          final measurements = item['food_data']?['measurements'] ?? [];
+          final firstMeasurement =
+              measurements.isNotEmpty ? measurements[0] : null;
+
+          calories =
+              (firstMeasurement?['calories'] ?? 0).toDouble() * servingSize;
+          protein =
+              (firstMeasurement?['protein'] ?? 0).toDouble() * servingSize;
+          carbs = (firstMeasurement?['carbs'] ?? 0).toDouble() * servingSize;
+          fats = (firstMeasurement?['fat'] ?? 0).toDouble() *
+              servingSize; // Note: 'fat' not 'fats'
+        }
+
+        // Add to totals
+        totalCalories += calories;
+        totalProtein += protein;
+        totalCarbs += carbs;
+        totalFats += fats;
+
+        // Format time
+        String formattedTime = '';
+        try {
+          if (item['time'] != null) {
+            formattedTime = DateFormat('HH:mm').format(
+                DateFormat('HH:mm:ss').parse(item['time'].split('.')[0]));
+          }
+        } catch (e) {
+          print('Error parsing time: ${item['time']}');
+        }
+
         Map<String, dynamic> foodItem = {
           'id': item['id'],
-          'name': item['food_data'] != null
-              ? item['food_data']['name']
-              : 'Custom Meal',
-          'calories': item['food_data'] != null
-              ? item['food_data']['calories']
-              : (item['manual_calories']?.toInt() ?? 0),
-          'protein': item['food_data'] != null
-              ? item['food_data']['protein']?.toDouble()
-              : (item['manual_protein']?.toDouble() ?? 0),
-          'carbs': item['food_data'] != null
-              ? item['food_data']['carbs']?.toDouble()
-              : (item['manual_carbs']?.toDouble() ?? 0),
-          'fats': item['food_data'] != null
-              ? item['food_data']['fat']?.toDouble()
-              : (item['manual_fats']?.toDouble() ?? 0),
-          'time': item['time'] != null
-              ? DateFormat('HH:mm')
-                  .format(DateTime.parse('2025-01-01T${item['time']}'))
-              : '',
+          'name': item['food_data']?['name'] ?? 'Custom Meal',
+          'calories': calories,
+          'protein': protein,
+          'carbs': carbs,
+          'fats': fats,
+          'time': formattedTime,
           'meal_type': item['meal_type'] ?? 'Meal',
         };
 
@@ -151,10 +202,38 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
 
       setState(() {
         _recentlyLoggedFood = foodData;
+
+        // Update progress manually if API isn't providing correct data
+        print(
+            'Manually calculated - Cal: $totalCalories, Pro: $totalProtein, Carb: $totalCarbs, Fat: $totalFats');
+
+        // Calculate remaining values
+        caloriesLeft = caloriesTotal - totalCalories.toInt();
+        proteinLeft = proteinTotal - totalProtein.toInt();
+        carbsLeft = carbsTotal - totalCarbs.toInt();
+        fatsLeft = fatsTotal - totalFats.toInt();
+
+        // Make sure we don't have negative values
+        caloriesLeft = caloriesLeft < 0 ? 0 : caloriesLeft;
+        proteinLeft = proteinLeft < 0 ? 0 : proteinLeft;
+        carbsLeft = carbsLeft < 0 ? 0 : carbsLeft;
+        fatsLeft = fatsLeft < 0 ? 0 : fatsLeft;
+
+        // Calculate progress for the progress bars
+        caloriesProgress =
+            totalCalories / (caloriesTotal > 0 ? caloriesTotal : 1);
+        proteinProgress = totalProtein / (proteinTotal > 0 ? proteinTotal : 1);
+        carbsProgress = totalCarbs / (carbsTotal > 0 ? carbsTotal : 1);
+        fatsProgress = totalFats / (fatsTotal > 0 ? fatsTotal : 1);
+
+        // Ensure progress doesn't exceed 1.0
+        caloriesProgress = caloriesProgress > 1.0 ? 1.0 : caloriesProgress;
+        proteinProgress = proteinProgress > 1.0 ? 1.0 : proteinProgress;
+        carbsProgress = carbsProgress > 1.0 ? 1.0 : carbsProgress;
+        fatsProgress = fatsProgress > 1.0 ? 1.0 : fatsProgress;
       });
     } catch (e) {
       print('Error fetching food intake: $e');
-      // Handle error - show error message or retry
     }
   }
 
