@@ -4,7 +4,9 @@ import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:tervist_apk/api/api_config.dart';
+import 'package:tervist_apk/main.dart';
 import 'package:tervist_apk/screens/login/signup_screen.dart';
 import 'running_timestamp.dart';
 import 'running_summary.dart';
@@ -40,7 +42,9 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
   bool isPaused = false;
   Timer? _timer;
   Ticker? _ticker; // Ticker for more efficient updates
-  final MapController _mapController = MapController();
+  // final MapController _mapController = MapController();
+  // Try this
+  MapController? _mapController;
 
   // Follow me button state
   bool _isFollowingUser = true; // Enable follow mode by default
@@ -91,6 +95,23 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
   final Color primaryGreen = const Color(0xFF4CB9A0); // Temperature value
 
   final RunningService _runningService = RunningService();
+
+  void main() {
+    // Catch Flutter errors
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      print('Flutter error caught: ${details.exception}');
+      print('Stack trace: ${details.stack}');
+    };
+
+    // Catch Dart errors
+    runZonedGuarded(() {
+      runApp(MyApp());
+    }, (Object error, StackTrace stack) {
+      print('Dart error caught: $error');
+      print('Stack trace: $stack');
+    });
+  }
 
   void stopWorkout() async {
     _timer?.cancel();
@@ -195,6 +216,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
   @override
   void initState() {
     super.initState();
+    _mapController = MapController(); // ⬅ Tambahin ini
     _checkAuthentication();
     // Create a ticker for more efficient UI updates
     _ticker = createTicker((elapsed) {
@@ -216,35 +238,70 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
   }
 
   Future<void> _checkAuthentication() async {
-    final token =
-        await AuthHelper.getToken(); // ambil token dari SharedPreferences
+    try {
+      final token =
+          await AuthHelper.getToken(); // ambil token dari SharedPreferences
 
-    if (token == null) {
-      Navigator.pushReplacementNamed(context, '/login');
-      return;
-    }
+      if (token == null) {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AuthPage()),
+          );
+        }
+        return;
+      }
 
-    // panggil endpoint /auth/profile/ buat verifikasi token valid
-    final response = await http.get(
-      ApiConfig.profile,
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
+      // panggil endpoint /auth/profile/ buat verifikasi token valid
+      try {
+        final response = await http.get(
+          ApiConfig.profile,
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        ).timeout(const Duration(seconds: 10)); // Add timeout
 
-    if (response.statusCode == 200) {
-      final userData = jsonDecode(response.body);
-      setState(() {
-        _userName = userData['username']; // tampilkan nama beneran
-        bool isAuthenticated = true;
-      });
-    } else {
-      await AuthHelper.clearAuthData();
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => AuthPage()),
-      );
+        if (response.statusCode == 200) {
+          final userData = jsonDecode(response.body);
+          if (mounted) {
+            setState(() {
+              _userName = userData['username']; // tampilkan nama beneran
+              _isLoggedIn = true; // Set login state to true
+            });
+          }
+        } else {
+          print('Authentication failed with status: ${response.statusCode}');
+          await AuthHelper.clearAuthData();
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AuthPage()),
+          );
+        }
+      } catch (e) {
+        print('API request error: $e');
+        // Don't redirect on network errors, just log them
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Connection error: $e'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      print('Authentication error: $e');
+      print('Stack trace: $stackTrace');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('An error occurred while checking authentication'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -328,15 +385,14 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
 
   // Check location permission status
   Future<void> _checkLocationPermission() async {
-    bool hasPermission =
-        await _locationPermissionHandler.isLocationPermissionGranted();
-    setState(() {
-      _locationPermissionChecked = true;
-    });
+    final status = await Permission.location.request();
 
-    if (hasPermission) {
-      // Start listening to location updates if permission is granted
+    if (status.isGranted) {
+      _locationPermissionChecked = true;
       _subscribeToLocationUpdates();
+    } else {
+      print('❌ Lokasi belum diizinkan oleh user');
+      // Bisa tampilkan dialog atau toast kalau mau
     }
   }
 
@@ -360,8 +416,9 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
 
       // If enabling follow mode, immediately center the map on current location
       if (_isFollowingUser) {
-        LatLng currentLocation = MapService.getCurrentLocation();
-        _mapController.move(currentLocation, _mapController.camera.zoom);
+        LatLng? currentLocation = MapService.getCurrentLocation();
+        _mapController?.move(
+            currentLocation, _mapController?.camera.zoom ?? 15.0);
       }
     });
   }
@@ -376,7 +433,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
 
       // If follow mode is enabled, center the map on the current location
       if (_isFollowingUser) {
-        _mapController.move(newLocation, _mapController.camera.zoom);
+        _mapController?.move(newLocation, _mapController?.camera.zoom ?? 15.0);
       }
 
       // Signal that we need an update
@@ -398,22 +455,33 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
 
     // If in active tracking mode, center the map on the current location if following is enabled
     if (isWorkoutActive && currentStep == 1 && _isFollowingUser) {
-      _mapController.move(
-          MapService.getCurrentLocation(), _mapController.camera.zoom);
+      _mapController?.move(
+          MapService.getCurrentLocation(), _mapController!.camera.zoom);
     }
   }
 
   Future<void> _initializeMapData() async {
     try {
       final mapData = await MapService.getInitialMapData();
-      setState(() {
-        routePoints = mapData.routePoints;
-        markers = mapData.markers;
-        polylines = mapData.polylines;
-      });
-    } catch (e) {
-      // Handle error
+      if (mounted) {
+        setState(() {
+          routePoints = mapData.routePoints;
+          markers = mapData.markers;
+          polylines = mapData.polylines;
+        });
+      }
+    } catch (e, stack) {
       print('Error initializing map: $e');
+      print('Stack trace: $stack');
+      // Continue without map data
+      if (mounted) {
+        setState(() {
+          // Set default empty values
+          routePoints = [];
+          markers = [];
+          polylines = [];
+        });
+      }
     }
   }
 
@@ -528,7 +596,6 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
     double totalDistance = 0.0;
 
     if (routePoints.length > 1) {
-      // Calculate the total distance along the route
       for (int i = 1; i < routePoints.length; i++) {
         totalDistance += _calculateDistance(routePoints[i - 1], routePoints[i]);
       }
@@ -538,43 +605,36 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
     final stepsPerSecond = 160.0 / 60.0;
     final newStepsCount = steps + stepsPerSecond.round();
 
-    // Calculate calories (using a simple approximation)
-    // Running burns more calories, around 600 kcal per hour
+    // Calories calculation
     final caloriesPerSecond = 600.0 / 3600.0;
     final newCalories = (newDuration.inSeconds * caloriesPerSecond).round();
 
-    // Update steps per minute
-    stepsPerMinute = 160; // Common running cadence
-
     // Update performance data for pace graph
-    // Only update if workout is active
-    if (isWorkoutActive && currentStep == 1) {
-      // Calculate current pace
-      double currentPace = 0;
-      if (totalDistance > 0) {
-        // Pace in minutes per km
-        currentPace = newDuration.inSeconds / 60 / totalDistance;
+    double currentPace = 0;
+    if (isWorkoutActive && currentStep == 1 && totalDistance > 0) {
+      currentPace = newDuration.inSeconds / 60 / totalDistance;
+      currentPace = math.min(currentPace / 10, 1.0);
 
-        // Normalize for the graph (between 0-1)
-        currentPace = math.min(currentPace / 10, 1.0);
-      }
-
-      // Shift performance data array and add new value
       for (int i = 0; i < performanceData.length - 1; i++) {
         performanceData[i] = performanceData[i + 1];
       }
       performanceData[performanceData.length - 1] = currentPace;
     }
 
-    // Apply updates all at once
-    duration = newDuration;
-    steps = newStepsCount;
-    distance = totalDistance; // Use the calculated distance from route points
-    double userWeight = _userWeight; // TODO: ambil dari profil kalau bisa
-    calories = _calculateCalories(
-      weightKg: userWeight,
-      durationSeconds: newDuration.inSeconds.toDouble(),
-    ).toInt();
+    // ⛑️ Pastikan widget masih mounted sebelum update state
+    if (!mounted) return;
+
+    setState(() {
+      duration = newDuration;
+      steps = newStepsCount;
+      distance = totalDistance;
+      stepsPerMinute = 160;
+      double userWeight = _userWeight;
+      calories = _calculateCalories(
+        weightKg: userWeight,
+        durationSeconds: newDuration.inSeconds.toDouble(),
+      ).toInt();
+    });
   }
 
   // Helper method to calculate distance between two coordinates (in kilometers)
