@@ -23,6 +23,7 @@ class ApiConfig {
   // static Uri get dailySteps => Uri.parse('$baseUrl/api/daily-steps/');
   // static Uri get caloriesBurned => Uri.parse('$baseUrl/api/calories-burned/');
   static Uri get runningActivity => Uri.parse('$baseUrl/api/running-activity/');
+  static Uri get walkingActivity => Uri.parse('$baseUrl/api/walking-activity/');
   static Uri get runningStats => Uri.parse('$baseUrl/api/running-stats/');
   static Uri get cyclingStats => Uri.parse('$baseUrl/api/cycling-stats/');
   static Uri get dashboard => Uri.parse('$baseUrl/api/dashboard/');

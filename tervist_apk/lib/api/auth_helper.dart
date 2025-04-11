@@ -1,43 +1,51 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:tervist_apk/api/api_config.dart';
+import 'dart:async';
 
 class AuthHelper {
   static const String TOKEN_KEY = 'auth_token';
-  static const String ACCESS_TOKEN_KEY = 'access_token'; // Add reference to the access_token key
+  static const String ACCESS_TOKEN_KEY = 'access_token';
   static const String USER_ID_KEY = 'user_id';
   static const String USER_NAME_KEY = 'user_name';
+
+  // Cache untuk mengurangi panggilan berulang
+  static String? _cachedToken;
+  static DateTime? _lastTokenValidation;
+  static const Duration _tokenValidationCooldown = Duration(minutes: 30);
 
   // Save token to SharedPreferences
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(TOKEN_KEY, token);
-    
-    // Also save as access_token for backward compatibility
     await prefs.setString(ACCESS_TOKEN_KEY, token);
-    
-    print('Token saved successfully to both TOKEN_KEY and ACCESS_TOKEN_KEY');
+
+    // Update cached token
+    _cachedToken = token;
+    print('Token saved successfully');
   }
 
   // Get token from SharedPreferences
   static Future<String?> getToken() async {
+    // Return cached token jika sudah ada
+    if (_cachedToken != null) return _cachedToken;
+
     final prefs = await SharedPreferences.getInstance();
-    
-    // Try both token keys
+
+    // Coba ambil token dari TOKEN_KEY terlebih dahulu
     String? token = prefs.getString(TOKEN_KEY);
-    
-    // If not found, try access_token
+
+    // Jika tidak ada, coba dari ACCESS_TOKEN_KEY
     if (token == null || token.isEmpty) {
       token = prefs.getString(ACCESS_TOKEN_KEY);
       if (token != null && token.isNotEmpty) {
-        print('Found token in ACCESS_TOKEN_KEY');
-        // Sync the tokens if found in access_token
+        // Sinkronkan token
         await prefs.setString(TOKEN_KEY, token);
       }
-    } else {
-      print('Found token in TOKEN_KEY');
     }
-    
+
+    // Simpan ke cache
+    _cachedToken = token;
     return token;
   }
 
@@ -72,35 +80,52 @@ class AuthHelper {
     await prefs.remove(ACCESS_TOKEN_KEY);
     await prefs.remove(USER_ID_KEY);
     await prefs.remove(USER_NAME_KEY);
+
+    // Reset cached token
+    _cachedToken = null;
+    _lastTokenValidation = null;
   }
 
-  // Check if user is logged in
-static Future<bool> isLoggedIn() async {
+  // Check if user is logged in dengan caching validasi token
+  static Future<bool> isLoggedIn() async {
     final token = await getToken();
     if (token == null) return false;
 
-    final response = await http.get(
-      ApiConfig.profile,
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
+    // Cek apakah token sudah divalidasi baru-baru ini
+    if (_lastTokenValidation != null &&
+        DateTime.now().difference(_lastTokenValidation!) <
+            _tokenValidationCooldown) {
+      return true;
+    }
 
-    return response.statusCode == 200;
+    try {
+      final response = await http.get(
+        ApiConfig.profile,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10)); // Tambah timeout
+
+      if (response.statusCode == 200) {
+        // Update timestamp validasi terakhir
+        _lastTokenValidation = DateTime.now();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Token validation error: $e');
+      // Kembalikan status terakhir jika ada error koneksi
+      return _lastTokenValidation != null;
+    }
   }
 
-  
   // Get authentication headers for API requests
   static Future<Map<String, String>> getAuthHeaders() async {
     final token = await getToken();
-    if (token == null) {
-      return {'Content-Type': 'application/json'};
-    } else {
-      return {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      };
-    }
+    return {
+      'Authorization': token != null ? 'Bearer $token' : '',
+      'Content-Type': 'application/json',
+    };
   }
 
   static Future<void> saveProfilePicture(String url) async {
@@ -112,6 +137,4 @@ static Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('profile_picture');
   }
-
 }
-

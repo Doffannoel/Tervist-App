@@ -194,6 +194,16 @@ class RunningActivity(models.Model):
         if self.user:
             return f"{self.user.username} - {self.distance_km} km on {self.date}"
         return f"Unknown User - {self.distance_km} km on {self.date}"
+    
+
+class WalkingActivity(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    distance_km = models.FloatField()
+    time_seconds = models.IntegerField()
+    pace = models.FloatField()
+    calories_burned = models.IntegerField()
+    steps = models.IntegerField()
+    date = models.DateField(default=timezone.now)
 
 class CyclingActivity(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from authentication.models import CustomUser
-from .models import  CyclingActivity, DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, FoodMeasurement, FoodMeasurement, NutritionalTarget, Reminder, RunningActivity
+from .models import  CyclingActivity, DailySteps, CaloriesBurned, FoodDatabase, FoodIntake, FoodMeasurement, FoodMeasurement, NutritionalTarget, Reminder, RunningActivity, WalkingActivity
 
 class NutritionalTargetSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
@@ -64,6 +64,14 @@ class RunningActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = RunningActivity
         fields = ['id', 'user', 'distance_km', 'time_seconds', 'pace', 'calories_burned', 'steps', 'date']
+
+class WalkingActivitySerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+
+    class Meta:
+        model = WalkingActivity
+        fields = ['id', 'user', 'distance_km', 'time_seconds', 'pace', 'calories_burned', 'steps', 'date']
+        read_only_fields = ['user']
 
 # NEW: Serializer untuk statistik ringkasan lari
 class RunningStatsSerializer(serializers.Serializer):

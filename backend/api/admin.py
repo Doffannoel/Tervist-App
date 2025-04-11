@@ -72,7 +72,11 @@ class RunningActivityForm(forms.ModelForm):
             instance.pace = 0
 
         # Hitung calories_burned berdasarkan berat & waktu
-        weight = instance.user.weight or 60  # default kalau kosong
+        if instance.user:
+            weight = instance.user.weight or 60
+        else:
+            weight = 60
+
         MET = 5.0  # nilai MET moderat
         calories = (float(weight) * MET * instance.time_seconds) / 60
         instance.calories_burned = round(calories)
