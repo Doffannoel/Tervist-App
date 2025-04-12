@@ -573,7 +573,7 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
           onStop: stopWorkout,
         );
       case 2:
-        return walkingSummary(
+        return WalkingSummary(
           distance: distance,
           formattedDuration: formattedDuration,
           formattedPace: formattedPace,
