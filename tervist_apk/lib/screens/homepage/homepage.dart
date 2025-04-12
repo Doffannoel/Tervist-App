@@ -262,17 +262,29 @@ class _HomePageState extends State<HomePage>
               const SizedBox(width: 8),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.local_fire_department,
-                        color: Colors.orange, size: 16),
-                    SizedBox(width: 4),
-                    Text("11", style: TextStyle(fontWeight: FontWeight.bold)),
+                    Image.asset('assets/images/fireon.png', height: 16),
+                    const SizedBox(width: 4),
+                    const Text(
+                      '1',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
                   ],
                 ),
               ),
