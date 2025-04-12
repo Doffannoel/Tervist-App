@@ -57,7 +57,7 @@ class MyApp extends StatelessWidget {
           } else {
             return snapshot.data == true
                 ? const MainNavigation()
-                : const OnboardingScreen();
+                : const  OnboardingScreen();
           }
         },
       ),

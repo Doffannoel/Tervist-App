@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../map_service.dart';
-import '../follow_me_button.dart'; // Import the follow me button
+import '../follow_me_button.dart';
 
 class CyclingTimestamp extends StatefulWidget {
   final double distance;
