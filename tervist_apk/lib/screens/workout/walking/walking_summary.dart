@@ -40,22 +40,28 @@ class walkingSummary extends StatefulWidget {
 
 class _walkingSummaryState extends State<walkingSummary> {
   final MapController _mapController = MapController();
-  final List<double> paceData = [0.5, 0.7, 0.4, 0.6, 0.5]; // Fixed pace data for summary
+  final List<double> paceData = [
+    0.5,
+    0.7,
+    0.4,
+    0.6,
+    0.5
+  ]; // Fixed pace data for summary
   bool _isFollowingUser = true; // Default state for the follow button
 
   LatLng _calculateMapCenter() {
     if (widget.routePoints.isEmpty) {
       return const LatLng(-7.767, 110.378); // Default center
     }
-    
+
     double latSum = 0;
     double lngSum = 0;
-    
+
     for (var point in widget.routePoints) {
       latSum += point.latitude;
       lngSum += point.longitude;
     }
-    
+
     return LatLng(
       latSum / widget.routePoints.length,
       lngSum / widget.routePoints.length,
@@ -66,7 +72,7 @@ class _walkingSummaryState extends State<walkingSummary> {
   void _toggleFollowMode() {
     setState(() {
       _isFollowingUser = !_isFollowingUser;
-      
+
       // If enabling follow mode, center the map on the route
       if (_isFollowingUser) {
         _mapController.move(_calculateMapCenter(), _mapController.camera.zoom);
@@ -112,39 +118,42 @@ class _walkingSummaryState extends State<walkingSummary> {
   @override
   Widget build(BuildContext context) {
     // Ensure we have valid polylines even if empty
-    final List<Polyline> displayPolylines = widget.polylines.isEmpty || widget.routePoints.isEmpty ? 
-      [
-        Polyline(
-          points: [const LatLng(-7.767, 110.378)], // Use default point if empty
-          color: Colors.transparent,
-          strokeWidth: 0,
-        )
-      ] : 
-      widget.polylines;
-      
+    final List<Polyline> displayPolylines =
+        widget.polylines.isEmpty || widget.routePoints.isEmpty
+            ? [
+                Polyline(
+                  points: [
+                    const LatLng(-7.767, 110.378)
+                  ], // Use default point if empty
+                  color: Colors.transparent,
+                  strokeWidth: 0,
+                )
+              ]
+            : widget.polylines;
+
     // Ensure we have valid markers even if empty
-    final List<Marker> displayMarkers = widget.markers.isEmpty ? 
-      [
-        Marker(
-          point: const LatLng(-7.767, 110.378),
-          width: 80,
-          height: 80,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.3),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.location_on,
-                color: Colors.blue,
-                size: 30,
+    final List<Marker> displayMarkers = widget.markers.isEmpty
+        ? [
+            Marker(
+              point: const LatLng(-7.767, 110.378),
+              width: 80,
+              height: 80,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.location_on,
+                    color: Colors.blue,
+                    size: 30,
+                  ),
+                ),
               ),
-            ),
-          ),
-        )
-      ] : 
-      widget.markers;
+            )
+          ]
+        : widget.markers;
 
     return Scaffold(
       appBar: AppBar(
@@ -228,7 +237,8 @@ class _walkingSummaryState extends State<walkingSummary> {
                         ),
                         children: [
                           TileLayer(
-                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                             userAgentPackageName: 'com.example.walking_app',
                           ),
                           PolylineLayer(
@@ -239,7 +249,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                           ),
                         ],
                       ),
-                      
+
                       // Follow me button
                       Positioned(
                         right: 16,
@@ -254,7 +264,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                   ),
                 ),
               ),
-              
+
               // Tervist | Outdoor Walking text
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
@@ -266,7 +276,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                   ),
                 ),
               ),
-              
+
               // Primary workout stats card
               Card(
                 margin: const EdgeInsets.only(bottom: 16.0),
@@ -309,7 +319,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                               ),
                             ],
                           ),
-                          
+
                           // User info with profile image
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -325,7 +335,8 @@ class _walkingSummaryState extends State<walkingSummary> {
                                     width: 2,
                                   ),
                                   image: const DecorationImage(
-                                    image: AssetImage('assets/images/profile.png'),
+                                    image:
+                                        AssetImage('assets/images/profile.png'),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -348,9 +359,9 @@ class _walkingSummaryState extends State<walkingSummary> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Time and Pace
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -375,7 +386,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                               ),
                             ],
                           ),
-                          
+
                           // Pace column
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,7 +413,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                   ),
                 ),
               ),
-              
+
               // Two-column layout for Calories and Steps
               Row(
                 children: [
@@ -469,7 +480,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                       ),
                     ),
                   ),
-                  
+
                   // Steps card
                   Expanded(
                     child: Card(
@@ -486,10 +497,10 @@ class _walkingSummaryState extends State<walkingSummary> {
                             // Steps title with icon
                             Row(
                               children: [
-                                Icon(
-                                  Icons.directions_walk,
-                                  color: widget.primaryGreen,
-                                  size: 20,
+                                Image.asset(
+                                  'assets/images/stepicon.png',
+                                  color: Colors.blue[400],
+                                  width: 20,
                                 ),
                                 const SizedBox(width: 8),
                                 // Using Flexible to prevent overflow
@@ -523,7 +534,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                   ),
                 ],
               ),
-              
+
               // Performance chart with updated Pace indicator
               Card(
                 elevation: 2,
@@ -551,7 +562,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                           ],
                         ),
                       ),
-                      
+
                       // Pace indicator at bottom right
                       Container(
                         alignment: Alignment.bottomRight,
@@ -560,7 +571,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Container(
+                            SizedBox(
                               width: 24,
                               height: 24,
                               child: Icon(
@@ -586,7 +597,7 @@ class _walkingSummaryState extends State<walkingSummary> {
                   ),
                 ),
               ),
-              
+
               // Share Button
               Padding(
                 padding: const EdgeInsets.only(bottom: 24.0),
@@ -616,7 +627,8 @@ class _walkingSummaryState extends State<walkingSummary> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     minimumSize: const Size(double.infinity, 50),
                   ),
                 ),

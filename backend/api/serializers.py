@@ -72,6 +72,7 @@ class WalkingActivitySerializer(serializers.ModelSerializer):
         model = WalkingActivity
         fields = ['id', 'user', 'distance_km', 'time_seconds', 'pace', 'calories_burned', 'steps', 'date']
         read_only_fields = ['user']
+        
 
 # NEW: Serializer untuk statistik ringkasan lari
 class RunningStatsSerializer(serializers.Serializer):

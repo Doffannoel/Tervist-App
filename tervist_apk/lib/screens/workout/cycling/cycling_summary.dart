@@ -40,22 +40,28 @@ class CyclingSummary extends StatefulWidget {
 
 class _CyclingSummaryState extends State<CyclingSummary> {
   final MapController _mapController = MapController();
-  final List<double> paceData = [0.5, 0.7, 0.4, 0.6, 0.5]; // Fixed pace data for summary
+  final List<double> paceData = [
+    0.5,
+    0.7,
+    0.4,
+    0.6,
+    0.5
+  ]; // Fixed pace data for summary
   bool _isFollowingUser = true; // Default state for the follow button
 
   LatLng _calculateMapCenter() {
     if (widget.routePoints.isEmpty) {
       return const LatLng(-7.767, 110.378); // Default center
     }
-    
+
     double latSum = 0;
     double lngSum = 0;
-    
+
     for (var point in widget.routePoints) {
       latSum += point.latitude;
       lngSum += point.longitude;
     }
-    
+
     return LatLng(
       latSum / widget.routePoints.length,
       lngSum / widget.routePoints.length,
@@ -66,7 +72,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
   void _toggleFollowMode() {
     setState(() {
       _isFollowingUser = !_isFollowingUser;
-      
+
       // If enabling follow mode, center the map on the route
       if (_isFollowingUser) {
         _mapController.move(_calculateMapCenter(), _mapController.camera.zoom);
@@ -112,39 +118,42 @@ class _CyclingSummaryState extends State<CyclingSummary> {
   @override
   Widget build(BuildContext context) {
     // Ensure we have valid polylines even if empty
-    final List<Polyline> displayPolylines = widget.polylines.isEmpty || widget.routePoints.isEmpty ? 
-      [
-        Polyline(
-          points: [const LatLng(-7.767, 110.378)], // Use default point if empty
-          color: Colors.transparent,
-          strokeWidth: 0,
-        )
-      ] : 
-      widget.polylines;
-      
+    final List<Polyline> displayPolylines =
+        widget.polylines.isEmpty || widget.routePoints.isEmpty
+            ? [
+                Polyline(
+                  points: [
+                    const LatLng(-7.767, 110.378)
+                  ], // Use default point if empty
+                  color: Colors.transparent,
+                  strokeWidth: 0,
+                )
+              ]
+            : widget.polylines;
+
     // Ensure we have valid markers even if empty
-    final List<Marker> displayMarkers = widget.markers.isEmpty ? 
-      [
-        Marker(
-          point: const LatLng(-7.767, 110.378),
-          width: 80,
-          height: 80,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.3),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.location_on,
-                color: Colors.blue,
-                size: 30,
+    final List<Marker> displayMarkers = widget.markers.isEmpty
+        ? [
+            Marker(
+              point: const LatLng(-7.767, 110.378),
+              width: 80,
+              height: 80,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.location_on,
+                    color: Colors.blue,
+                    size: 30,
+                  ),
+                ),
               ),
-            ),
-          ),
-        )
-      ] : 
-      widget.markers;
+            )
+          ]
+        : widget.markers;
 
     return Scaffold(
       appBar: AppBar(
@@ -220,7 +229,8 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                         ),
                         children: [
                           TileLayer(
-                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                             userAgentPackageName: 'com.example.cycling_app',
                           ),
                           PolylineLayer(
@@ -231,7 +241,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                           ),
                         ],
                       ),
-                      
+
                       // Follow me button
                       Positioned(
                         right: 16,
@@ -246,7 +256,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                   ),
                 ),
               ),
-              
+
               // Tervist | Outdoor cycling text
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
@@ -258,7 +268,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                   ),
                 ),
               ),
-              
+
               // Primary workout stats card
               Card(
                 margin: const EdgeInsets.only(bottom: 16.0),
@@ -301,7 +311,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                               ),
                             ],
                           ),
-                          
+
                           // User info with profile image
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -317,7 +327,8 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                                     width: 2,
                                   ),
                                   image: const DecorationImage(
-                                    image: AssetImage('assets/images/profile.png'),
+                                    image:
+                                        AssetImage('assets/images/profile.png'),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -340,9 +351,9 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Time and Pace
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -367,7 +378,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                               ),
                             ],
                           ),
-                          
+
                           // Pace column
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,7 +405,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                   ),
                 ),
               ),
-              
+
               // Two-column layout for Calories and Steps
               Row(
                 children: [
@@ -461,7 +472,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                       ),
                     ),
                   ),
-                  
+
                   // Steps card
                   Expanded(
                     child: Card(
@@ -478,16 +489,16 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                             // Steps title with icon
                             Row(
                               children: [
-                                Icon(
-                                  Icons.directions_walk,
+                                Image.asset(
+                                  'assets/images/stepicon.png',
                                   color: Colors.blue[400],
-                                  size: 20,
+                                  width: 20,
                                 ),
                                 const SizedBox(width: 8),
                                 // Using Flexible to prevent overflow
                                 Flexible(
                                   child: Text(
-                                    'Steps',
+                                    'Max speed',
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
@@ -515,7 +526,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                   ),
                 ],
               ),
-              
+
               // Performance chart with updated Pace indicator
               Card(
                 elevation: 2,
@@ -543,7 +554,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                           ],
                         ),
                       ),
-                      
+
                       // Pace indicator at bottom right
                       Container(
                         alignment: Alignment.bottomRight,
@@ -553,7 +564,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             // cycling icon
-                            Container(
+                            SizedBox(
                               width: 24,
                               height: 24,
                               child: Icon(

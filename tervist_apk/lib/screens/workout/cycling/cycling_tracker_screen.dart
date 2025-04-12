@@ -4,6 +4,9 @@ import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:tervist_apk/api/api_config.dart';
+import 'package:tervist_apk/api/auth_helper.dart';
+import 'package:tervist_apk/screens/workout/cycling/cycling_service.dart';
 import 'cycling_timestamp.dart';
 import 'cycling_summary.dart';
 import '../map_service.dart';
@@ -13,45 +16,56 @@ import 'package:flutter/scheduler.dart'; // Import for Ticker
 import '../location_permission_handler.dart'; // Import the permission handler
 import '../follow_me_button.dart'; // Import the follow me button widget
 import '../weather_service.dart';
- // Added import for navigation bar
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+// Added import for navigation bar
 
 class CyclingTrackerScreen extends StatefulWidget {
   final Function(String)? onWorkoutTypeChanged;
-  
+
   const CyclingTrackerScreen({
     super.key,
     this.onWorkoutTypeChanged,
   });
-  
+
   @override
   State<CyclingTrackerScreen> createState() => _CyclingTrackerScreenState();
 }
 
-class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with SingleTickerProviderStateMixin {
+class _CyclingTrackerScreenState extends State<CyclingTrackerScreen>
+    with SingleTickerProviderStateMixin {
   int currentStep = 0; // 0: initial, 1: workout tracking, 2: summary
   bool isWorkoutActive = false;
   bool isPaused = false;
   Timer? _timer;
   Ticker? _ticker; // Ticker for more efficient updates
   final MapController _mapController = MapController();
-  
+
   // Follow me button state
   bool _isFollowingUser = true; // Enable follow mode by default
-  
+
   // Cache for UI updates to prevent rebuilds
   bool _needsUpdate = false;
-  
+
+  // User profile data
+  String _userName = "User";
+  String? _profileImageUrl;
+  final bool _isLoggedIn = false;
+  final bool _isLoading = true;
+
   // Location permission handler
-  final LocationPermissionHandler _locationPermissionHandler = LocationPermissionHandler();
+  final LocationPermissionHandler _locationPermissionHandler =
+      LocationPermissionHandler();
   bool _locationPermissionChecked = false;
-  
+
   // Workout metrics
   double distance = 0.0; // Start with 0
   Duration duration = const Duration(seconds: 0); // Start with 0
   int calories = 0; // Start with 0
   int steps = 0; // Start with 0
   int stepsPerMinute = 0; // Start with 0
-  List<double> performanceData = List.generate(5, (index) => 0.0); // Initialize with zeros
+  List<double> performanceData =
+      List.generate(5, (index) => 0.0); // Initialize with zeros
 
   // For route tracking
   List<LatLng> routePoints = [];
@@ -61,8 +75,10 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
   final Color primaryGreen = const Color(0xFF4CB9A0);
 
   @override
+  @override
   void initState() {
     super.initState();
+
     // Create a ticker for more efficient UI updates
     _ticker = createTicker((elapsed) {
       if (_needsUpdate) {
@@ -71,21 +87,72 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
       }
     });
     _ticker?.start();
-    
+
+    // Fetch user profile
+    _loadUserProfile();
+
     // Check location permission status initially
     _checkLocationPermission();
-    
+
     // Initialize map data
     _initializeMapData();
   }
 
+  Future<void> _loadUserProfile() async {
+    try {
+      // Coba ambil dari local storage terlebih dahulu
+      String? storedName = await AuthHelper.getUserName();
+      String? storedProfilePic = await AuthHelper.getProfilePicture();
+
+      setState(() {
+        _userName = storedName ?? "User";
+        _profileImageUrl = storedProfilePic;
+      });
+
+      // Pastikan Anda sudah menambahkan import http dan dart:convert
+      final token = await AuthHelper.getToken();
+      if (token == null) return;
+
+      final response = await http.get(
+        ApiConfig.profile,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final userData = jsonDecode(response.body);
+
+        setState(() {
+          _userName = userData['username'] ?? "User";
+
+          if (userData['profile_picture'] != null) {
+            final picPath = userData['profile_picture'];
+            _profileImageUrl = picPath.startsWith("http")
+                ? picPath
+                : "${ApiConfig.baseUrl}$picPath";
+          }
+        });
+
+        // Simpan ke local storage
+        await AuthHelper.saveUserName(_userName);
+        if (_profileImageUrl != null) {
+          await AuthHelper.saveProfilePicture(_profileImageUrl!);
+        }
+      }
+    } catch (e) {
+      print('Error loading user profile: $e');
+    }
+  }
+
   // Check location permission status
   Future<void> _checkLocationPermission() async {
-    bool hasPermission = await _locationPermissionHandler.isLocationPermissionGranted();
+    bool hasPermission =
+        await _locationPermissionHandler.isLocationPermissionGranted();
     setState(() {
       _locationPermissionChecked = true;
     });
-    
+
     if (hasPermission) {
       // Start listening to location updates if permission is granted
       _subscribeToLocationUpdates();
@@ -94,13 +161,14 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
 
   // Request location permission
   Future<bool> _requestLocationPermission() async {
-    bool hasPermission = await _locationPermissionHandler.requestLocationPermission(context);
-    
+    bool hasPermission =
+        await _locationPermissionHandler.requestLocationPermission(context);
+
     if (hasPermission) {
       // Start listening to location updates if permission is granted
       _subscribeToLocationUpdates();
     }
-    
+
     return hasPermission;
   }
 
@@ -108,13 +176,11 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
   void _toggleFollowMode() {
     setState(() {
       _isFollowingUser = !_isFollowingUser;
-      
+
       // If enabling follow mode, immediately center the map on current location
       if (_isFollowingUser) {
         LatLng currentLocation = MapService.getCurrentLocation();
-        if (_mapController.camera != null) {
-          _mapController.move(currentLocation, _mapController.camera.zoom);
-        }
+        _mapController.move(currentLocation, _mapController.camera.zoom);
       }
     });
   }
@@ -126,12 +192,12 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
       if (isWorkoutActive && !isPaused) {
         _updateMapWithNewLocation();
       }
-      
+
       // If follow mode is enabled, center the map on the current location
-      if (_isFollowingUser && _mapController.camera != null) {
+      if (_isFollowingUser) {
         _mapController.move(newLocation, _mapController.camera.zoom);
       }
-      
+
       // Signal that we need an update
       _needsUpdate = true;
     });
@@ -141,17 +207,18 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
   void _updateMapWithNewLocation() {
     // Get the current map data including route history
     final mapData = MapService.getCurrentMapData();
-    
+
     // Update state with the new map data
     setState(() {
       routePoints = mapData.routePoints;
       markers = mapData.markers;
       polylines = mapData.polylines;
     });
-    
+
     // If in active tracking mode, center the map on the current location if following is enabled
-    if (isWorkoutActive && currentStep == 1 && _isFollowingUser && _mapController.camera != null) {
-      _mapController.move(MapService.getCurrentLocation(), _mapController.camera.zoom);
+    if (isWorkoutActive && currentStep == 1 && _isFollowingUser) {
+      _mapController.move(
+          MapService.getCurrentLocation(), _mapController.camera.zoom);
     }
   }
 
@@ -173,39 +240,40 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
   void dispose() {
     _timer?.cancel();
     _ticker?.dispose();
-    
+
     // Stop location updates when disposing the screen
     MapService.stopLocationUpdates();
-    
+
     super.dispose();
   }
 
   // Start workout after ensuring location permission
   Future<void> startWorkoutWithPermissionCheck() async {
     bool hasPermission = await _requestLocationPermission();
-    
+
     if (!hasPermission) {
       // Show snackbar if permission is not granted
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Aplikasi memerlukan izin lokasi untuk melacak aktivitas bersepeda Anda'),
+            content: Text(
+                'Aplikasi memerlukan izin lokasi untuk melacak aktivitas bersepeda Anda'),
             duration: Duration(seconds: 3),
           ),
         );
       }
       return;
     }
-    
+
     if (!isWorkoutActive) {
       // Reset route history and start session when GO is pressed
       MapService.startSession();
-      
+
       setState(() {
         isWorkoutActive = true;
         isPaused = false;
         currentStep = 1; // Move to workout tracking screen
-        
+
         // Reset performance data
         performanceData = List.generate(5, (index) => 0.0);
       });
@@ -219,7 +287,7 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
         isPaused = true;
       });
       _timer?.cancel();
-      
+
       // Tell MapService tracking is paused
       MapService.setPaused(true);
     }
@@ -231,36 +299,96 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
         isPaused = false;
       });
       _startTimer();
-      
+
       // Tell MapService tracking is resumed
       MapService.setPaused(false);
     }
   }
 
-  void stopWorkout() {
+  void stopWorkout() async {
     _timer?.cancel();
-    
-    // Stop session in MapService
     MapService.stopSession();
-    
-    setState(() {
-      isWorkoutActive = false;
-      isPaused = false;
-      currentStep = 2; // Move to summary screen
-    });
+
+    // Hitung kecepatan rata-rata
+    double avgSpeed = distance > 0 ? distance / (duration.inSeconds / 3600) : 0;
+
+    // Contoh sederhana untuk max speed (bisa ditingkatkan)
+    double maxSpeed = avgSpeed * 1.2;
+
+    try {
+      final token = await AuthHelper.getToken();
+      if (token == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Silakan login ulang'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          return;
+        }
+      }
+
+      // Gunakan CyclingService untuk menyimpan aktivitas
+      bool saved = await CyclingService().saveCyclingActivity(
+        date: DateTime.now(),
+        durationSeconds: duration.inSeconds,
+        distanceKm: distance,
+        avgSpeedKmh: avgSpeed,
+        maxSpeedKmh: maxSpeed,
+        // Opsional: tambahkan elevation gain jika memungkinkan
+        elevationGainM: 0,
+      );
+
+      if (saved && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Aktivitas bersepeda berhasil disimpan'),
+            backgroundColor: primaryGreen,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else if (!saved && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menyimpan aktivitas bersepeda'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        isWorkoutActive = false;
+        isPaused = false;
+        currentStep = 2;
+      });
+    }
   }
 
   void _startTimer() {
     _timer?.cancel();
-    
+
     // Use an isolate-like approach by spawning a single computation future
     Future.microtask(() {
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
         if (isPaused) return;
-        
+
         // Update values but don't trigger setState yet
         await _computeUpdatedMetrics();
-        
+
         // Signal the ticker that we need an update
         _needsUpdate = true;
       });
@@ -271,31 +399,31 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
   Future<void> _computeUpdatedMetrics() async {
     // Update duration - one second at a time
     final newDuration = duration + const Duration(seconds: 1);
-    
+
     // Calculate the actual distance from the route points
     final routePoints = MapService.getRouteHistory();
     double totalDistance = 0.0;
-    
+
     if (routePoints.length > 1) {
       // Calculate the total distance along the route
       for (int i = 1; i < routePoints.length; i++) {
-        totalDistance += _calculateDistance(routePoints[i-1], routePoints[i]);
+        totalDistance += _calculateDistance(routePoints[i - 1], routePoints[i]);
       }
     }
-    
+
     // For cycling, we don't really count steps but rather pedal strokes
     // Using a cadence of about 80 rpm for average cycling
     final strokesToCount = 80.0 / 60.0; // strokes per second
     final newStepsCount = steps + strokesToCount.round();
-    
+
     // Calculate calories (using a simple approximation)
     // Cycling burns around 400-500 kcal per hour
     final caloriesPerSecond = 450.0 / 3600.0;
     final newCalories = (newDuration.inSeconds * caloriesPerSecond).round();
-    
+
     // Update steps (pedal strokes) per minute
     stepsPerMinute = 80; // Common cycling cadence
-    
+
     // Update performance data for pace graph
     if (isWorkoutActive && currentStep == 1) {
       // Calculate current pace
@@ -303,18 +431,18 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
       if (totalDistance > 0) {
         // Pace in minutes per km
         currentPace = newDuration.inSeconds / 60 / totalDistance;
-        
+
         // Normalize for the graph (between 0-1)
         currentPace = math.min(currentPace / 10, 1.0);
       }
-      
+
       // Shift performance data array and add new value
       for (int i = 0; i < performanceData.length - 1; i++) {
         performanceData[i] = performanceData[i + 1];
       }
       performanceData[performanceData.length - 1] = currentPace;
     }
-    
+
     // Apply updates all at once
     duration = newDuration;
     steps = newStepsCount;
@@ -325,22 +453,24 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
   // Helper method to calculate distance between two coordinates (in kilometers)
   double _calculateDistance(LatLng point1, LatLng point2) {
     const double earthRadius = 6371; // Earth's radius in kilometers
-    
+
     // Convert latitude and longitude from degrees to radians
     double lat1 = point1.latitude * (math.pi / 180);
     double lon1 = point1.longitude * (math.pi / 180);
     double lat2 = point2.latitude * (math.pi / 180);
     double lon2 = point2.longitude * (math.pi / 180);
-    
+
     // Haversine formula
     double dLat = lat2 - lat1;
     double dLon = lon2 - lon1;
-    double a = math.sin(dLat/2) * math.sin(dLat/2) +
-               math.cos(lat1) * math.cos(lat2) *
-               math.sin(dLon/2) * math.sin(dLon/2);
-    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a));
+    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1) *
+            math.cos(lat2) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
     double distance = earthRadius * c;
-    
+
     return distance;
   }
 
@@ -358,27 +488,27 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen> with Single
     if (distance <= 0) {
       return "0'00\""; // Default when no distance
     }
-    
+
     // Convert total duration to minutes and divide by distance
     double paceMinutes = duration.inMinutes + (duration.inSeconds % 60) / 60;
     double pacePerKm = paceMinutes / distance;
-    
+
     // Format pace as minutes and seconds
     int paceWholeMinutes = pacePerKm.floor();
     int paceSeconds = ((pacePerKm - paceWholeMinutes) * 60).round();
-    
+
     return "$paceWholeMinutes'${paceSeconds.toString().padLeft(2, '0')}\"";
   }
 
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: const Color(0xFFF1F7F6),
-    body: SafeArea(
-      child: _buildCurrentStep(),
-    ),
-  );
-}
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF1F7F6),
+      body: SafeArea(
+        child: _buildCurrentStep(),
+      ),
+    );
+  }
 
   Widget _buildCurrentStep() {
     switch (currentStep) {
@@ -414,7 +544,7 @@ Widget build(BuildContext context) {
           onBackToHome: () {
             setState(() {
               currentStep = 0; // Back to initial screen
-              
+
               // Reset workout metrics
               distance = 0.0;
               duration = const Duration(seconds: 0);
@@ -447,7 +577,7 @@ Widget build(BuildContext context) {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Hi, Yesaya!',
+                        'Hi, $_userName!',
                         style: GoogleFonts.poppins(
                           fontSize: 24,
                           fontWeight: FontWeight.w600,
@@ -456,13 +586,16 @@ Widget build(BuildContext context) {
                       ),
                       CircleAvatar(
                         radius: 20,
-                        backgroundImage: const AssetImage('assets/images/profile.png'),
+                        backgroundImage: _profileImageUrl != null
+                            ? NetworkImage(_profileImageUrl!)
+                            : const AssetImage('assets/images/profile.png')
+                                as ImageProvider,
                         backgroundColor: Colors.grey[300],
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Distance and weather
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10.0),
@@ -497,13 +630,13 @@ Widget build(BuildContext context) {
                           ),
                         ],
                       ),
-                      
+
                       // Weather information
                       const WeatherWidget(),
                     ],
                   ),
                 ),
-                
+
                 // Workout type selector
                 WorkoutNavbar(
                   currentWorkoutType: 'Cycling',
@@ -514,7 +647,7 @@ Widget build(BuildContext context) {
                     }
                   },
                 ),
-                
+
                 // Permission info - Now clickable
                 GestureDetector(
                   onTap: _requestLocationPermission,
@@ -537,13 +670,14 @@ Widget build(BuildContext context) {
                             color: Colors.black,
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(Icons.question_mark, color: Colors.white, size: 10),
+                          child: Icon(Icons.question_mark,
+                              color: Colors.white, size: 10),
                         ),
                       ],
                     ),
                   ),
                 ),
-                
+
                 // Map display with follow me button
                 Expanded(
                   child: Stack(
@@ -567,7 +701,8 @@ Widget build(BuildContext context) {
                           child: FlutterMap(
                             mapController: _mapController,
                             options: MapOptions(
-                              initialCenter: MapService.defaultCenter, // Use default center initially
+                              initialCenter: MapService
+                                  .defaultCenter, // Use default center initially
                               initialZoom: 15,
                               // Add interactiveFlags to prevent bounds error
                               interactionOptions: const InteractionOptions(
@@ -576,48 +711,55 @@ Widget build(BuildContext context) {
                             ),
                             children: [
                               TileLayer(
-                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                urlTemplate:
+                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                                 userAgentPackageName: 'com.example.app',
                               ),
                               // Always include at least one valid point in polylines
                               PolylineLayer(
-                                polylines: polylines.isEmpty ? 
-                                  [
-                                    Polyline(
-                                      points: [MapService.defaultCenter], // Include default center
-                                      color: Colors.transparent, // Make it invisible initially
-                                      strokeWidth: 0,
-                                    ),
-                                  ] : polylines,
+                                polylines: polylines.isEmpty
+                                    ? [
+                                        Polyline(
+                                          points: [
+                                            MapService.defaultCenter
+                                          ], // Include default center
+                                          color: Colors
+                                              .transparent, // Make it invisible initially
+                                          strokeWidth: 0,
+                                        ),
+                                      ]
+                                    : polylines,
                               ),
                               MarkerLayer(
-                                markers: markers.isEmpty ? 
-                                  [
-                                    Marker(
-                                      point: MapService.defaultCenter,
-                                      width: 60,
-                                      height: 60,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.withOpacity(0.3),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Center(
-                                          child: Icon(
-                                            Icons.location_on,
-                                            color: Colors.blue,
-                                            size: 30,
+                                markers: markers.isEmpty
+                                    ? [
+                                        Marker(
+                                          point: MapService.defaultCenter,
+                                          width: 60,
+                                          height: 60,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Colors.blue.withOpacity(0.3),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Center(
+                                              child: Icon(
+                                                Icons.location_on,
+                                                color: Colors.blue,
+                                                size: 30,
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ),
-                                  ] : markers,
+                                      ]
+                                    : markers,
                               ),
                             ],
                           ),
                         ),
                       ),
-                      
+
                       // Follow Me Button
                       Positioned(
                         right: 10,
@@ -635,7 +777,7 @@ Widget build(BuildContext context) {
             ),
           ),
         ),
-          
+
         // GO button - Modified to check location permission
         Center(
           child: Padding(
@@ -644,22 +786,24 @@ Widget build(BuildContext context) {
               onTap: () async {
                 // First check location permission
                 bool hasPermission = await _requestLocationPermission();
-                
+
                 if (!hasPermission) {
                   // Show dialog if permission is not granted
                   if (context.mounted) {
-                    await _locationPermissionHandler.showLocationServicesDisabledDialog(context);
+                    await _locationPermissionHandler
+                        .showLocationServicesDisabledDialog(context);
                   }
                   return;
                 }
-                
+
                 // If permission granted, proceed with countdown and workout
                 if (context.mounted) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => WorkoutCountdown(
                         onCountdownComplete: () {
-                          Navigator.of(context).pop(); // Pop the countdown screen
+                          Navigator.of(context)
+                              .pop(); // Pop the countdown screen
                           startWorkoutWithPermissionCheck(); // Start the workout when countdown finishes
                         },
                       ),

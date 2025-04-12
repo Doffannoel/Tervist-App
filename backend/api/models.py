@@ -224,21 +224,41 @@ class CyclingActivity(models.Model):
 
     @staticmethod
     def calculate_calories(duration_hours, weight_kg, avg_speed_kmh):
-        if avg_speed_kmh < 16:
-            met = 4.0
-        elif avg_speed_kmh < 19:
-            met = 6.8
-        elif avg_speed_kmh < 22:
-            met = 8.0
-        elif avg_speed_kmh < 25:
-            met = 10.0
-        else:
-            met = 12.0
-        return met * weight_kg * duration_hours
+        # Konversi semua nilai ke Decimal
+        duration_hours = Decimal(str(duration_hours))
+        weight_kg = Decimal(str(weight_kg))
+        avg_speed_kmh = Decimal(str(avg_speed_kmh))
 
-    def __str__(self):
-        return f"{self.user.username} - {self.date} - {self.distance_km}km"
-    
+        # Tentukan MET berdasarkan kecepatan
+        if avg_speed_kmh < 16:
+            met = Decimal('4.0')
+        elif avg_speed_kmh < 19:
+            met = Decimal('6.8')
+        elif avg_speed_kmh < 22:
+            met = Decimal('8.0')
+        elif avg_speed_kmh < 25:
+            met = Decimal('10.0')
+        else:
+            met = Decimal('12.0')
+
+        # Hitung kalori dengan semua nilai Decimal
+        calories = met * weight_kg * duration_hours
+        return calories
+
+    def save(self, *args, **kwargs):
+        # Pastikan kalori dihitung dengan benar
+        if not self.calories_burned:
+            weight_kg = Decimal(str(self.user.weight or 60))  # fallback default 60 kg
+            duration_hours = Decimal(str(self.duration.total_seconds() / 3600))
+            avg_speed = Decimal(str(float(self.avg_speed_kmh)))
+            
+            self.calories_burned = self.calculate_calories(
+                duration_hours, 
+                weight_kg, 
+                avg_speed
+            )
+        
+        super().save(*args, **kwargs)
 
 class Reminder(models.Model):
     MEAL_CHOICES = [
