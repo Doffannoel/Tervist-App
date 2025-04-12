@@ -3,7 +3,9 @@ class ApiConfig {
   // terus cari IPv4 Address.
 
   static const String baseUrl =
+
       'http://172.20.10.3:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
+
 
   // ---------------- AUTHENTICATION ----------------
   static Uri get signup => Uri.parse('$baseUrl/auth/signup/');
@@ -24,6 +26,7 @@ class ApiConfig {
   // static Uri get caloriesBurned => Uri.parse('$baseUrl/api/calories-burned/');
   static Uri get runningActivity => Uri.parse('$baseUrl/api/running-activity/');
   static Uri get walkingActivity => Uri.parse('$baseUrl/api/walking-activity/');
+  static Uri get cyclingActivity => Uri.parse('$baseUrl/api/cycling-activity/');
   static Uri get runningStats => Uri.parse('$baseUrl/api/running-stats/');
   static Uri get cyclingStats => Uri.parse('$baseUrl/api/cycling-stats/');
   static Uri get dashboard => Uri.parse('$baseUrl/api/dashboard/');

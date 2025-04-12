@@ -46,4 +46,15 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Python
+__pycache__/
+*.py[cod]
+
+# Django
+*.log
+*.pot
+*.pyc
+*.pyo
+.env
+
 

@@ -48,15 +48,15 @@ class _WalkingSummaryState extends State<WalkingSummary> {
     if (widget.routePoints.isEmpty) {
       return const LatLng(-7.767, 110.378); // Default center
     }
-    
+
     double latSum = 0;
     double lngSum = 0;
-    
+
     for (var point in widget.routePoints) {
       latSum += point.latitude;
       lngSum += point.longitude;
     }
-    
+
     return LatLng(
       latSum / widget.routePoints.length,
       lngSum / widget.routePoints.length,
@@ -67,7 +67,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
   void _toggleFollowMode() {
     setState(() {
       _isFollowingUser = !_isFollowingUser;
-      
+
       // If enabling follow mode, center the map on the route
       if (_isFollowingUser) {
         _mapController.move(_calculateMapCenter(), _mapController.camera.zoom);
@@ -97,39 +97,42 @@ class _WalkingSummaryState extends State<WalkingSummary> {
     }
     
     // Ensure we have valid polylines even if empty
-    final List<Polyline> displayPolylines = widget.polylines.isEmpty || widget.routePoints.isEmpty ? 
-      [
-        Polyline(
-          points: [const LatLng(-7.767, 110.378)], // Use default point if empty
-          color: Colors.transparent,
-          strokeWidth: 0,
-        )
-      ] : 
-      widget.polylines;
-      
+    final List<Polyline> displayPolylines =
+        widget.polylines.isEmpty || widget.routePoints.isEmpty
+            ? [
+                Polyline(
+                  points: [
+                    const LatLng(-7.767, 110.378)
+                  ], // Use default point if empty
+                  color: Colors.transparent,
+                  strokeWidth: 0,
+                )
+              ]
+            : widget.polylines;
+
     // Ensure we have valid markers even if empty
-    final List<Marker> displayMarkers = widget.markers.isEmpty ? 
-      [
-        Marker(
-          point: const LatLng(-7.767, 110.378),
-          width: 80,
-          height: 80,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.3),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.location_on,
-                color: Colors.blue,
-                size: 30,
+    final List<Marker> displayMarkers = widget.markers.isEmpty
+        ? [
+            Marker(
+              point: const LatLng(-7.767, 110.378),
+              width: 80,
+              height: 80,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.location_on,
+                    color: Colors.blue,
+                    size: 30,
+                  ),
+                ),
               ),
-            ),
-          ),
-        )
-      ] : 
-      widget.markers;
+            )
+          ]
+        : widget.markers;
 
     return Scaffold(
       // Removing AppBar to use custom buttons like in cycling_summary
