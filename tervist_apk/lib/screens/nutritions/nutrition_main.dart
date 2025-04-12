@@ -407,7 +407,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                       children: [
                         Image.asset(
                           'assets/images/logotervist.png',
-                          height: 24,
+                          height: 28,
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -415,20 +415,32 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Row(
                             children: [
-                              Image.asset('assets/images/fire.png', height: 20),
-                              const SizedBox(width: 5),
-                              const Text('0',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.w500)),
+                              Image.asset('assets/images/fireon.png',
+                                  height: 16),
+                              const SizedBox(width: 4),
+                              const Text(
+                                '1',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 24),
 
                     // Calendar header
                     GestureDetector(
