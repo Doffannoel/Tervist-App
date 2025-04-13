@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:math'; // Added for Random
 import 'package:path_provider/path_provider.dart';
 // import 'package:share_plus/share_plus.dart';
 import '../screenshot_helper.dart';
@@ -37,6 +38,62 @@ class _ShareScreenState extends State<ShareScreen> {
   bool isDefaultTemplate = false; // Set the default to Custom template
   final GlobalKey _screenshotKey = GlobalKey();
   bool _isSaving = false;
+  int _randomBackgroundIndex = 0;
+  
+  // List of background images for custom template
+  final List<String> _backgroundOptions = [
+    'assets/images/workoutsummary1.jpeg',
+    'assets/images/workoutsummary2.jpeg',
+    'assets/images/workoutsummary3.jpeg',
+  ];
+  
+  // List of gradients to use over the backgrounds
+  final List<LinearGradient> _gradientOptions = [
+    LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Colors.black.withOpacity(0.3),
+        Colors.black.withOpacity(0.7),
+      ],
+    ),
+    LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Colors.indigo.withOpacity(0.4),
+        Colors.purple.withOpacity(0.7),
+      ],
+    ),
+    LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Colors.blue.withOpacity(0.4),
+        Colors.teal.withOpacity(0.7),
+      ],
+    ),
+  ];
+  
+  // List of motivational phrases
+  final List<String> _motivationalPhrases = [
+    'Make exercise\nyour busyness',
+    'Stronger\nevery day',
+    'Pushing\nlimits',
+  ];
+  
+  @override
+  void initState() {
+    super.initState();
+    _randomizeBackground();
+  }
+  
+  // Function to select a random background
+  void _randomizeBackground() {
+    setState(() {
+      _randomBackgroundIndex = Random().nextInt(_backgroundOptions.length);
+    });
+  }
 
   // Helper method to create metric columns
   Widget _buildMetricColumn(String label, String value) {
@@ -98,7 +155,8 @@ class _ShareScreenState extends State<ShareScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      // Updated background color to F1F7F6
+      backgroundColor: const Color(0xFFF1F7F6),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -155,6 +213,8 @@ class _ShareScreenState extends State<ShareScreen> {
                 // Custom template button
                 GestureDetector(
                   onTap: () {
+                    // Randomize background when custom is selected
+                    _randomizeBackground();
                     setState(() {
                       isDefaultTemplate = false;
                     });
@@ -393,86 +453,93 @@ class _ShareScreenState extends State<ShareScreen> {
     );
   }
 
-  // Updated to match Image 1 design
+  // Updated custom template with randomization features
   Widget _buildCustomTemplate() {
+    // Get current template elements based on randomized index
+    final backgroundImage = _backgroundOptions[_randomBackgroundIndex];
+    final gradient = _gradientOptions[_randomBackgroundIndex];
+    final motivationalPhrase = _motivationalPhrases[_randomBackgroundIndex];
+
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: AssetImage('assets/images/workoutsummary1.jpeg'),
+          image: AssetImage(backgroundImage),
           fit: BoxFit.cover,
         ),
       ),
       child: Stack(
         children: [
+          // Gradient overlay to make text readable
+          Container(
+            decoration: BoxDecoration(
+              gradient: gradient,
+            ),
+          ),
+          
           // Content
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Tervist icon at top
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.favorite,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Tervist',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 8),
-                
-                // Date
+                // Date at top
                 Text(
                   '${widget.workoutDate.day}/${widget.workoutDate.month}/${widget.workoutDate.year}',
                   style: GoogleFonts.poppins(
+                    color: Colors.white,
                     fontSize: 14,
-                    color: Colors.white,
                   ),
                 ),
                 
-                const SizedBox(height: 32),
-                
-                // Motivational text
-                Text(
-                  'Make exercise',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                // Center content - Motivational text
+                Center(
+                  child: Text(
+                    motivationalPhrase,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
                 
-                Text(
-                  'your busyness',
-                  style: GoogleFonts.poppins(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                
-                const SizedBox(height: 32),
-                
-                // Exercise info
-                Text(
-                  '${widget.activityType} | ${widget.distance.toStringAsFixed(2)} Km',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                  ),
+                // Bottom area with activity info and logo
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Activity type and distance
+                    Text(
+                      '${widget.activityType} | ${widget.distance.toStringAsFixed(2)} Km',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    
+                    // Tervist logo
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.favorite,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Tervist',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),

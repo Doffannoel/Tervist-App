@@ -135,6 +135,8 @@ class _WalkingSummaryState extends State<WalkingSummary> {
         : widget.markers;
 
     return Scaffold(
+      // Added background color
+      backgroundColor: const Color(0xFFF1F7F6),
       // Removing AppBar to use custom buttons like in cycling_summary
       body: Stack(
         children: [

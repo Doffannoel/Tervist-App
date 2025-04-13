@@ -9,7 +9,7 @@ class FollowMeButton extends StatelessWidget {
     super.key,
     required this.isFollowing,
     required this.onPressed,
-    this.activeColor = const Color(0xFF4CB9A0),
+    this.activeColor = const Color.fromARGB(255, 0, 0, 0),
   });
   
   @override

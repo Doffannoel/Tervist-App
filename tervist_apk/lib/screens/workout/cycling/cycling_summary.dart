@@ -135,6 +135,8 @@ class _CyclingSummaryState extends State<CyclingSummary> {
         : widget.markers;
 
     return Scaffold(
+      // Set background color to F1F7F6
+      backgroundColor: const Color(0xFFF1F7F6),
       // Hapus AppBar untuk menggunakan custom buttons
       body: Stack(
         children: [

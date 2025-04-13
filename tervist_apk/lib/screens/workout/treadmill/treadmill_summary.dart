@@ -26,8 +26,11 @@ class TreadmillSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Updated background color to F1F7F6
+      backgroundColor: const Color(0xFFF1F7F6),
       appBar: AppBar(
-
+        backgroundColor: const Color(0xFFF1F7F6),
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: onBackToHome,

@@ -189,6 +189,8 @@ class _RunningSummaryState extends State<RunningSummary> {
         : widget.markers;
 
     return Scaffold(
+      // Added background color to F1F7F6
+      backgroundColor: const Color(0xFFF1F7F6),
       // Removing AppBar to use custom buttons like in cycling_summary
       body: Stack(
         children: [

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:math';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -45,11 +46,68 @@ class _ShareScreenState extends State<ShareScreen> {
   bool isDefaultTemplate = true;
   final GlobalKey _screenshotKey = GlobalKey();
   bool _isSaving = false;
+  int _randomBackgroundIndex = 0;
+  
+  // List of background images for custom template
+  final List<String> _backgroundOptions = [
+    'assets/images/workoutsummary1.jpeg',
+    'assets/images/workoutsummary2.jpeg',
+    'assets/images/workoutsummary3.jpeg',
+  ];
+  
+  // List of gradients to use over the backgrounds
+  final List<LinearGradient> _gradientOptions = [
+    LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Colors.black.withOpacity(0.3),
+        Colors.black.withOpacity(0.7),
+      ],
+    ),
+    LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        Colors.indigo.withOpacity(0.4),
+        Colors.purple.withOpacity(0.7),
+      ],
+    ),
+    LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Colors.blue.withOpacity(0.4),
+        Colors.teal.withOpacity(0.7),
+      ],
+    ),
+  ];
+  
+  // List of motivational phrases
+  final List<String> _motivationalPhrases = [
+    'Make exercise\nyour busyness',
+    'Stronger\nevery day',
+    'Pushing\nlimits',
+  ];
+  
+  @override
+  void initState() {
+    super.initState();
+    _randomizeBackground();
+  }
+  
+  // Function to select a random background
+  void _randomizeBackground() {
+    setState(() {
+      _randomBackgroundIndex = Random().nextInt(_backgroundOptions.length);
+    });
+  }
   
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      // Updated background color to F1F7F6
+      backgroundColor: const Color(0xFFF1F7F6),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -123,6 +181,8 @@ class _ShareScreenState extends State<ShareScreen> {
                     ),
                     GestureDetector(
                       onTap: () {
+                        // Always randomize the background when pressing the custom button
+                        _randomizeBackground();
                         setState(() {
                           isDefaultTemplate = false;
                         });
@@ -205,7 +265,7 @@ class _ShareScreenState extends State<ShareScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(width: 60),
+                const SizedBox(width: 80),  // Increased spacing between buttons
                 Column(
                   children: [
                     CircleAvatar(
@@ -500,76 +560,30 @@ class _ShareScreenState extends State<ShareScreen> {
   }
 
   Widget _buildCustomTemplate() {
-    // Calculate map center
-    LatLng mapCenter = _calculateMapCenter();
+    // Get current template elements based on randomized index
+    final backgroundImage = _backgroundOptions[_randomBackgroundIndex];
+    final gradient = _gradientOptions[_randomBackgroundIndex];
+    final motivationalPhrase = _motivationalPhrases[_randomBackgroundIndex];
     
-    // Ensure we have valid polylines even if empty
-    final List<Polyline> displayPolylines = widget.polylines.isEmpty || widget.routePoints.isEmpty ? 
-      [
-        Polyline(
-          points: [LatLng(-7.767, 110.378)], // Use default point if empty
-          color: Colors.green,
-          strokeWidth: 4,
-        )
-      ] : 
-      widget.polylines;
-      
-    // Ensure we have valid markers even if empty
-    final List<Marker> displayMarkers = widget.markers.isEmpty ? 
-      [
-        Marker(
-          point: LatLng(-7.767, 110.378),
-          width: 15,
-          height: 15,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
-            ),
-          ),
-        )
-      ] : 
-      widget.markers;
-
-    // Modern design with running/workout image and map
+    // Modern design with background image (no map option)
     return Container(
       color: Colors.white,
       child: Stack(
         children: [
-          // Background map with workout route
-          FlutterMap(
-            options: MapOptions(
-              initialCenter: mapCenter,
-              initialZoom: 14,
-              interactionOptions: const InteractionOptions(
-                enableMultiFingerGestureRace: true,
+          // Background fitness image - always use image, never map
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage(backgroundImage),
+                fit: BoxFit.cover,
               ),
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.running_app',
-              ),
-              PolylineLayer(
-                polylines: displayPolylines,
-              ),
-              MarkerLayer(
-                markers: displayMarkers,
-              ),
-            ],
           ),
           
           // Overlay gradient to make text readable
           Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.3),
-                  Colors.black.withOpacity(0.7),
-                ],
-              ),
+              gradient: gradient,
             ),
           ),
           
@@ -595,15 +609,8 @@ class _ShareScreenState extends State<ShareScreen> {
                   child: Column(
                     children: [
                       Text(
-                        'Make exercise',
-                        style: GoogleFonts.poppins(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        'your busyness',
+                        motivationalPhrase,
+                        textAlign: TextAlign.center,
                         style: GoogleFonts.poppins(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
