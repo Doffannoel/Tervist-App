@@ -24,6 +24,7 @@ class FoodDatabase {
 }
 
 class FoodMeasurement {
+  final int id; // Add this field
   final String label;
   final double gramEquivalent;
   final double calories;
@@ -44,6 +45,7 @@ class FoodMeasurement {
   final double iron;
 
   FoodMeasurement({
+    required this.id,
     required this.label,
     required this.gramEquivalent,
     required this.calories,
@@ -66,6 +68,7 @@ class FoodMeasurement {
 
   factory FoodMeasurement.fromJson(Map<String, dynamic> json) {
     return FoodMeasurement(
+      id : json['id'],
       label: json['label'],
       gramEquivalent: json['gram_equivalent']?.toDouble() ?? 0.0,
       calories: json['calories']?.toDouble() ?? 0.0,

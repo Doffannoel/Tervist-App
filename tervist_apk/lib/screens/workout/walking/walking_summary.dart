@@ -79,7 +79,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
   Widget build(BuildContext context) {
     // Extract pace data for PaceStatistics
     List<Map<String, dynamic>> paceData;
-    
+
     if (widget.routePoints.isNotEmpty) {
       // If route points exist, use them for pace data extraction
       paceData = PaceDataProcessor.extractPaceFromRoutePoints(
@@ -95,7 +95,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
         null,
       );
     }
-    
+
     // Ensure we have valid polylines even if empty
     final List<Polyline> displayPolylines =
         widget.polylines.isEmpty || widget.routePoints.isEmpty
@@ -148,7 +148,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                 children: [
                   // Spacer for the top buttons
                   const SizedBox(height: 60),
-                  
+
                   // Map container
                   Container(
                     width: double.infinity,
@@ -174,7 +174,8 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                             ),
                             children: [
                               TileLayer(
-                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                urlTemplate:
+                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                                 userAgentPackageName: 'com.example.walking_app',
                               ),
                               PolylineLayer(
@@ -185,7 +186,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                               ),
                             ],
                           ),
-                          
+
                           // Follow me button
                           Positioned(
                             right: 16,
@@ -200,7 +201,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                       ),
                     ),
                   ),
-                  
+
                   // Tervist | Outdoor Walking text
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
@@ -212,7 +213,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                       ),
                     ),
                   ),
-                  
+
                   // Primary workout stats card
                   Card(
                     margin: const EdgeInsets.only(bottom: 16.0),
@@ -255,7 +256,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                                   ),
                                 ],
                               ),
-                              
+
                               // User info with profile image
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -271,7 +272,8 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                                         width: 2,
                                       ),
                                       image: const DecorationImage(
-                                        image: AssetImage('assets/images/profile.png'),
+                                        image: AssetImage(
+                                            'assets/images/profile.png'),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
@@ -294,9 +296,9 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 24),
-                          
+
                           // Time and Pace
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -321,7 +323,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                                   ),
                                 ],
                               ),
-                              
+
                               // Pace column
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,7 +350,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                       ),
                     ),
                   ),
-                  
+
                   // Two-column layout for Calories and Steps
                   Row(
                     children: [
@@ -415,7 +417,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                           ),
                         ),
                       ),
-                      
+
                       // Steps card
                       Expanded(
                         child: Card(
@@ -432,10 +434,10 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                                 // Steps title with icon
                                 Row(
                                   children: [
-                                    Icon(
-                                      Icons.directions_walk,
+                                    Image.asset(
+                                      'assets/images/stepicon.png',
                                       color: widget.primaryGreen,
-                                      size: 20,
+                                      width: 20,
                                     ),
                                     const SizedBox(width: 8),
                                     // Using Flexible to prevent overflow
@@ -469,7 +471,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                       ),
                     ],
                   ),
-                  
+
                   // REPLACED: Performance chart with PaceStatisticsWidget
                   Padding(
                     padding: const EdgeInsets.only(bottom: 24.0),
@@ -483,7 +485,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
               ),
             ),
           ),
-          
+
           // Custom back and share buttons at the top - added from cycling summary
           Positioned(
             top: 16,
@@ -512,7 +514,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                     child: const Icon(Icons.arrow_back, color: Colors.black),
                   ),
                 ),
-                
+
                 // Share button - using the style from cycling summary
                 InkWell(
                   onTap: () {

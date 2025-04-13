@@ -130,10 +130,10 @@ class _RunningSummaryState extends State<RunningSummary> {
     // Format date and time
     String formattedDate = DateFormat('dd/MM/yyyy').format(_currentDateTime);
     String formattedTime = DateFormat('HH:mm').format(_currentDateTime);
-    
+
     // Extract pace data for PaceStatistics
     List<Map<String, dynamic>> paceData;
-    
+
     if (widget.routePoints.isNotEmpty) {
       // If route points exist, use them for pace data extraction
       paceData = PaceDataProcessor.extractPaceFromRoutePoints(
@@ -149,7 +149,7 @@ class _RunningSummaryState extends State<RunningSummary> {
         null,
       );
     }
-    
+
     // Ensure we have valid polylines even if empty
     final List<Polyline> displayPolylines =
         widget.polylines.isEmpty || widget.routePoints.isEmpty
@@ -202,7 +202,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                 children: [
                   // Spacer for the top buttons
                   const SizedBox(height: 60),
-                  
+
                   // Map container instead of treadmill image
                   Container(
                     width: double.infinity,
@@ -228,7 +228,8 @@ class _RunningSummaryState extends State<RunningSummary> {
                             ),
                             children: [
                               TileLayer(
-                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                urlTemplate:
+                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                                 userAgentPackageName: 'com.example.running_app',
                               ),
                               PolylineLayer(
@@ -239,7 +240,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                               ),
                             ],
                           ),
-                          
+
                           // Follow me button
                           Positioned(
                             right: 16,
@@ -254,7 +255,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                       ),
                     ),
                   ),
-                  
+
                   // Tervist | Outdoor Running text
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
@@ -266,7 +267,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                       ),
                     ),
                   ),
-                  
+
                   // Primary workout stats card
                   Card(
                     margin: const EdgeInsets.only(bottom: 16.0),
@@ -309,7 +310,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                                   ),
                                 ],
                               ),
-                              
+
                               // User info with profile image
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -325,27 +326,30 @@ class _RunningSummaryState extends State<RunningSummary> {
                                         width: 2,
                                       ),
                                       image: const DecorationImage(
-                                        image: AssetImage('assets/images/profile.png'),
+                                        image: AssetImage(
+                                            'assets/images/profile.png'),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
                                   ),
                                   _isLoading
-                                  ? SizedBox(
-                                      width: 50,
-                                      height: 10,
-                                      child: LinearProgressIndicator(
-                                        backgroundColor: Colors.grey[200],
-                                        valueColor: AlwaysStoppedAnimation<Color>(widget.primaryGreen),
-                                      ),
-                                    )
-                                  : Text(
-                                      _userName,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
+                                      ? SizedBox(
+                                          width: 50,
+                                          height: 10,
+                                          child: LinearProgressIndicator(
+                                            backgroundColor: Colors.grey[200],
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    widget.primaryGreen),
+                                          ),
+                                        )
+                                      : Text(
+                                          _userName,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
                                   Text(
                                     '$formattedDate $formattedTime',
                                     style: GoogleFonts.poppins(
@@ -357,9 +361,9 @@ class _RunningSummaryState extends State<RunningSummary> {
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 24),
-                          
+
                           // Time and Pace
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -384,7 +388,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                                   ),
                                 ],
                               ),
-                              
+
                               // Pace column
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -411,7 +415,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                       ),
                     ),
                   ),
-                  
+
                   // Two-column layout for Calories and Steps
                   Row(
                     children: [
@@ -478,7 +482,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                           ),
                         ),
                       ),
-                      
+
                       // Steps card
                       Expanded(
                         child: Card(
@@ -495,10 +499,10 @@ class _RunningSummaryState extends State<RunningSummary> {
                                 // Steps title with icon
                                 Row(
                                   children: [
-                                    Icon(
-                                      Icons.directions_walk,
-                                      color: Colors.blue[400],
-                                      size: 20,
+                                    Image.asset(
+                                      'assets/images/stepicon.png',
+                                      color: widget.primaryGreen,
+                                      width: 20,
                                     ),
                                     const SizedBox(width: 8),
                                     // Using Flexible to prevent overflow
@@ -532,7 +536,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                       ),
                     ],
                   ),
-                  
+
                   // REPLACED: Performance chart with PaceStatisticsWidget
                   Padding(
                     padding: const EdgeInsets.only(bottom: 24.0),
@@ -546,7 +550,7 @@ class _RunningSummaryState extends State<RunningSummary> {
               ),
             ),
           ),
-          
+
           // Custom back and share buttons at the top - added from cycling summary
           Positioned(
             top: 16,
@@ -575,7 +579,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                     child: const Icon(Icons.arrow_back, color: Colors.black),
                   ),
                 ),
-                
+
                 // Share button - using the style from cycling summary
                 InkWell(
                   onTap: () {

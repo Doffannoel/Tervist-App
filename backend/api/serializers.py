@@ -53,7 +53,7 @@ class FoodIntakeSerializer(serializers.ModelSerializer):
         model = FoodIntake
         fields = [
             'id', 'user', 'food_data', 'food_data_id', 'serving_size',
-            'meal_type', 'manual_calories', 'manual_protein', 'manual_carbs', 'manual_fats',
+            'meal_type', 'name', 'manual_calories', 'manual_protein', 'manual_carbs', 'manual_fats',
             'date', 'time'
         ]
         read_only_fields = ['user']

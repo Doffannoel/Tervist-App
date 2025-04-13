@@ -114,16 +114,49 @@ class _HomePageState extends State<HomePage>
 
   Future<Map<String, dynamic>> _fetchDashboardData(String token) async {
     try {
+      // Add timestamp to prevent caching
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final today = DateTime.now();
+      final formattedDate =
+          "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+      final dashboardUri = Uri.parse(
+          '${ApiConfig.dashboard.toString()}?date=$formattedDate&t=${DateTime.now().millisecondsSinceEpoch}');
       final response = await http.get(
-        ApiConfig.dashboard,
+        dashboardUri,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store',
+          'Pragma': 'no-cache',
         },
       ).timeout(const Duration(seconds: 15));
 
+      print('Dashboard Request URL: $dashboardUri');
+      print('Dashboard Response Status: ${response.statusCode}');
+
+      // Debug response body (limited to avoid log overflow)
+      if (response.body.isNotEmpty) {
+        final previewLength =
+            response.body.length > 300 ? 300 : response.body.length;
+        print(
+            'Dashboard Response Preview: ${response.body.substring(0, previewLength)}...');
+      }
+
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final data = json.decode(response.body);
+
+        // Debug food data
+        if (data.containsKey('categorized_food')) {
+          print('Food data found:');
+          final foodData = data['categorized_food'];
+          foodData.forEach((mealType, meals) {
+            print('$mealType: ${meals.length} items');
+          });
+        } else {
+          print('No categorized_food data in response');
+        }
+
+        return data;
       } else if (response.statusCode == 401) {
         throw Exception('Session expired. Please log in again.');
       } else {
@@ -307,6 +340,7 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildProfileMenu() {
     return PopupMenuButton<String>(
+      color: Colors.white,
       icon: CircleAvatar(
         backgroundImage: _userProfileData?['profile_picture'] != null
             ? NetworkImage(_userProfileData!['profile_picture'])

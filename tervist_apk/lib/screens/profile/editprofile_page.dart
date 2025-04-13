@@ -396,11 +396,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
               controller: controller,
               textAlign: TextAlign.right,
               style: GoogleFonts.poppins(fontSize: 10),
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(
-                    RegExp(r'^\d{0,3}(\.\d{0,2})?$')),
-              ],
+              // Remove the number-specific keyboard type
+              keyboardType: label == 'Weight (kg)'
+                  ? TextInputType.numberWithOptions(decimal: true)
+                  : TextInputType.text,
+              // Only apply input formatters for weight
+              inputFormatters: label == 'Weight (kg)'
+                  ? [
+                      FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d{0,3}(\.\d{0,2})?$'))
+                    ]
+                  : null,
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 isDense: true,

@@ -61,6 +61,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     try {
       await _foodService.logFoodIntake(
         foodDataId: widget.food.id,
+        measurementId: _selectedIndex, //biar bisa ikut measurmeent nya
         mealType: _getMealTypeBasedOnTime(),
         servingSize: _servings.toString(),
       );
@@ -84,7 +85,8 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     final hour = TimeOfDay.now().hour;
     if (hour >= 5 && hour < 10) return 'Breakfast';
     if (hour >= 10 && hour < 15) return 'Lunch';
-    if (hour >= 15 && hour < 20) return 'Dinner';
+    // aku aganti dari & jadi ||
+    if (hour >= 15 || hour < 2) return 'Dinner';
     return 'Snack';
   }
 
@@ -123,7 +125,8 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: List.generate(widget.food.measurements.length, (index) {
+                  children:
+                      List.generate(widget.food.measurements.length, (index) {
                     return Padding(
                       padding: const EdgeInsets.only(right: 10),
                       child: MeasurementButton(
@@ -159,17 +162,16 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.remove, size: 18),
-                          onPressed: _servings > 1
-                              ? () => _decreaseServing()
-                              : null,
+                          onPressed:
+                              _servings > 1 ? () => _decreaseServing() : null,
                           padding: EdgeInsets.zero,
                         ),
-                        Text(
-                          '${_servings.toInt()}',
-                          style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.w500, fontSize: 16)),
+                        Text('${_servings.toInt()}',
+                            style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w500, fontSize: 16)),
                         IconButton(
-                          icon: const Icon(Icons.add, size: 18), // Changed from edit to add icon
+                          icon: const Icon(Icons.add,
+                              size: 18), // Changed from edit to add icon
                           onPressed: () => _increaseServing(),
                           padding: EdgeInsets.zero,
                         ),
@@ -191,30 +193,72 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      _buildSimpleNutritionFactRow('Saturated Fat',
-                          formatNutritionValue((selectedMeasurement.saturatedFat ?? 0) * _servings, 'g')),
-                      _buildSimpleNutritionFactRow('Polyunsaturated Fat',
-                          formatNutritionValue((selectedMeasurement.polyunsaturatedFat ?? 0) * _servings, 'g')),
-                      _buildSimpleNutritionFactRow('Monounsaturated Fat',
-                          formatNutritionValue((selectedMeasurement.monounsaturatedFat ?? 0) * _servings, 'g')),
-                      _buildSimpleNutritionFactRow('Cholesterol',
-                          formatNutritionValue((selectedMeasurement.cholesterol ?? 0) * _servings, 'mg')),
-                      _buildSimpleNutritionFactRow('Sodium',
-                          formatNutritionValue((selectedMeasurement.sodium ?? 0) * _servings, 'mg')),
-                      _buildSimpleNutritionFactRow('Fiber',
-                          formatNutritionValue((selectedMeasurement.dietaryFiber ?? 0) * _servings, 'g')),
-                      _buildSimpleNutritionFactRow('Sugar',
-                          formatNutritionValue((selectedMeasurement.totalSugars ?? 0) * _servings, 'g')),
-                      _buildSimpleNutritionFactRow('Potassium',
-                          formatNutritionValue((selectedMeasurement.potassium ?? 0) * _servings, 'mg')),
-                      _buildSimpleNutritionFactRow('Vitamin A',
-                          formatNutritionValue((selectedMeasurement.vitaminA ?? 0) * _servings, 'μg')),
-                      _buildSimpleNutritionFactRow('Vitamin C',
-                          formatNutritionValue((selectedMeasurement.vitaminC ?? 0) * _servings, 'mg')),
-                      _buildSimpleNutritionFactRow('Calcium',
-                          formatNutritionValue((selectedMeasurement.calcium ?? 0) * _servings, 'mg')),
-                      _buildSimpleNutritionFactRow('Iron',
-                          formatNutritionValue((selectedMeasurement.iron ?? 0) * _servings, 'mg')),
+                      _buildSimpleNutritionFactRow(
+                          'Saturated Fat',
+                          formatNutritionValue(
+                              (selectedMeasurement.saturatedFat ?? 0) *
+                                  _servings,
+                              'g')),
+                      _buildSimpleNutritionFactRow(
+                          'Polyunsaturated Fat',
+                          formatNutritionValue(
+                              (selectedMeasurement.polyunsaturatedFat ?? 0) *
+                                  _servings,
+                              'g')),
+                      _buildSimpleNutritionFactRow(
+                          'Monounsaturated Fat',
+                          formatNutritionValue(
+                              (selectedMeasurement.monounsaturatedFat ?? 0) *
+                                  _servings,
+                              'g')),
+                      _buildSimpleNutritionFactRow(
+                          'Cholesterol',
+                          formatNutritionValue(
+                              (selectedMeasurement.cholesterol ?? 0) *
+                                  _servings,
+                              'mg')),
+                      _buildSimpleNutritionFactRow(
+                          'Sodium',
+                          formatNutritionValue(
+                              (selectedMeasurement.sodium ?? 0) * _servings,
+                              'mg')),
+                      _buildSimpleNutritionFactRow(
+                          'Fiber',
+                          formatNutritionValue(
+                              (selectedMeasurement.dietaryFiber ?? 0) *
+                                  _servings,
+                              'g')),
+                      _buildSimpleNutritionFactRow(
+                          'Sugar',
+                          formatNutritionValue(
+                              (selectedMeasurement.totalSugars ?? 0) *
+                                  _servings,
+                              'g')),
+                      _buildSimpleNutritionFactRow(
+                          'Potassium',
+                          formatNutritionValue(
+                              (selectedMeasurement.potassium ?? 0) * _servings,
+                              'mg')),
+                      _buildSimpleNutritionFactRow(
+                          'Vitamin A',
+                          formatNutritionValue(
+                              (selectedMeasurement.vitaminA ?? 0) * _servings,
+                              'μg')),
+                      _buildSimpleNutritionFactRow(
+                          'Vitamin C',
+                          formatNutritionValue(
+                              (selectedMeasurement.vitaminC ?? 0) * _servings,
+                              'mg')),
+                      _buildSimpleNutritionFactRow(
+                          'Calcium',
+                          formatNutritionValue(
+                              (selectedMeasurement.calcium ?? 0) * _servings,
+                              'mg')),
+                      _buildSimpleNutritionFactRow(
+                          'Iron',
+                          formatNutritionValue(
+                              (selectedMeasurement.iron ?? 0) * _servings,
+                              'mg')),
                     ],
                   ),
                 ),
@@ -248,11 +292,10 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   Widget _buildCaloriesBox() {
     // Calculate the additional calories based on servings
     num? caloriesValue = selectedMeasurement.calories;
-    int baseCalories = caloriesValue?.toInt() ?? 0;
-    int additionalCalories = _servings > 1 
-      ? ((baseCalories * _servings).toInt() - baseCalories) 
-      : 0;
-    
+    int baseCalories = caloriesValue.toInt() ?? 0;
+    int additionalCalories =
+        _servings > 1 ? ((baseCalories * _servings).toInt() - baseCalories) : 0;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -269,16 +312,17 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
               color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.local_fire_department, color: Colors.black, size: 20),
+            child: const Icon(Icons.local_fire_department,
+                color: Colors.black, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Calories', 
+                Text('Calories',
                     style: GoogleFonts.poppins(
-                      fontSize: 14, 
+                      fontSize: 14,
                       color: Colors.grey[600],
                     )),
                 Row(
@@ -297,7 +341,8 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                     Visibility(
                       visible: _servings > 1,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.black,
                           borderRadius: BorderRadius.circular(12),
@@ -324,22 +369,18 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   Widget _buildMacroRow() {
     // Calculate additional values for protein, carbs, and fats
     num? proteinValue = selectedMeasurement.protein;
-    double baseProtein = proteinValue?.toDouble() ?? 0;
-    double additionalProtein = _servings > 1 
-        ? (baseProtein * _servings - baseProtein) 
-        : 0;
-    
+    double baseProtein = proteinValue.toDouble() ?? 0;
+    double additionalProtein =
+        _servings > 1 ? (baseProtein * _servings - baseProtein) : 0;
+
     num? carbsValue = selectedMeasurement.carbs;
-    double baseCarbs = carbsValue?.toDouble() ?? 0;
-    double additionalCarbs = _servings > 1 
-        ? (baseCarbs * _servings - baseCarbs)
-        : 0;
-    
+    double baseCarbs = carbsValue.toDouble() ?? 0;
+    double additionalCarbs =
+        _servings > 1 ? (baseCarbs * _servings - baseCarbs) : 0;
+
     num? fatValue = selectedMeasurement.fat;
-    double baseFat = fatValue?.toDouble() ?? 0;
-    double additionalFat = _servings > 1 
-        ? (baseFat * _servings - baseFat)
-        : 0;
+    double baseFat = fatValue.toDouble() ?? 0;
+    double additionalFat = _servings > 1 ? (baseFat * _servings - baseFat) : 0;
 
     return Row(
       children: [
@@ -379,7 +420,8 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     );
   }
 
-  Widget _buildMacroBox(String label, String value, IconData icon, Color color, String additionalValue) {
+  Widget _buildMacroBox(String label, String value, IconData icon, Color color,
+      String additionalValue) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
       decoration: BoxDecoration(
@@ -396,7 +438,8 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
               Flexible(
                 child: Text(
                   label,
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                  style: GoogleFonts.poppins(
+                      fontSize: 12, color: Colors.grey[600]),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -408,7 +451,8 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
               Expanded(
                 child: Text(
                   value,
-                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -422,7 +466,10 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                   visible: _servings > 1,
                   child: Text(
                     additionalValue,
-                    style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -442,7 +489,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
           Expanded(
             flex: 3,
             child: Text(
-              label, 
+              label,
               style: GoogleFonts.poppins(fontSize: 14),
               overflow: TextOverflow.ellipsis,
             ),
@@ -451,7 +498,8 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
             flex: 1,
             child: Text(
               value,
-              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+              style: GoogleFonts.poppins(
+                  fontSize: 14, fontWeight: FontWeight.w500),
               textAlign: TextAlign.right,
               overflow: TextOverflow.ellipsis,
             ),
@@ -468,11 +516,11 @@ class MeasurementButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const MeasurementButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.isSelected,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -483,7 +531,9 @@ class MeasurementButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? Colors.black : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: !isSelected ? Border.all(color: Colors.grey.shade300, width: 1) : null,
+          border: !isSelected
+              ? Border.all(color: Colors.grey.shade300, width: 1)
+              : null,
         ),
         child: Text(
           label,

@@ -120,6 +120,7 @@ class FoodMeasurement(models.Model):
 
 class FoodIntake(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=100, null=True,blank=True, default='Custom Meal')
     food_data = models.ForeignKey(FoodDatabase, on_delete=models.CASCADE, null=True, blank=True)
     serving_size = models.CharField(max_length=50, null=True, blank=True)
 

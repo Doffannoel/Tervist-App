@@ -12,6 +12,8 @@ class ApiConfig {
   static Uri get resetPassword => Uri.parse('$baseUrl/auth/reset-password/');
   static Uri get verifyOtp => Uri.parse('$baseUrl/auth/verify-otp/');
   static Uri get profile => Uri.parse('$baseUrl/auth/profile/');
+  static Uri get socialLogin => Uri.parse('$baseUrl/auth/social/login/');
+
 
   // Debugging endpoint to check token validity
   static Uri get tokenVerify => Uri.parse('$baseUrl/auth/token/verify/');
