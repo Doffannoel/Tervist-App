@@ -4,7 +4,7 @@ class ApiConfig {
 
   static const String baseUrl =
 
-      'http://172.20.10.3:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
+      'http://192.168.0.165:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
 
 
   // ---------------- AUTHENTICATION ----------------
