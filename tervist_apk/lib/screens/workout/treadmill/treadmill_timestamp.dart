@@ -38,7 +38,8 @@ class _TreadmillTimestampState extends State<TreadmillTimestamp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      // Updated background color to F1F7F6
+      backgroundColor: const Color(0xFFF1F7F6),
       body: SafeArea(
         child: Column(
           children: [

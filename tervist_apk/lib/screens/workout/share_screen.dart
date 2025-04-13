@@ -106,7 +106,8 @@ class _ShareScreenState extends State<ShareScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      // Updated background color to F1F7F6
+      backgroundColor: const Color(0xFFF1F7F6),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
