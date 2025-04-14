@@ -412,33 +412,43 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                           'assets/images/logotervist.png',
                           height: 28,
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Image.asset('assets/images/fireon.png',
-                                  height: 16),
-                              const SizedBox(width: 4),
-                              const Text(
-                                '1',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
+                        GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return const StreakPopupDialog();
+                              },
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Image.asset('assets/images/fireon.png',
+                                    height: 16),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  '1',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
