@@ -26,7 +26,7 @@ class TreadmillSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Updated background color to F1F7F6
+      // Keeping the light mint green background
       backgroundColor: const Color(0xFFF1F7F6),
       appBar: AppBar(
         backgroundColor: const Color(0xFFF1F7F6),
@@ -94,10 +94,11 @@ class TreadmillSummary extends StatelessWidget {
                 ),
               ),
               
-              // Primary workout stats card
+              // Primary workout stats card - set to pure white (#FFFFFF)
               Card(
                 margin: const EdgeInsets.only(bottom: 16.0),
                 elevation: 2,
+                color: const Color(0xFFFFFFFF),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16.0),
                 ),
@@ -233,10 +234,11 @@ class TreadmillSummary extends StatelessWidget {
               // Two-column layout for Calories and Steps
               Row(
                 children: [
-                  // Calories card
+                  // Calories card - set to pure white (#FFFFFF)
                   Expanded(
                     child: Card(
                       elevation: 2,
+                      color: const Color(0xFFFFFFFF),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -297,10 +299,11 @@ class TreadmillSummary extends StatelessWidget {
                     ),
                   ),
                   
-                  // Steps card
+                  // Steps card - set to pure white (#FFFFFF)
                   Expanded(
                     child: Card(
                       elevation: 2,
+                      color: const Color(0xFFFFFFFF),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -351,9 +354,10 @@ class TreadmillSummary extends StatelessWidget {
                 ],
               ),
               
-              // Performance chart with updated Pace indicator
+              // Performance chart - set to pure white (#FFFFFF)
               Card(
                 elevation: 2,
+                color: const Color(0xFFFFFFFF),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),

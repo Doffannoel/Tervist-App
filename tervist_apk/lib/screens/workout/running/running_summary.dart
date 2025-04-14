@@ -189,7 +189,7 @@ class _RunningSummaryState extends State<RunningSummary> {
         : widget.markers;
 
     return Scaffold(
-      // Added background color to F1F7F6
+      // Keep the original light mint green background
       backgroundColor: const Color(0xFFF1F7F6),
       // Removing AppBar to use custom buttons like in cycling_summary
       body: Stack(
@@ -269,10 +269,11 @@ class _RunningSummaryState extends State<RunningSummary> {
                     ),
                   ),
                   
-                  // Primary workout stats card
+                  // Primary workout stats card - changed to pure white background
                   Card(
                     margin: const EdgeInsets.only(bottom: 16.0),
                     elevation: 2,
+                    color: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16.0),
                     ),
@@ -414,13 +415,14 @@ class _RunningSummaryState extends State<RunningSummary> {
                     ),
                   ),
                   
-                  // Two-column layout for Calories and Steps
+                  // Two-column layout for Calories and Steps - changed to pure white background
                   Row(
                     children: [
                       // Calories card
                       Expanded(
                         child: Card(
                           elevation: 2,
+                          color: const Color(0xFFFFFFFF),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -485,6 +487,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                       Expanded(
                         child: Card(
                           elevation: 2,
+                          color: const Color(0xFFFFFFFF),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -535,13 +538,21 @@ class _RunningSummaryState extends State<RunningSummary> {
                     ],
                   ),
                   
-                  // REPLACED: Performance chart with PaceStatisticsWidget
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 24.0),
-                    child: PaceStatisticsWidget(
-                      activityType: 'Running',
-                      paceData: paceData,
-                      primaryColor: widget.primaryGreen,
+                  // Pace statistics chart - changed to pure white background
+                  Card(
+                    elevation: 2,
+                    color: const Color(0xFFFFFFFF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    margin: const EdgeInsets.only(bottom: 24.0),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: PaceStatisticsWidget(
+                        activityType: 'Running',
+                        paceData: paceData,
+                        primaryColor: widget.primaryGreen,
+                      ),
                     ),
                   ),
                 ],

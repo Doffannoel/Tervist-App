@@ -135,7 +135,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
         : widget.markers;
 
     return Scaffold(
-      // Set background color to F1F7F6
+      // Keep the light mint green background
       backgroundColor: const Color(0xFFF1F7F6),
       // Hapus AppBar untuk menggunakan custom buttons
       body: Stack(
@@ -215,10 +215,11 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                     ),
                   ),
                   
-                  // Primary workout stats card
+                  // Primary workout stats card - set to pure white (#FFFFFF)
                   Card(
                     margin: const EdgeInsets.only(bottom: 16.0),
                     elevation: 2,
+                    color: const Color(0xFFFFFFFF),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16.0),
                     ),
@@ -354,10 +355,11 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                   // Two-column layout for Calories and Steps
                   Row(
                     children: [
-                      // Calories card
+                      // Calories card - set to pure white (#FFFFFF)
                       Expanded(
                         child: Card(
                           elevation: 2,
+                          color: const Color(0xFFFFFFFF),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -418,10 +420,11 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                         ),
                       ),
                       
-                      // Steps card
+                      // Steps card - set to pure white (#FFFFFF)
                       Expanded(
                         child: Card(
                           elevation: 2,
+                          color: const Color(0xFFFFFFFF),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -473,12 +476,21 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                   ),
                   
                   // REPLACED: Performance chart with PaceStatisticsWidget
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 24.0),
-                    child: PaceStatisticsWidget(
-                      activityType: 'Cycling',
-                      paceData: paceData,
-                      primaryColor: widget.primaryGreen,
+                  // Wrapped in Card with pure white background
+                  Card(
+                    elevation: 2,
+                    color: const Color(0xFFFFFFFF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    margin: const EdgeInsets.only(bottom: 24),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: PaceStatisticsWidget(
+                        activityType: 'Cycling',
+                        paceData: paceData,
+                        primaryColor: widget.primaryGreen,
+                      ),
                     ),
                   ),
                 ],
@@ -500,7 +512,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: const Color(0xFFFFFFFF),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -537,7 +549,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: const Color(0xFFFFFFFF),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(

@@ -135,7 +135,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
         : widget.markers;
 
     return Scaffold(
-      // Added background color
+      // Keep the mint green background
       backgroundColor: const Color(0xFFF1F7F6),
       // Removing AppBar to use custom buttons like in cycling_summary
       body: Stack(
@@ -215,10 +215,11 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                     ),
                   ),
                   
-                  // Primary workout stats card
+                  // Primary workout stats card - set to pure white (#FFFFFF)
                   Card(
                     margin: const EdgeInsets.only(bottom: 16.0),
                     elevation: 2,
+                    color: const Color(0xFFFFFFFF),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16.0),
                     ),
@@ -354,10 +355,11 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                   // Two-column layout for Calories and Steps
                   Row(
                     children: [
-                      // Calories card
+                      // Calories card - set to pure white (#FFFFFF)
                       Expanded(
                         child: Card(
                           elevation: 2,
+                          color: const Color(0xFFFFFFFF),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -418,10 +420,11 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                         ),
                       ),
                       
-                      // Steps card
+                      // Steps card - set to pure white (#FFFFFF)
                       Expanded(
                         child: Card(
                           elevation: 2,
+                          color: const Color(0xFFFFFFFF),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -472,13 +475,21 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                     ],
                   ),
                   
-                  // REPLACED: Performance chart with PaceStatisticsWidget
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 24.0),
-                    child: PaceStatisticsWidget(
-                      activityType: 'Walking',
-                      paceData: paceData,
-                      primaryColor: widget.primaryGreen,
+                  // REPLACED: Performance chart with PaceStatisticsWidget - wrapped in a Card with pure white background
+                  Card(
+                    elevation: 2,
+                    color: const Color(0xFFFFFFFF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    margin: const EdgeInsets.only(bottom: 24),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: PaceStatisticsWidget(
+                        activityType: 'Walking',
+                        paceData: paceData,
+                        primaryColor: widget.primaryGreen,
+                      ),
                     ),
                   ),
                 ],
@@ -486,7 +497,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
             ),
           ),
           
-          // Custom back and share buttons at the top - added from cycling summary
+          // Custom back and share buttons at the top - set to pure white (#FFFFFF)
           Positioned(
             top: 16,
             left: 16,
@@ -500,7 +511,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: const Color(0xFFFFFFFF),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -515,7 +526,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                   ),
                 ),
                 
-                // Share button - using the style from cycling summary
+                // Share button - set to pure white (#FFFFFF)
                 InkWell(
                   onTap: () {
                     Navigator.push(
@@ -540,7 +551,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: const Color(0xFFFFFFFF),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
