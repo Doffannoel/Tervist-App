@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:tervist_apk/api/api_config.dart';
 import 'package:tervist_apk/api/login_service.dart';
 import 'package:tervist_apk/screens/forgetpassword/reset_password.dart';
 import 'package:tervist_apk/screens/homepage/homepage.dart';
 import 'package:tervist_apk/screens/main_navigation.dart';
 import 'enter_details.dart'; // Import the EnterDetails page
 import '/../api/signup_data.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 // Import the ResetPasswordPage
 
 class AuthPage extends StatefulWidget {
@@ -25,6 +29,47 @@ class _AuthPageState extends State<AuthPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email'],
+  );
+
+  Future<void> _signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        print('Login dibatalkan user');
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+
+      final response = await http.post(
+        ApiConfig.socialLogin,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'provider': 'google',
+          'access_token': idToken,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Login Google berhasil');
+        // Misalnya kamu mau simpan access token ke local storage atau pindah ke MainNavigation:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigation()),
+        );
+      } else {
+        print('Login gagal: ${response.body}');
+      }
+    } catch (e) {
+      print('Error login google: $e');
+    }
+  }
 
   bool _isEmailValid = true;
   bool _isPasswordValid = true;
@@ -584,7 +629,8 @@ class _AuthPageState extends State<AuthPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _socialButton('assets/images/google.png'),
+                    _socialButton('assets/images/google.png',
+                        onTap: _signInWithGoogle),
                     const SizedBox(width: 30),
                     _socialButton('assets/images/apple.png'),
                     const SizedBox(width: 30),
@@ -632,7 +678,7 @@ class _AuthPageState extends State<AuthPage> {
     );
   }
 
-  Widget _socialButton(String iconAsset) {
+  Widget _socialButton(String iconAsset, {VoidCallback? onTap}) {
     return Container(
       width: 80,
       height: 44,

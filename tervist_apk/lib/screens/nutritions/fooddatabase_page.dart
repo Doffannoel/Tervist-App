@@ -172,34 +172,34 @@ class _FoodDatabasePageState extends State<FoodDatabasePage> {
                     children: [
                       if (!_isSearching || _searchQuery.isEmpty) ...[
                         OutlinedButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const SelectedFoodPage(),
-      ),
-    );
-  },
-  style: OutlinedButton.styleFrom(
-    shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(30)),
-    side: const BorderSide(color: Colors.black),
-    padding: const EdgeInsets.symmetric(vertical: 16),
-  ),
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      const Icon(Icons.edit, color: Colors.black, size: 18),
-      const SizedBox(width: 8),
-      Text('Log empty meal',
-          style: GoogleFonts.poppins(
-              color: Colors.black,
-              fontWeight: FontWeight.w500,
-              fontSize: 16)),
-    ],
-  ),
-),
-
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SelectedFoodPage(),
+                              ),
+                            );
+                          },
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30)),
+                            side: const BorderSide(color: Colors.black),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.edit,
+                                  color: Colors.black, size: 18),
+                              const SizedBox(width: 8),
+                              Text('Log empty meal',
+                                  style: GoogleFonts.poppins(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 16)),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 30),
                         Text('Recently logged',
                             style: GoogleFonts.poppins(

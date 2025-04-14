@@ -189,4 +189,49 @@ class NutrisiService {
           'Failed to get weekly nutrition summary: ${response.statusCode}');
     }
   }
+
+  // Tambahkan method baru untuk manual food intake
+  Future<Map<String, dynamic>> createManualFoodIntake({
+    required String name,
+    required String mealType,
+    required double calories,
+    double protein = 0,
+    double carbs = 0,
+    double fats = 0,
+    double servingSize = 1,
+  }) async {
+    final token = await _getToken();
+    final currentDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final currentTime = DateFormat('HH:mm:ss').format(DateTime.now());
+
+    // final currentTime = DateFormat('HH:mm:ss').format(DateTime.now());
+
+    final data = {
+      'name': name,
+      'meal_type': mealType,
+      'manual_calories': calories,
+      'manual_protein': protein,
+      'manual_carbs': carbs,
+      'manual_fats': fats,
+      'serving_size': servingSize,
+      'date': currentDate,
+      'time': currentTime,
+    };
+
+    final response = await http.post(
+      ApiConfig.foodIntake,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(data),
+    );
+
+    if (response.statusCode == 201) {
+      return json.decode(response.body);
+    } else {
+      throw Exception(
+          'Failed to create manual food intake: ${response.statusCode}, ${response.body}');
+    }
+  }
 }

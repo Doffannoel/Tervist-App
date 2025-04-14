@@ -42,6 +42,7 @@ class FoodDatabaseService {
   // Log food intake
   Future<void> logFoodIntake({
     required int foodDataId,
+    int? measurementId, // Added parameter
     required String mealType,
     required String servingSize,
     DateTime? date,
@@ -55,6 +56,21 @@ class FoodDatabaseService {
         throw Exception('No authentication token found');
       }
 
+      // Create request body with all parameters
+      final Map<String, dynamic> requestBody = {
+        'food_data_id': foodDataId,
+        'meal_type': mealType,
+        'serving_size': servingSize,
+        'date': date?.toIso8601String().split('T')[0] ??
+            DateTime.now().toIso8601String().split('T')[0],
+        'time': time ?? DateTime.now().toString().split(' ')[1].substring(0, 5),
+      };
+
+      // Add measurement_id to the request body if provided
+      if (measurementId != null) {
+        requestBody['measurement_id'] = measurementId;
+      }
+
       final response = await http
           .post(
             ApiConfig.foodIntake,
@@ -62,15 +78,7 @@ class FoodDatabaseService {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
             },
-            body: json.encode({
-              'food_data_id': foodDataId,
-              'meal_type': mealType,
-              'serving_size': servingSize,
-              'date': date?.toIso8601String().split('T')[0] ??
-                  DateTime.now().toIso8601String().split('T')[0],
-              'time': time ??
-                  DateTime.now().toString().split(' ')[1].substring(0, 5),
-            }),
+            body: json.encode(requestBody),
           )
           .timeout(const Duration(seconds: ApiConfig.timeoutDuration));
 

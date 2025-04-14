@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tervist_apk/api/chatbot_service.dart';
+import 'package:tervist_apk/api/nutritisi_service.dart';
 import 'package:tervist_apk/screens/nutritions/chatbot.dart';
 import 'changefoodname_page.dart';
 import 'edit_nutrition_page.dart';
@@ -13,7 +14,7 @@ class SelectedFoodPage extends StatefulWidget {
 }
 
 class _SelectedFoodPageState extends State<SelectedFoodPage> {
-  String foodName = '';
+  String foodName = 'Tap to Name';
   int quantity = 1;
   String? selectedMeal;
   int calories = 0;
@@ -25,6 +26,122 @@ class _SelectedFoodPageState extends State<SelectedFoodPage> {
   final int proteinTarget = 75;
   final int carbsTarget = 156;
   final int fatsTarget = 34;
+
+  // Controller untuk input nutrition
+  final TextEditingController _caloriesController = TextEditingController();
+  final TextEditingController _proteinController =
+      TextEditingController(text: '0');
+  final TextEditingController _carbsController =
+      TextEditingController(text: '0');
+  final TextEditingController _fatsController =
+      TextEditingController(text: '0');
+
+  // Inisialisasi service
+  final NutrisiService _nutritionService = NutrisiService();
+
+  @override
+  void initState() {
+    super.initState();
+    _caloriesController.text = '0';
+    _proteinController.text = '0';
+    _carbsController.text = '0';
+    _fatsController.text = '0';
+  }
+
+  @override
+  void dispose() {
+    _caloriesController.dispose();
+    _proteinController.dispose();
+    _carbsController.dispose();
+    _fatsController.dispose();
+    super.dispose();
+  }
+
+  void _logManualFood() async {
+    // Validasi input
+    if (_caloriesController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter calories')),
+      );
+      return;
+    }
+
+    if (selectedMeal == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please select a meal category')),
+      );
+      return;
+    }
+
+    try {
+      // Kirim data ke backend
+      final response = await _nutritionService.createManualFoodIntake(
+        name: foodName,
+        mealType: selectedMeal!,
+        calories: double.parse(_caloriesController.text),
+        protein: double.parse(_proteinController.text),
+        carbs: double.parse(_carbsController.text),
+        fats: double.parse(_fatsController.text),
+        servingSize: quantity.toDouble(),
+      );
+
+      // Kembali ke halaman sebelumnya dengan status sukses
+      Navigator.pop(context, true);
+    } catch (e) {
+      // Tampilkan error jika gagal
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to log food: $e')),
+      );
+    }
+  }
+
+  void _navigateToEdit(String title, int value, int target) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditNutritionPage(
+          title: title,
+          value: value,
+          onSave: (val) {
+            setState(() {
+              switch (title) {
+                case 'Calories':
+                  calories = val;
+                  _caloriesController.text = val.toString();
+                  break;
+                case 'Protein':
+                  protein = val;
+                  _proteinController.text = val.toString();
+                  break;
+                case 'Carbs':
+                  carbs = val;
+                  _carbsController.text = val.toString();
+                  break;
+                case 'Fats':
+                  fats = val;
+                  _fatsController.text = val.toString();
+                  break;
+              }
+            });
+          },
+          dailyTarget: target,
+          consumedValue: 0,
+        ),
+      ),
+    );
+  }
+
+  void _showFoodNameDialog() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChangeFoodNamePage(initialName: foodName),
+      ),
+    );
+    if (result != null && result is String) {
+      setState(() => foodName = result);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +164,7 @@ class _SelectedFoodPageState extends State<SelectedFoodPage> {
                         onPressed: () => Navigator.pop(context),
                       ),
                       Text(
-                        'Selected food',
+                        'Create Meal',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -65,13 +182,15 @@ class _SelectedFoodPageState extends State<SelectedFoodPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      GestureDetector(
-                        onTap: _showFoodNameDialog,
-                        child: Text(
-                          foodName.isEmpty ? 'Tap to Name' : foodName,
-                          style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _showFoodNameDialog,
+                          child: Text(
+                            foodName.isEmpty ? 'Tap to Name' : foodName,
+                            style: GoogleFonts.poppins(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -195,9 +314,8 @@ class _SelectedFoodPageState extends State<SelectedFoodPage> {
                   child: SizedBox(
                     height: 55,
                     child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: Log action
-                      },
+                      onPressed:
+                          _logManualFood, // Perbaikan: Langsung panggil _logManualFood
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
                         shape: RoundedRectangleBorder(
@@ -285,8 +403,14 @@ class _SelectedFoodPageState extends State<SelectedFoodPage> {
             builder: (context) => EditNutritionPage(
               title: 'Calories',
               value: calories,
-              onSave: (val) => setState(() => calories = val),
-              dailyTarget: 1236, consumedValue: 0,
+              onSave: (val) {
+                setState(() {
+                  calories = val;
+                  _caloriesController.text = val.toString();
+                });
+              },
+              dailyTarget: 1236,
+              consumedValue: 0,
             ),
           ),
         );
@@ -365,59 +489,5 @@ class _SelectedFoodPageState extends State<SelectedFoodPage> {
         ],
       ),
     );
-  }
-
-  void _navigateToEdit(String title, int value, int target) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditNutritionPage(
-          title: title,
-          value: value,
-          onSave: (val) {
-            setState(() {
-              switch (title) {
-                case 'Calories':
-                  calories = val;
-                  break;
-                case 'Protein':
-                  protein = val;
-                  break;
-                case 'Carbs':
-                  carbs = val;
-                  break;
-                case 'Fats':
-                  fats = val;
-                  break;
-              }
-            });
-          },
-          dailyTarget: target, consumedValue: 0,
-        ),
-      ),
-    );
-
-    void _showFoodNameDialog() async {
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChangeFoodNamePage(initialName: foodName),
-        ),
-      );
-      if (result != null && result is String) {
-        setState(() => foodName = result);
-      }
-    }
-  }
-    void _showFoodNameDialog() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChangeFoodNamePage(initialName: foodName),
-      ),
-    );
-    if (result != null && result is String) {
-      setState(() => foodName = result);
-    }
   }
 }

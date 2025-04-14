@@ -8,4 +8,5 @@ urlpatterns = [
     path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),  # Endpoint reset password
     path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     path('profile/', ProfileView.as_view(), name='profile')
+    
 ]

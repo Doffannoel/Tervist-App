@@ -59,6 +59,7 @@ dependencies:
   timezone: 0.10.0
   
   shared_preferences: ^2.5.3
+  google_sign_in: ^6.3.0
 
 
 

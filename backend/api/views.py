@@ -8,7 +8,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
 from django.utils.timezone import now
 from authentication.models import CustomUser
-from .models import CaloriesBurned, CyclingActivity, DailySteps, FoodDatabase, FoodIntake, NutritionalTarget, Reminder, RunningActivity, WalkingActivity
+from .models import CaloriesBurned, CyclingActivity, DailySteps, FoodDatabase, FoodIntake, FoodMeasurement, NutritionalTarget, Reminder, RunningActivity, WalkingActivity
 from .serializers import CyclingActivitySerializer, DailyStepsSerializer, CaloriesBurnedSerializer, FoodDatabaseSerializer, FoodIntakeSerializer, NutritionalTargetSerializer, ReminderSerializer, RunningActivitySerializer, UserProfileSerializer, WalkingActivitySerializer
 from rest_framework.views import APIView
 from django.db.models import Avg, Sum, Count
@@ -16,6 +16,12 @@ from calendar import monthrange
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action 
 from rest_framework.exceptions import ValidationError
+from pytz import timezone as pytz_timezone 
+
+def get_today_local():
+    local_tz = pytz_timezone("Asia/Jakarta")
+    return timezone.localtime(timezone.now(), local_tz).date()
+
 
 class NutritionalTargetView(viewsets.ModelViewSet):
     queryset = NutritionalTarget.objects.all()
@@ -91,25 +97,54 @@ class FoodIntakeView(viewsets.ModelViewSet):
         print("🔥 Food Intake Creation Data:")
         print(f"User: {user.username}")
         print(f"Input Data: {data}")
+        food_name = data.get('name', 'Custom Meal')
 
-        # Tentukan meal_type otomatis kalau gak dikirim
+    # Tentukan meal_type otomatis kalau gak dikirim
         meal_type = data.get('meal_type')
+        # Zona waktu lokal
+        local_tz = pytz_timezone('Asia/Jakarta')
+        input_time_str = data.get('time')
+        input_time = timezone.localtime(timezone.now(), local_tz).time()  # default fallback
+
+        if input_time_str:
+            try:
+                # Coba parse HH:mm atau HH:mm:ss
+                if len(input_time_str.strip()) == 5:
+                    input_time_naive = datetime.strptime(input_time_str, "%H:%M")
+                else:
+                    input_time_naive = datetime.strptime(input_time_str, "%H:%M:%S")
+
+                input_time = local_tz.localize(
+                    datetime.combine(timezone.now().date(), input_time_naive.time())
+                ).time()
+            except Exception as e:
+                print(f"❌ Gagal parsing time string '{input_time_str}', fallback to localtime. Error: {e}")
+
+        # Auto-detect meal type jika belum dikirim
         if not meal_type:
-            current_time = datetime.now().time()
-            if datetime.strptime("06:00", "%H:%M").time() <= current_time < datetime.strptime("10:00", "%H:%M").time():
+            if datetime.strptime("06:00", "%H:%M").time() <= input_time < datetime.strptime("10:00", "%H:%M").time():
                 meal_type = "Breakfast"
-            elif datetime.strptime("10:00", "%H:%M").time() <= current_time < datetime.strptime("15:00", "%H:%M").time():
+            elif datetime.strptime("10:00", "%H:%M").time() <= input_time < datetime.strptime("15:00", "%H:%M").time():
                 meal_type = "Lunch"
-            elif datetime.strptime("15:00", "%H:%M").time() <= current_time < datetime.strptime("20:00", "%H:%M").time():
+            elif (
+                datetime.strptime("15:00", "%H:%M").time() <= input_time
+                or input_time < datetime.strptime("02:00", "%H:%M").time()
+            ):
                 meal_type = "Dinner"
             else:
                 meal_type = "Snack"
 
+            print(f"🕒 Final parsed input_time (WIB): {input_time}")
+            print(f"🍽️ Auto-detected meal_type: {meal_type}")
+
+
         # Siapkan data dasar
         instance_data = {
             'user': user,
+            'name': food_name,
             'meal_type': meal_type,
-            'date': data.get('date', timezone.now().date()),
+            'date': data.get('date', get_today_local()),
+
             'time': data.get('time', timezone.now().time())
         }
 
@@ -127,11 +162,27 @@ class FoodIntakeView(viewsets.ModelViewSet):
         try:
             if food_data_id:
                 food_data = FoodDatabase.objects.get(id=food_data_id)
+                instance_data['name'] = food_data.name
                 instance_data['food_data'] = food_data
 
                 # Ambil measurement
-                if measurement_id:
-                    measurement = food_data.measurements.get(id=measurement_id)
+
+                if measurement_id is not None:
+                    try:
+                        # Try to get by ID first
+                        measurement = food_data.measurements.get(id=measurement_id)
+                    except FoodMeasurement.DoesNotExist:
+                        # If that fails, try using it as an index
+                        measurements = list(food_data.measurements.all())
+                        try:
+                            idx = int(measurement_id)
+                            if 0 <= idx < len(measurements):
+                                measurement = measurements[idx]
+                            else:
+                                measurement = food_data.measurements.first()
+                        except (ValueError, TypeError, IndexError):
+                            # If all fails, use the first measurement
+                            measurement = food_data.measurements.first()
                 else:
                     measurement = food_data.measurements.first()
 
@@ -171,16 +222,31 @@ class FoodIntakeView(viewsets.ModelViewSet):
         search_query = request.GET.get('search', None)
         date_filter = request.GET.get('date', None)
 
+        today = get_today_local()
+        food_intakes = FoodIntake.objects.filter(user=user) 
         if search_query:
             food_items = FoodDatabase.objects.filter(name__icontains=search_query)
             return Response(FoodDatabaseSerializer(food_items, many=True).data)
 
-        food_intakes = FoodIntake.objects.filter(user=user)
+        # food_intakes = FoodIntake.objects.filter(user=user)
 
         if date_filter:
             food_intakes = food_intakes.filter(date=date_filter)
+            # Debug timezone information
+        print(f"Server timezone now: {timezone.now()}")
+        print(f"Local server date used for filtering: {today}")
+        
+        # Get date parameter from request if available
+        date_param = request.GET.get('date')
+        if date_param:
+            try:
+                today = datetime.strptime(date_param, '%Y-%m-%d').date()
+                print(f"Using date parameter instead: {today}")
+            except ValueError:
+                print(f"Invalid date parameter: {date_param}")
 
         return Response(FoodIntakeSerializer(food_intakes, many=True).data)
+    
 
 
 class DailyStepsView(viewsets.ModelViewSet):
@@ -223,7 +289,16 @@ class DashboardView(viewsets.ViewSet):
             print(f"User ID: {user.id}, Username: {user.username}, Email: {user.email}")
         
         # Get today's date
-        today = timezone.now().date()
+        local_tz = pytz_timezone("Asia/Jakarta")
+        date_str = request.GET.get('date')
+        if date_str:
+            try:
+                today = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                today = get_today_local()
+                print(f"❌ Invalid date string received, fallback to local today: {today}")
+        else:
+            today = get_today_local()
         print(f"Filtering data for date: {today}")
         
         if user is None:
@@ -293,6 +368,7 @@ class DashboardView(viewsets.ViewSet):
 
         # Get and categorize food intake
         food_intake_data = FoodIntake.objects.filter(user=user, date=today)
+        print(f"Food intake for today ({today}): {list(food_intake_data.values())}")
         print(f"Food intake records: {food_intake_data.count()}")
         
         serialized_food = FoodIntakeSerializer(food_intake_data, many=True).data
@@ -312,6 +388,7 @@ class DashboardView(viewsets.ViewSet):
 
         
         for meal_type, items in categorized_food.items():
+            print(f"Meal type {meal_type}: {items}")
             print(f"{meal_type} items: {len(items)}")
 
         # Prepare the response data
@@ -361,7 +438,7 @@ class RunningActivityView(viewsets.ModelViewSet):
             serializer.save()
 
     def update_daily_steps(self, user, steps):
-        today = timezone.now().date()
+        today = get_today_local()
 
         # Update DailySteps for today
         daily_steps, created = DailySteps.objects.get_or_create(user=user, date=today)
@@ -375,7 +452,7 @@ class RunningActivityView(viewsets.ModelViewSet):
         daily_steps.save()
 
     def update_calories_burned(self, user, calories_burned):
-        today = timezone.now().date()
+        today = get_today_local()
 
         # Update CaloriesBurned for today
         calories_obj, created = CaloriesBurned.objects.get_or_create(user=user, date=today)
@@ -419,7 +496,7 @@ class WeeklyNutritionSummaryView(APIView):
 
     def get(self, request):
         user = request.user
-        today = timezone.now().date()
+        today = get_today_local()
         week_ago = today - timezone.timedelta(days=6)
 
         # Ambil semua makanan dalam 7 hari terakhir
@@ -467,7 +544,7 @@ class RunningStatsView(viewsets.ViewSet):
     def list(self, request):
         user = request.user  # tidak perlu user_id dari query params
 
-        today = timezone.now().date()
+        today = get_today_local()
         week_ago = today - timedelta(days=7)
         year_start = today.replace(month=1, day=1)
 
@@ -502,7 +579,7 @@ class CyclingStatsView(viewsets.ViewSet):
 
     def list(self, request):
         user = request.user
-        today = timezone.now().date()
+        today = get_today_local()
         week_ago = today - timedelta(days=7)
         year_start = today.replace(month=1, day=1)
 
@@ -539,7 +616,7 @@ class MonthlySummaryView(APIView):
 
     def get(self, request):
         user = request.user
-        today = timezone.now().date()
+        today = get_today_local()
         start_year = today.year
 
         summary = defaultdict(lambda: {"distance_km": 0, "time_minutes": 0})
@@ -665,7 +742,7 @@ class WalkingActivityView(viewsets.ModelViewSet):
         return round(calories)
 
     def update_daily_steps(self, user, steps):
-        today = timezone.now().date()
+        today = get_today_local()
         daily_steps, created = DailySteps.objects.get_or_create(user=user, date=today)
         
         if created:
@@ -676,7 +753,7 @@ class WalkingActivityView(viewsets.ModelViewSet):
         daily_steps.save()
 
     def update_calories_burned(self, user, calories_burned):
-        today = timezone.now().date()
+        today = get_today_local()
         calories_obj, created = CaloriesBurned.objects.get_or_create(user=user, date=today)
         
         if created:

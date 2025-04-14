@@ -189,7 +189,10 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
 
         Map<String, dynamic> foodItem = {
           'id': item['id'],
-          'name': item['food_data']?['name'] ?? 'Custom Meal',
+          'name': item['name'] ?? // Pertama, coba ambil nama manual
+              item['food_data']
+                  ?['name'] ?? // Kedua, ambil nama dari food database
+              'Custom Meal', // Terakhir, gunakan d
           'calories': calories,
           'protein': protein,
           'carbs': carbs,
@@ -409,33 +412,43 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                           'assets/images/logotervist.png',
                           height: 28,
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Image.asset('assets/images/fireon.png',
-                                  height: 16),
-                              const SizedBox(width: 4),
-                              const Text(
-                                '1',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
+                        GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return const StreakPopupDialog();
+                              },
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Image.asset('assets/images/fireon.png',
+                                    height: 16),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  '1',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -596,34 +609,34 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
 
                     // Macronutrients row with progress - UPDATED TO MATCH IMAGE WITH FIXED VALUES
                     Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  crossAxisAlignment: CrossAxisAlignment.start, // Align all cards to the top
-  children: [
-    _buildMacroCard(
-      '75g',
-      'Proteins left',
-      'assets/images/protein.png',
-      proteinProgress,
-      Colors.red,
-    ),
-    _buildMacroCard(
-      '156g',
-      'Carbs left',
-      'assets/images/carb.png',
-      carbsProgress,
-      Colors.amber,
-    ),
-    _buildMacroCard(
-      '34g',
-      'Fats left',
-      'assets/images/fat.png',
-      fatsProgress,
-      Colors.blue,
-    ),
-  ],
-),
-const SizedBox(height: 15),
-                    
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment
+                          .start, // Align all cards to the top
+                      children: [
+                        _buildMacroCard(
+                          '75g',
+                          'Proteins left',
+                          'assets/images/protein.png',
+                          proteinProgress,
+                          Colors.red,
+                        ),
+                        _buildMacroCard(
+                          '156g',
+                          'Carbs left',
+                          'assets/images/carb.png',
+                          carbsProgress,
+                          Colors.amber,
+                        ),
+                        _buildMacroCard(
+                          '34g',
+                          'Fats left',
+                          'assets/images/fat.png',
+                          fatsProgress,
+                          Colors.blue,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
 
                     // Recently logged section
                     const Text(
@@ -708,66 +721,69 @@ const SizedBox(height: 15),
   }
 
   // Build macronutrient card to match the image
- Widget _buildMacroCard(String value, String label, String imagePath,
-    double progress, Color progressColor) {
-  return Container(
-    width: 115, // Width consistent for all cards
-    height: 150, // Same height for all cards, fixing the overflow
-    padding: const EdgeInsets.all(16),
-    margin: const EdgeInsets.only(bottom: 10), // Add bottom margin to avoid overflow
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min, // Ensure content fits
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 22, 
-            fontWeight: FontWeight.bold,
+  Widget _buildMacroCard(String value, String label, String imagePath,
+      double progress, Color progressColor) {
+    return Container(
+      width: 115, // Width consistent for all cards
+      height: 150, // Same height for all cards, fixing the overflow
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(
+          bottom: 10), // Add bottom margin to avoid overflow
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.black87,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min, // Ensure content fits
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const Spacer(), // Use spacer instead of fixed height to distribute space evenly
-        Center(
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 50,
-                height: 50,
-                child: CircularProgressIndicator(
-                  value: progress,
-                  strokeWidth: 5,
-                  backgroundColor: Colors.grey.withOpacity(0.2),
-                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.black87,
+            ),
+          ),
+          const Spacer(), // Use spacer instead of fixed height to distribute space evenly
+          Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 50,
+                  height: 50,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 5,
+                    backgroundColor: Colors.grey.withOpacity(0.2),
+                    valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                  ),
                 ),
-              ),
-              Image.asset(imagePath, height: 20),
-            ],
+                Image.asset(imagePath, height: 20),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 4), // Small padding at bottom to avoid cutting off the circle
-      ],
-    ),
-  );
-}
+          const SizedBox(
+              height:
+                  4), // Small padding at bottom to avoid cutting off the circle
+        ],
+      ),
+    );
+  }
 
   // Build food item card for recently logged food
   Widget _buildFoodItem(Map<String, dynamic> food) {
