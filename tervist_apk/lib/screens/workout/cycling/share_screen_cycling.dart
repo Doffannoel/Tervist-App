@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'screenshot_helper.dart';
+import '../screenshot_helper.dart';
 
 class ShareScreen extends StatefulWidget {
   final double distance;
@@ -662,7 +662,7 @@ class _ShareScreenState extends State<ShareScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'steps',
+                                    'Max speed',
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,

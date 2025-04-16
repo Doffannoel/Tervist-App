@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 
-// Import the warning dialog
+// Import the warning widget
 // Make sure to adjust the import path based on your project structure
-import 'warningfood.dart';
+import 'warning_widget.dart';
 
 class EditNutritionPage extends StatefulWidget {
   final String title;
@@ -72,7 +72,7 @@ class _EditNutritionPageState extends State<EditNutritionPage> {
   Future<bool> _onWillPop() async {
     if (_isEditing) {
       // Show warning dialog if there are unsaved changes
-      showWarningFoodDialog(context);
+      _showWarningDialog();
       return false; // Prevent default back behavior
     }
     return true; // Allow back if no unsaved changes
@@ -82,10 +82,27 @@ class _EditNutritionPageState extends State<EditNutritionPage> {
   void _handleBackPress() {
     if (_isEditing) {
       // Show warning dialog if there are unsaved changes
-      showWarningFoodDialog(context);
+      _showWarningDialog();
     } else {
       Navigator.pop(context);
     }
+  }
+
+  // Method to show the warning dialog using the WarningWidget
+  void _showWarningDialog() {
+    context.showWarningDialog(
+      onLeave: () {
+        // Handle leaving without saving
+        Navigator.of(context).pop(); // Close the dialog
+        Navigator.of(context).pop(); // Go back to previous screen
+      },
+      onBack: () {
+        // Go back to continue editing
+        Navigator.of(context).pop(); // Close the dialog only
+      },
+      warningTitle: 'Warning!',
+      warningMessage: 'You haven\'t saved your nutrition changes yet! Are you sure you want to leave? Any unsaved data will be lost.',
+    );
   }
 
   Color _getProgressColor() {
@@ -304,26 +321,4 @@ class _EditNutritionPageState extends State<EditNutritionPage> {
       ),
     );
   }
-}
-
-// Custom version of showWarningFoodDialog specifically for EditNutritionPage
-void showWarningFoodDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    barrierColor: Colors.black.withOpacity(0.5),
-    builder: (BuildContext context) {
-      return WarningFoodDialog(
-        onLeave: () {
-          // Handle leaving without saving
-          Navigator.of(context).pop(); // Close the dialog
-          Navigator.of(context).pop(); // Go back to previous screen
-        },
-        onBack: () {
-          // Go back to continue editing
-          Navigator.of(context).pop(); // Close the dialog only
-        },
-      );
-    },
-  );
 }
