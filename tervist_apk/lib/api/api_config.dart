@@ -38,7 +38,6 @@ class ApiConfig {
   static Uri get calculateNutritionPreview =>
       Uri.parse('$baseUrl/api/calculate-nutrition-preview/');
 
-
   // NEW: Reminder API endpoint
   static Uri get reminders => Uri.parse('$baseUrl/api/reminders/');
 
