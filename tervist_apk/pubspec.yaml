@@ -60,6 +60,8 @@ dependencies:
   
   shared_preferences: ^2.5.3
   google_sign_in: ^6.3.0
+  video_player: ^2.9.5
+  dotted_border: ^2.1.0
 
 
 
@@ -89,7 +91,6 @@ flutter:
   assets:
     - assets/images/
     - assets/svg/
-
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

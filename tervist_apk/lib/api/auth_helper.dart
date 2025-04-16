@@ -9,89 +9,84 @@ class AuthHelper {
   static const String USER_ID_KEY = 'user_id';
   static const String USER_NAME_KEY = 'user_name';
 
-  // Cache untuk mengurangi panggilan berulang
   static String? _cachedToken;
   static DateTime? _lastTokenValidation;
   static const Duration _tokenValidationCooldown = Duration(minutes: 30);
 
-  // Save token to SharedPreferences
+  /// ✅ Simpan token ke SharedPreferences
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(TOKEN_KEY, token);
     await prefs.setString(ACCESS_TOKEN_KEY, token);
-
-    // Update cached token
     _cachedToken = token;
-    print('Token saved successfully');
+    print('✅ Token saved successfully');
   }
 
-  // Get token from SharedPreferences
+  /// 🧹 Bersihkan token saat login ulang atau logout
+  static Future<void> clearToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(TOKEN_KEY);
+    await prefs.remove(ACCESS_TOKEN_KEY);
+    _cachedToken = null;
+    print('🧹 Token cleared');
+  }
+
+  /// 🔐 Ambil token dari cache atau SharedPreferences
   static Future<String?> getToken() async {
-    // Return cached token jika sudah ada
     if (_cachedToken != null) return _cachedToken;
 
     final prefs = await SharedPreferences.getInstance();
-
-    // Coba ambil token dari TOKEN_KEY terlebih dahulu
     String? token = prefs.getString(TOKEN_KEY);
 
-    // Jika tidak ada, coba dari ACCESS_TOKEN_KEY
     if (token == null || token.isEmpty) {
       token = prefs.getString(ACCESS_TOKEN_KEY);
       if (token != null && token.isNotEmpty) {
-        // Sinkronkan token
         await prefs.setString(TOKEN_KEY, token);
       }
     }
 
-    // Simpan ke cache
     _cachedToken = token;
     return token;
   }
 
-  // Save user ID to SharedPreferences
   static Future<void> saveUserId(int userId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(USER_ID_KEY, userId);
   }
 
-  // Get user ID from SharedPreferences
   static Future<int?> getUserId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(USER_ID_KEY);
   }
 
-  // Save username to SharedPreferences
   static Future<void> saveUserName(String userName) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(USER_NAME_KEY, userName);
   }
 
-  // Get username from SharedPreferences
   static Future<String?> getUserName() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(USER_NAME_KEY);
   }
 
-  // Clear auth data on logout
+  /// 🔐 Logout: Bersihkan semua data login
   static Future<void> clearAuthData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(TOKEN_KEY);
     await prefs.remove(ACCESS_TOKEN_KEY);
     await prefs.remove(USER_ID_KEY);
     await prefs.remove(USER_NAME_KEY);
-
-    // Reset cached token
+    await prefs.remove('profile_picture');
     _cachedToken = null;
     _lastTokenValidation = null;
+    print('🚫 Auth data cleared');
   }
 
-  // Check if user is logged in dengan caching validasi token
+  /// 🔁 Cek apakah user masih login dan token valid
   static Future<bool> isLoggedIn() async {
     final token = await getToken();
     if (token == null) return false;
 
-    // Cek apakah token sudah divalidasi baru-baru ini
     if (_lastTokenValidation != null &&
         DateTime.now().difference(_lastTokenValidation!) <
             _tokenValidationCooldown) {
@@ -101,25 +96,21 @@ class AuthHelper {
     try {
       final response = await http.get(
         ApiConfig.profile,
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      ).timeout(const Duration(seconds: 10)); // Tambah timeout
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        // Update timestamp validasi terakhir
         _lastTokenValidation = DateTime.now();
         return true;
       }
       return false;
     } catch (e) {
-      print('Token validation error: $e');
-      // Kembalikan status terakhir jika ada error koneksi
+      print('⚠️ Token validation error: $e');
       return _lastTokenValidation != null;
     }
   }
 
-  // Get authentication headers for API requests
+  /// 🔧 Header autentikasi untuk request API
   static Future<Map<String, String>> getAuthHeaders() async {
     final token = await getToken();
     return {
@@ -128,6 +119,7 @@ class AuthHelper {
     };
   }
 
+  /// 🖼️ Foto profil user
   static Future<void> saveProfilePicture(String url) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('profile_picture', url);

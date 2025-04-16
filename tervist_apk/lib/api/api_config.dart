@@ -37,6 +37,8 @@ class ApiConfig {
   static Uri get monthlySummary => Uri.parse('$baseUrl/api/monthly-summary/');
   static Uri dailySummary(String date) =>
       Uri.parse('$baseUrl/api/nutritional-target/daily_summary/?date=$date');
+  static Uri get calculateNutritionPreview =>
+      Uri.parse('$baseUrl/api/calculate-nutrition-preview/');
 
   // NEW: Reminder API endpoint
   static Uri get reminders => Uri.parse('$baseUrl/api/reminders/');

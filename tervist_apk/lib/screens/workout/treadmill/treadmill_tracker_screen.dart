@@ -237,7 +237,7 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Hi, Yesaya!',
+                  'Hi, Noel!',
                   style: GoogleFonts.poppins(
                     fontSize: 24,
                     fontWeight: FontWeight.w600,

@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CyclingActivityViewSet, CyclingStatsView, FoodDatabaseViewSet, NutritionalTargetView, FoodIntakeView, CaloriesBurnedView, DashboardView, ReminderViewSet, RunningActivityView, RunningStatsView, UserProfileViewSet, WalkingActivityView, WeeklyNutritionSummaryView, MonthlySummaryView
+from .views import CyclingActivityViewSet, CyclingStatsView, FoodDatabaseViewSet, NutritionalTargetView, FoodIntakeView, CaloriesBurnedView, DashboardView, ReminderViewSet, RunningActivityView, RunningStatsView, UserProfileViewSet, WalkingActivityView, WeeklyNutritionSummaryView, MonthlySummaryView, calculate_nutrition_preview
 
 # Membuat router untuk viewsets
 router = DefaultRouter()
@@ -30,5 +30,6 @@ urlpatterns = [
     }), name='profile-me'),
     path('nutrition-weekly-summary/', WeeklyNutritionSummaryView.as_view(), name='nutrition-weekly-summary'), # Untuk weekly nutrition summary
     path('monthly-summary/', MonthlySummaryView.as_view(), name='monthly-summary'), #Untuk weekly running
+    path('calculate-nutrition-preview/', calculate_nutrition_preview, name='calculate_nutrition_preview'),
 
 ]
