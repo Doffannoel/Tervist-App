@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 
+// Import the warning dialog
+// Make sure to adjust the import path based on your project structure
+import 'warningfood.dart';
+
 class EditNutritionPage extends StatefulWidget {
   final String title;
   final int value;
   final int dailyTarget;
-  final int consumedValue; // Nilai yang sudah dikonsumsi dari API
+  final int consumedValue;
   final ValueChanged<int> onSave;
 
   const EditNutritionPage({
@@ -14,7 +18,7 @@ class EditNutritionPage extends StatefulWidget {
     required this.title,
     required this.value,
     required this.dailyTarget,
-    required this.consumedValue, // Nilai yang sudah dikonsumsi sebelumnya
+    required this.consumedValue,
     required this.onSave,
   });
 
@@ -64,6 +68,26 @@ class _EditNutritionPageState extends State<EditNutritionPage> {
     });
   }
 
+  // Method to handle back navigation with warning
+  Future<bool> _onWillPop() async {
+    if (_isEditing) {
+      // Show warning dialog if there are unsaved changes
+      showWarningFoodDialog(context);
+      return false; // Prevent default back behavior
+    }
+    return true; // Allow back if no unsaved changes
+  }
+
+  // Method to handle back button press
+  void _handleBackPress() {
+    if (_isEditing) {
+      // Show warning dialog if there are unsaved changes
+      showWarningFoodDialog(context);
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
   Color _getProgressColor() {
     switch (widget.title) {
       case 'Calories':
@@ -96,188 +120,210 @@ class _EditNutritionPageState extends State<EditNutritionPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Menghitung berapa banyak yang tersisa dari total target
-    int remaining = widget.dailyTarget - widget.consumedValue;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF1F7F6),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        title: Text(
-          'Create meal',
-          style: GoogleFonts.poppins(
-            color: Colors.black,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+    // Wrap the Scaffold with WillPopScope to handle system back button
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF1F7F6),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+            onPressed: _handleBackPress, // Use our custom handler
+          ),
+          centerTitle: true,
+          title: Text(
+            'Create meal',
+            style: GoogleFonts.poppins(
+              color: Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              Text(
-                'Edit ${widget.title}',
-                style: GoogleFonts.poppins(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 30),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: Color(0xFFF1F7F6),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE7E7E7), width: 1),
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: Stack(
-                        children: [
-                          SizedBox(
-                            width: 60,
-                            height: 60,
-                            child: CircularProgressIndicator(
-                              // Nilai progress berdasarkan proporsi yang sudah dikonsumsi dari total target
-                              value: widget.consumedValue / widget.dailyTarget,
-                              strokeWidth: 5,
-                              backgroundColor: Colors.grey.withOpacity(0.2),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  _getProgressColor()),
-                            ),
-                          ),
-                          Center(
-                            child: Image.asset(
-                              _getIconAsset(),
-                              height: 24,
-                              width: 24,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${_controller.text}${widget.title == 'Protein' || widget.title == 'Carbs' || widget.title == 'Fats' ? 'g' : ''}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Out of $remaining left today',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.black),
-                ),
-                child: TextField(
-                  controller: _controller,
-                  keyboardType: TextInputType.number,
-                  onChanged: (value) {
-                    setState(() {
-                      if (!_isEditing) {
-                        _isEditing = true;
-                      }
-                      _currentValue = int.tryParse(value) ?? 0;
-                    });
-                  },
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  'Edit ${widget.title}',
                   style: GoogleFonts.poppins(
-                    fontSize: 16,
-                  ),
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 16),
-                    border: InputBorder.none,
-                    labelText: widget.title,
-                    labelStyle: GoogleFonts.poppins(
-                      color: Colors.grey,
-                    ),
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-              const Spacer(),
-              if (_isEditing)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 180),
+                const SizedBox(height: 30),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFF1F7F6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE7E7E7), width: 1),
+                  ),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _handleRevert,
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(100),
+                      SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: Stack(
+                          children: [
+                            SizedBox(
+                              width: 60,
+                              height: 60,
+                              child: CircularProgressIndicator(
+                                value: widget.consumedValue / widget.dailyTarget,
+                                strokeWidth: 5,
+                                backgroundColor: Colors.grey.withOpacity(0.2),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    _getProgressColor()),
+                              ),
                             ),
-                            side: const BorderSide(color: Colors.black),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: Text(
-                            'Revert',
-                            style: GoogleFonts.poppins(
-                              color: Colors.black,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 16,
+                            Center(
+                              child: Image.asset(
+                                _getIconAsset(),
+                                height: 24,
+                                width: 24,
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _handleDone,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(100),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: Text(
-                            'Done',
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${_controller.text}${widget.title == 'Protein' || widget.title == 'Carbs' || widget.title == 'Fats' ? 'g' : ''}',
                             style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 16,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
-                      ),
+                          Text(
+                            'Out of ${widget.dailyTarget - widget.consumedValue} left today',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      )
                     ],
                   ),
                 ),
-            ],
+                const SizedBox(height: 24),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.black),
+                  ),
+                  child: TextField(
+                    controller: _controller,
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      setState(() {
+                        if (!_isEditing) {
+                          _isEditing = true;
+                        }
+                        _currentValue = int.tryParse(value) ?? 0;
+                      });
+                    },
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                    ),
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
+                      border: InputBorder.none,
+                      labelText: widget.title,
+                      labelStyle: GoogleFonts.poppins(
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                if (_isEditing)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 180),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _handleRevert,
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              side: const BorderSide(color: Colors.black),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: Text(
+                              'Revert',
+                              style: GoogleFonts.poppins(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _handleDone,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: Text(
+                              'Done',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+// Custom version of showWarningFoodDialog specifically for EditNutritionPage
+void showWarningFoodDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.black.withOpacity(0.5),
+    builder: (BuildContext context) {
+      return WarningFoodDialog(
+        onLeave: () {
+          // Handle leaving without saving
+          Navigator.of(context).pop(); // Close the dialog
+          Navigator.of(context).pop(); // Go back to previous screen
+        },
+        onBack: () {
+          // Go back to continue editing
+          Navigator.of(context).pop(); // Close the dialog only
+        },
+      );
+    },
+  );
 }

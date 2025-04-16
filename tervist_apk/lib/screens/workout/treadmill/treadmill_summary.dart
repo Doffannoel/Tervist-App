@@ -12,6 +12,7 @@ class TreadmillSummary extends StatelessWidget {
   final Color primaryGreen;
   final VoidCallback onBackToHome;
 
+  // Constructor yang menggunakan parameter yang sama seperti di kode asli
   const TreadmillSummary({
     super.key,
     required this.distance,
@@ -23,8 +24,74 @@ class TreadmillSummary extends StatelessWidget {
     required this.onBackToHome,
   });
 
+  // Factory constructor untuk membuat instance dengan data acak
+  // Ini memungkinkan penggunaan TreadmillSummary dengan cara yang sama
+  factory TreadmillSummary.random({
+    required Color primaryGreen,
+    required VoidCallback onBackToHome,
+  }) {
+    final random = math.Random();
+    
+    // Generate random distance between 2.0 and 8.0 km
+    final distance = (200 + random.nextInt(600)) / 100;
+    
+    // Generate random duration between 30 minutes and 90 minutes
+    final durationMinutes = 30 + random.nextInt(60);
+    final durationSeconds = random.nextInt(60);
+    final formattedDuration = '${durationMinutes ~/ 60 > 0 ? durationMinutes ~/ 60 : '00'}:${durationMinutes % 60 < 10 ? '0' : ''}${durationMinutes % 60}:${durationSeconds < 10 ? '0' : ''}$durationSeconds';
+    
+    // Calculate random pace (minutes per km)
+    final paceSeconds = (durationMinutes * 60 + durationSeconds) ~/ distance;
+    final paceMinutes = paceSeconds ~/ 60;
+    final paceRemainingSeconds = paceSeconds % 60;
+    final formattedPace = "$paceMinutes'${paceRemainingSeconds < 10 ? '0' : ''}$paceRemainingSeconds\"";
+    
+    // Random calories between 150 and 500
+    final calories = 150 + random.nextInt(350);
+    
+    // Random steps between 3000 and 10000
+    final steps = 3000 + random.nextInt(7000);
+    
+    return TreadmillSummary(
+      distance: distance,
+      formattedDuration: formattedDuration,
+      formattedPace: formattedPace,
+      calories: calories,
+      steps: steps,
+      primaryGreen: primaryGreen,
+      onBackToHome: onBackToHome,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Generate random chart data for each build
+    final random = math.Random();
+    final chartBars = <Map<String, dynamic>>[];
+    for (int i = 1; i <= 5; i++) {
+      final barHeight = 60 + random.nextInt(80); // Random height between 60-140
+      final barPaceMinutes = 10 + random.nextInt(11); // Random minutes between 10-20
+      final barPaceSeconds = random.nextInt(60); // Random seconds between 0-59
+      chartBars.add({
+        'km': i,
+        'height': barHeight,
+        'pace': "$barPaceMinutes'${barPaceSeconds < 10 ? '0' : ''}$barPaceSeconds\""
+      });
+    }
+
+    // Format the distance with comma as decimal separator
+    final distanceFormatted = distance.toStringAsFixed(2).replaceAll('.', ',');
+    
+    // Format the steps with dot as thousands separator
+    final formattedSteps = steps.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.'
+    );
+    
+    // Get current date and time
+    final now = DateTime.now();
+    final formattedDate = '${now.day}/${now.month < 10 ? '0' : ''}${now.month}/${now.year.toString().substring(2)} ${now.hour}:${now.minute < 10 ? '0' : ''}${now.minute} ${now.hour >= 12 ? 'PM' : 'AM'}';
+
     return Scaffold(
       // Keeping the light mint green background
       backgroundColor: const Color(0xFFF1F7F6),
@@ -42,7 +109,6 @@ class TreadmillSummary extends StatelessWidget {
               'assets/images/sharebutton.png',
               width: 60,
               height: 60,
-
             ),
             onPressed: () {
               Navigator.push(
@@ -117,7 +183,7 @@ class TreadmillSummary extends StatelessWidget {
                             textBaseline: TextBaseline.alphabetic,
                             children: [
                               Text(
-                                "4,89",
+                                distanceFormatted,
                                 style: GoogleFonts.poppins(
                                   fontSize: 40,
                                   fontWeight: FontWeight.bold,
@@ -166,7 +232,7 @@ class TreadmillSummary extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                '12/02/25 8:32 AM',
+                                formattedDate,
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   color: Colors.grey,
@@ -188,7 +254,7 @@ class TreadmillSummary extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "01:18:02",
+                                formattedDuration,
                                 style: GoogleFonts.poppins(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w600,
@@ -209,7 +275,7 @@ class TreadmillSummary extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "15'58\"",
+                                formattedPace,
                                 style: GoogleFonts.poppins(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w600,
@@ -276,7 +342,7 @@ class TreadmillSummary extends StatelessWidget {
                             Row(
                               children: [
                                 Text(
-                                  '286',
+                                  '$calories',
                                   style: GoogleFonts.poppins(
                                     fontSize: 28,
                                     fontWeight: FontWeight.bold,
@@ -339,7 +405,7 @@ class TreadmillSummary extends StatelessWidget {
                             const SizedBox(height: 16),
                             // Steps value
                             Text(
-                              '5.234',
+                              formattedSteps,
                               style: GoogleFonts.poppins(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
@@ -373,13 +439,14 @@ class TreadmillSummary extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            _buildBarWithLabel("14'24\"", "1", 100),
-                            _buildBarWithLabel("14'12\"", "2", 90),
-                            _buildBarWithLabel("13'21\"", "3", 60),
-                            _buildBarWithLabel("16'02\"", "4", 130),
-                            _buildBarWithLabel("20'22\"", "5", 110),
-                          ],
+                          children: List.generate(
+                            chartBars.length,
+                            (index) => _buildBarWithLabel(
+                              chartBars[index]['pace'],
+                              chartBars[index]['km'].toString(),
+                              chartBars[index]['height'].toDouble(),
+                            ),
+                          ),
                         ),
                       ),
                       
@@ -395,7 +462,7 @@ class TreadmillSummary extends StatelessWidget {
                             Container(
                               width: 24,
                               height: 24,
-                              child: Icon(
+                              child: const Icon(
                                 Icons.directions_run,
                                 color: Colors.black,
                                 size: 24,

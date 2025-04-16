@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// Remove unused latlong2 import
-// import 'package:latlong2/latlong.dart';
+
 
 class PaceStatisticsWidget extends StatefulWidget {
   final String activityType; // 'Running', 'Treadmill', 'Cycling', 'Walking'
@@ -42,6 +41,7 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
 
     return Card(
       elevation: 4,
+      color: const Color(0xFFFFFFFF), // Set the background to pure white
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
