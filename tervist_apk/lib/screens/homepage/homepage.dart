@@ -919,7 +919,7 @@ class _HomePageState extends State<HomePage>
               },
             ),
             const SizedBox(height: 12),
-            Text('Distance: $distance km'),
+            Text('Distance: ${distance.ceil()} km'),
             Text('Avg. Pace: $pace'),
           ],
         ),
