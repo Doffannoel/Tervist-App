@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tervist_apk/api/auth_helper.dart';
 import 'package:tervist_apk/api/signup_data.dart';
 import 'package:tervist_apk/api/signup_service.dart';
 import 'package:tervist_apk/api/api_config.dart';
@@ -63,7 +64,7 @@ class _UserDataPageState extends State<UserDataPage> {
 
       // Memanggil API untuk menghitung target nutrisi tanpa autentikasi
       final response = await http.post(
-        ApiConfig.nutritionalTarget, // URL endpoint untuk target nutrisi
+        ApiConfig.calculateNutritionPreview,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
@@ -72,19 +73,14 @@ class _UserDataPageState extends State<UserDataPage> {
       print("DEBUG: API Response Status Code: ${response.statusCode}");
       print("DEBUG: API Response Body: ${response.body}");
 
-      if (response.statusCode == 201) {
-        // Parse data yang diterima dari API
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> data = json.decode(response.body);
-
-        // Debugging: Menampilkan data yang diterima dari API
         print("DEBUG: Nutritional data from API: $data");
 
         setState(() {
-          // Update data nutrisi berdasarkan API response
           nutritionalData = data;
         });
       } else {
-        // Menampilkan error jika status code bukan 200
         print(
             "ERROR: Failed to fetch data from API. Status code: ${response.statusCode}");
       }
@@ -175,7 +171,7 @@ class _UserDataPageState extends State<UserDataPage> {
                                       Expanded(
                                         child: _buildMacroItem(
                                           'Calories',
-                                          '${nutritionalData!['calorie_target'].round()}',
+                                          '${(nutritionalData!['calorie_target'] ?? 0).round()}',
                                           0.75,
                                           Colors.black,
                                         ),
@@ -184,7 +180,7 @@ class _UserDataPageState extends State<UserDataPage> {
                                       Expanded(
                                         child: _buildMacroItem(
                                           'Carbs',
-                                          '${nutritionalData!['carbs_target'].round()}g',
+                                          '${(nutritionalData!['carbs_target'] ?? 0).round()}g',
                                           0.7,
                                           Colors.amber,
                                         ),
@@ -197,7 +193,7 @@ class _UserDataPageState extends State<UserDataPage> {
                                       Expanded(
                                         child: _buildMacroItem(
                                           'Protein',
-                                          '${nutritionalData!['protein_target'].round()}g',
+                                          '${(nutritionalData!['protein_target'] ?? 0).round()}g',
                                           0.6,
                                           Colors.red,
                                         ),
@@ -206,7 +202,7 @@ class _UserDataPageState extends State<UserDataPage> {
                                       Expanded(
                                         child: _buildMacroItem(
                                           'Fats',
-                                          '${nutritionalData!['fats_target'].round()}g',
+                                          '${(nutritionalData!['fats_target'] ?? 0).round()}g',
                                           0.4,
                                           Colors.blue,
                                         ),
@@ -241,69 +237,73 @@ class _UserDataPageState extends State<UserDataPage> {
                         width: 250,
                         child: ElevatedButton(
                           onPressed: () async {
-                            // Proceed with signup
-                            final response = await SignupService.submitSignup(
-                                widget.signupData);
-                            if (response.statusCode == 201) {
-                              // After successful signup, proceed to login
-                              final loginResponse =
-                                  await SignupService.loginUser(
-                                widget.signupData.email!,
-                                widget.signupData.password!,
-                              );
+                            try {
+                              // STEP 1: Kirim data signup
+                              final response = await SignupService.submitSignup(
+                                  widget.signupData);
 
-                              if (loginResponse.statusCode == 200) {
-                                final responseData =
-                                    jsonDecode(loginResponse.body);
-                                final token = responseData['access_token'];
-                                final prefs =
-                                    await SharedPreferences.getInstance();
-                                await prefs.setString(
-                                    'access_token', token); // Save the token
-
-                                if (nutritionalData != null) {
-                                  final saveTargetResponse = await http.post(
-                                    Uri.parse(
-                                        '${ApiConfig.baseUrl}/api/nutritional-target/'),
-                                    headers: {
-                                      'Authorization': 'Bearer $token',
-                                      'Content-Type': 'application/json',
-                                    },
-                                    body: jsonEncode(nutritionalData),
-                                  );
-
-                                  print(
-                                      "DEBUG: Save NutritionalTarget response code: ${saveTargetResponse.statusCode}");
-                                  print(
-                                      "DEBUG: Save NutritionalTarget response body: ${saveTargetResponse.body}");
-                                }
-
-                                // Navigate to HomePage after successful login
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => MainNavigation()),
+                              if (response.statusCode == 201) {
+                                // STEP 2: Login setelah signup
+                                final loginSuccess =
+                                    await SignupService.loginUser(
+                                  widget.signupData.email!,
+                                  widget.signupData.password!,
                                 );
+
+                                if (loginSuccess) {
+                                  // STEP 3: Ambil token setelah login berhasil
+                                  final token = await AuthHelper.getToken();
+
+                                  // STEP 4: Simpan target nutrisi dengan token (user sudah login)
+                                  if (nutritionalData != null &&
+                                      token != null) {
+                                    final saveTargetResponse = await http.post(
+                                      Uri.parse(
+                                          '${ApiConfig.baseUrl}/api/nutritional-target/'),
+                                      headers: {
+                                        'Authorization': 'Bearer $token',
+                                        'Content-Type': 'application/json',
+                                      },
+                                      body: jsonEncode(nutritionalData),
+                                    );
+
+                                    print(
+                                        "✅ Save NutritionalTarget response: ${saveTargetResponse.statusCode}");
+                                    print(
+                                        "✅ Save NutritionalTarget body: ${saveTargetResponse.body}");
+                                  }
+
+                                  // STEP 5: Navigasi ke MainNavigation
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => MainNavigation()),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Signup berhasil, tapi login gagal'),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                }
                               } else {
-                                // If login fails, show error message
+                                // Signup gagal
+                                final error = jsonDecode(response.body);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        'Signup succeeded, but login failed'),
-                                    backgroundColor: Colors.orange,
+                                  SnackBar(
+                                    content:
+                                        Text(error['detail'] ?? 'Signup gagal'),
+                                    backgroundColor: Colors.red,
                                   ),
                                 );
                               }
-                            } else {
-                              print(
-                                  "DEBUG: Signup failed with code ${response.statusCode}");
-                              print("DEBUG: Error response: ${response.body}");
-                              // If signup fails, show error message
-                              final error = jsonDecode(response.body);
+                            } catch (e) {
+                              print("❌ Exception during signup/login: $e");
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content:
-                                      Text(error['detail'] ?? 'Signup failed'),
+                                  content: Text('Terjadi kesalahan: $e'),
                                   backgroundColor: Colors.red,
                                 ),
                               );

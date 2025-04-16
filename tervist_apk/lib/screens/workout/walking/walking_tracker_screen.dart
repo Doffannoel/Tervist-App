@@ -631,7 +631,7 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
                         radius: 20,
                         backgroundImage: _profileImageUrl != null
                             ? NetworkImage(_profileImageUrl!)
-                            : const AssetImage('assets/images/profile.png')
+                            : const AssetImage('assets/images/profilepicture.png')
                                 as ImageProvider,
                         backgroundColor: Colors.grey[300],
                       ),

@@ -245,6 +245,7 @@ class _HomePageState extends State<HomePage>
   // Widget untuk menampilkan dialog logout
   Widget _buildLogoutDialog() {
     return AlertDialog(
+      backgroundColor: Colors.white,
       title: const Text('Logout'),
       content: const Text('Are you sure you want to logout?'),
       actions: [
@@ -277,6 +278,7 @@ class _HomePageState extends State<HomePage>
   // Metode-metode widget lainnya (contoh)
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
+      automaticallyImplyLeading: false,
       backgroundColor: const Color(0xFFF1F7F6),
       elevation: 0,
       title: Column(
@@ -902,7 +904,7 @@ class _HomePageState extends State<HomePage>
                 final animatedPercent =
                     (progress * 100 * _progressAnimation.value).toInt();
                 return Text(
-                    '$animatedPercent% of daily goal ($stepsGoal steps)');
+                    '$animatedPercent% of daily goal (${stepsGoal.ceil()} steps)');
               },
             ),
             const SizedBox(height: 12),

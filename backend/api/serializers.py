@@ -81,11 +81,12 @@ class RunningStatsSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     remaining_calories = serializers.SerializerMethodField()
+    id = serializers.IntegerField(read_only=True) 
 
     class Meta:
         model = CustomUser
         fields = [
-            'email', 'username', 'bio', 'city', 'state', 'birthday',
+            'id', 'email', 'username', 'bio', 'city', 'state', 'birthday',
             'gender', 'weight', 'calorie_target', 'total_calories_consumed', 'remaining_calories'
         ]
 

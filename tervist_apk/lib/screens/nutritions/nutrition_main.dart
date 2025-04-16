@@ -6,6 +6,7 @@ import 'package:tervist_apk/widgets/calendar_popup.dart';
 import 'package:intl/intl.dart';
 import 'scanfood.dart';
 import 'package:tervist_apk/screens/nutritions/streak_popup_dialog.dart';
+import 'package:dotted_border/dotted_border.dart';
 
 class NutritionMainPage extends StatefulWidget {
   const NutritionMainPage({super.key});
@@ -18,6 +19,78 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
   // Date handling
   DateTime _selectedDate = DateTime.now();
   DateTime _startDate = DateTime(2025, 2, 16);
+  // First, define the enum at the top of your nutrition_main.dart file:
+
+// Then add this method to your _NutritionMainPageState class:
+  CalendarDayStatus _getDayStatus(DateTime date) {
+    // First check if we have this date in our cache
+    if (_dayStatusCache.containsKey(date)) {
+      return _dayStatusCache[date]!;
+    }
+
+    // Format date for comparison - strip time
+    final DateTime checkDate = DateTime(date.year, date.month, date.day);
+
+    // Check if this is today or selected date
+    final DateTime today = DateTime.now();
+    final bool isToday = checkDate.day == today.day &&
+        checkDate.month == today.month &&
+        checkDate.year == today.year;
+
+    final bool isSelected = checkDate.day == _selectedDate.day &&
+        checkDate.month == _selectedDate.month &&
+        checkDate.year == _selectedDate.year;
+
+    // For the selected date, we already have the food data in _recentlyLoggedFood
+    bool hasFoodEntries = false;
+    double totalCalories = 0;
+
+    if (isSelected) {
+      // Current selected date - use _recentlyLoggedFood
+      hasFoodEntries = _recentlyLoggedFood.isNotEmpty;
+
+      for (var food in _recentlyLoggedFood) {
+        totalCalories += food['calories'] ?? 0;
+      }
+    } else if (_foodIntakeCache.containsKey(checkDate)) {
+      // Other date but we have cached data
+      List<Map<String, dynamic>> foodEntries = _foodIntakeCache[checkDate]!;
+      hasFoodEntries = foodEntries.isNotEmpty;
+
+      for (var food in foodEntries) {
+        totalCalories += food['calories'] ?? 0;
+      }
+    } else {
+      // Default to no food entries
+      hasFoodEntries = false;
+      totalCalories = 0;
+    }
+
+    // Check if calories meet target
+    bool meetsCalorieTarget = totalCalories >= caloriesTotal;
+
+    // Determine status based on rules
+    CalendarDayStatus status;
+    if (isToday || isSelected) {
+      // Today or selected date
+      status = meetsCalorieTarget
+          ? CalendarDayStatus.blackSolid
+          : CalendarDayStatus.blackDashed;
+    } else if (hasFoodEntries) {
+      // Has food entries but is not today or selected date
+      status = meetsCalorieTarget
+          ? CalendarDayStatus.graySolid
+          : CalendarDayStatus.redSolid;
+    } else {
+      // No food entries
+      status = CalendarDayStatus.grayDashed;
+    }
+
+    // Cache the result
+    _dayStatusCache[checkDate] = status;
+
+    return status;
+  }
 
   // Nutrition data
   int caloriesLeft = 887;
@@ -43,11 +116,27 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
   List<Map<String, dynamic>> _recentlyLoggedFood = [];
   bool _isLoading = true;
 
+  // Food intake cache to reduce API calls
+  final Map<DateTime, List<Map<String, dynamic>>> _foodIntakeCache = {};
+// Status cache per date to reduce repeated calculations
+  final Map<DateTime, CalendarDayStatus> _dayStatusCache = {};
+
   @override
   void initState() {
     super.initState();
     getDailySummary();
     _fetchFoodIntake();
+  }
+
+  //Refresh
+  Future<void> _refreshData() async {
+    // Panggil fungsi untuk memperbarui data
+    await getDailySummary();
+    await _fetchFoodIntake();
+
+    // Perbarui status hari dalam kalender
+    _dayStatusCache.clear(); // Reset cache status hari
+    setState(() {}); // Refresh UI
   }
 
   // Fetch nutritional targets and consumption data
@@ -205,6 +294,8 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
       }
 
       setState(() {
+        _foodIntakeCache[_selectedDate] = foodData;
+        _dayStatusCache.remove(_selectedDate);
         _recentlyLoggedFood = foodData;
 
         // Update progress manually if API isn't providing correct data
@@ -252,11 +343,26 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
 
   // Show calendar popup
   void _showCalendarDialog() {
+    // Create a map of day statuses for the visible month
+    Map<DateTime, CalendarDayStatus> dayStatuses = {};
+
+    // For each day in the current month, determine its status
+    final daysInMonth =
+        DateTime(_selectedDate.year, _selectedDate.month + 1, 0).day;
+
+    for (int i = 1; i <= daysInMonth; i++) {
+      final date = DateTime(_selectedDate.year, _selectedDate.month, i);
+
+      // Use getDayStatus to properly determine the status
+      dayStatuses[date] = _getDayStatus(date);
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return CalendarPopup(
           initialSelectedDate: _selectedDate,
+          dayStatuses: dayStatuses,
           onDateSelected: (date) {
             _onDateSelected(date);
             Navigator.pop(context);
@@ -278,12 +384,14 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          color: Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 150),
           child: Row(
             children: [
               Expanded(
@@ -398,304 +506,375 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : SafeArea(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // App header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Image.asset(
-                          'assets/images/logotervist.png',
-                          height: 28,
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Image.asset('assets/images/fireon.png',
-                                  height: 16),
-                              const SizedBox(width: 4),
-                              const Text(
-                                '1',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Calendar header
-                    GestureDetector(
-                      onTap: _showCalendarDialog,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.calendar_today, size: 18),
-                          const SizedBox(width: 6),
-                          Text(
-                            DateFormat("MMMM yyyy").format(_selectedDate),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-
-                    // Week view calendar
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        GestureDetector(
-                          onTap: () => _changeWeek(-1),
-                          child: const Icon(Icons.chevron_left, size: 24),
-                        ),
-                        Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: List.generate(7, (index) {
-                              final date = currentWeek[index];
-                              final isSelected =
-                                  date.day == _selectedDate.day &&
-                                      date.month == _selectedDate.month &&
-                                      date.year == _selectedDate.year;
-                              final isToday = date.day == today.day &&
-                                  date.month == today.month &&
-                                  date.year == today.year;
-
-                              return GestureDetector(
-                                onTap: () => _onDateSelected(date),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      days[index],
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.red
-                                            : Colors.black,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      width: 36,
-                                      height: 36,
-                                      decoration: BoxDecoration(
-                                        border: isSelected
-                                            ? Border.all(
-                                                color: Colors.red, width: 2)
-                                            : isToday
-                                                ? Border.all(
-                                                    color: Colors.black,
-                                                    width: 1)
-                                                : Border.all(
-                                                    color: Colors.transparent),
-                                        borderRadius: BorderRadius.circular(18),
-                                        color: Colors.transparent,
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          date.day.toString(),
-                                          style: TextStyle(
-                                            fontWeight: isSelected
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => _changeWeek(1),
-                          child: const Icon(Icons.chevron_right, size: 24),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 30),
-
-                    // Calories left card with progress
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
+              child: RefreshIndicator(
+                onRefresh: _refreshData,
+                color: Color(0xFFF1F7F6),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // App header
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '$caloriesLeft',
-                                style: TextStyle(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'Calories left',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                            ],
+                          Image.asset(
+                            'assets/images/logotervist.png',
+                            height: 28,
                           ),
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: 60,
-                                height: 60,
-                                child: CircularProgressIndicator(
-                                  value: caloriesProgress,
-                                  strokeWidth: 8,
-                                  backgroundColor: Colors.grey.withOpacity(0.2),
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.black),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
                                 ),
-                              ),
-                              Image.asset('assets/images/fire.png', height: 24),
-                            ],
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Image.asset('assets/images/fireon.png',
+                                    height: 16),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  '1',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
-                    // Macronutrients row with progress - UPDATED TO MATCH IMAGE WITH FIXED VALUES
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment
-                          .start, // Align all cards to the top
-                      children: [
-                        _buildMacroCard(
-                          '75g',
-                          'Proteins left',
-                          'assets/images/protein.png',
-                          proteinProgress,
-                          Colors.red,
-                        ),
-                        _buildMacroCard(
-                          '156g',
-                          'Carbs left',
-                          'assets/images/carb.png',
-                          carbsProgress,
-                          Colors.amber,
-                        ),
-                        _buildMacroCard(
-                          '34g',
-                          'Fats left',
-                          'assets/images/fat.png',
-                          fatsProgress,
-                          Colors.blue,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
-
-                    // Recently logged section
-                    const Text(
-                      'Recently logged',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Recently logged food items or empty state
-                    Expanded(
-                      child: _recentlyLoggedFood.isEmpty
-                          ? Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF1F7F6),
-                                borderRadius: BorderRadius.circular(16),
+                      // Calendar header
+                      GestureDetector(
+                        onTap: _showCalendarDialog,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.calendar_today, size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              DateFormat("MMMM yyyy").format(_selectedDate),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Week view calendar
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          GestureDetector(
+                            onTap: () => _changeWeek(-1),
+                            child: const Icon(Icons.chevron_left, size: 24),
+                          ),
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: List.generate(7, (index) {
+                                final date = currentWeek[index];
+                                final isSelected =
+                                    date.day == _selectedDate.day &&
+                                        date.month == _selectedDate.month &&
+                                        date.year == _selectedDate.year;
+
+                                // Get status for this date using our helper method
+                                final status = _getDayStatus(date);
+
+                                // Determine border properties based on status
+                                Color borderColor;
+                                bool isDashed;
+                                double borderWidth;
+
+                                switch (status) {
+                                  case CalendarDayStatus.redSolid:
+                                    borderColor = Colors.red;
+                                    isDashed = false;
+                                    borderWidth = 2.0;
+                                    break;
+                                  case CalendarDayStatus.graySolid:
+                                    borderColor = Colors.grey;
+                                    isDashed = false;
+                                    borderWidth = 1.0;
+                                    break;
+                                  case CalendarDayStatus.grayDashed:
+                                    borderColor = Colors.grey;
+                                    isDashed = true;
+                                    borderWidth = 1.0;
+                                    break;
+                                  case CalendarDayStatus.blackDashed:
+                                    borderColor = Colors.black;
+                                    isDashed = true;
+                                    borderWidth = 1.0;
+                                    break;
+                                  case CalendarDayStatus.blackSolid:
+                                    borderColor = Colors.black;
+                                    isDashed = false;
+                                    borderWidth = 1.0;
+                                    break;
+                                }
+
+                                return GestureDetector(
+                                  onTap: () => _onDateSelected(date),
+                                  child: Column(
                                     children: [
-                                      const Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            "You haven't uploaded any food",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
+                                      Text(
+                                        days[index],
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? Colors.red
+                                              : Colors.black,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      // Use DottedBorder for dashed borders, Container for solid
+                                      isDashed
+                                          ? DottedBorder(
+                                              borderType: BorderType.Circle,
+                                              color: borderColor,
+                                              strokeWidth: borderWidth,
+                                              dashPattern: const [3, 2],
+                                              child: SizedBox(
+                                                width: 34,
+                                                height: 34,
+                                                child: Center(
+                                                  child: Text(
+                                                    date.day.toString(),
+                                                    style: TextStyle(
+                                                      fontWeight: isSelected
+                                                          ? FontWeight.bold
+                                                          : FontWeight.normal,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : Container(
+                                              width: 36,
+                                              height: 36,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: borderColor,
+                                                  width: borderWidth,
+                                                ),
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  date.day.toString(),
+                                                  style: TextStyle(
+                                                    fontWeight: isSelected
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
+                                                  ),
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                          SizedBox(height: 6),
-                                          Text(
-                                            "Start tracking today's meals by taking a\nquick picture",
-                                            style: TextStyle(
-                                                fontSize: 14, height: 1.3),
-                                          ),
-                                        ],
-                                      ),
-                                      Transform.rotate(
-                                        angle: 0.5,
-                                        child: const Icon(Icons.arrow_forward,
-                                            size: 24),
-                                      ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              physics: BouncingScrollPhysics(),
-                              itemCount: _recentlyLoggedFood.length,
-                              itemBuilder: (context, index) {
-                                final food = _recentlyLoggedFood[index];
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: _buildFoodItem(food),
                                 );
-                              },
+                              }),
                             ),
-                    ),
-                  ],
+                          ),
+                          GestureDetector(
+                            onTap: () => _changeWeek(1),
+                            child: const Icon(Icons.chevron_right, size: 24),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 30),
+
+                      // Calories left card with progress
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '$caloriesLeft',
+                                  style: TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'Calories left',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ],
+                            ),
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 60,
+                                  height: 60,
+                                  child: CircularProgressIndicator(
+                                    value: caloriesProgress,
+                                    strokeWidth: 8,
+                                    backgroundColor:
+                                        Colors.grey.withOpacity(0.2),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.black),
+                                  ),
+                                ),
+                                Image.asset('assets/images/fire.png',
+                                    height: 24),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Macronutrients row with progress
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment
+                            .start, // Align all cards to the top
+                        children: [
+                          _buildMacroCard(
+                            '${proteinLeft}g',
+                            'Proteins left',
+                            'assets/images/protein.png',
+                            proteinProgress,
+                            Colors.red,
+                          ),
+                          _buildMacroCard(
+                            '${carbsLeft}g',
+                            'Carbs left',
+                            'assets/images/carb.png',
+                            carbsProgress,
+                            Colors.amber,
+                          ),
+                          _buildMacroCard(
+                            '${fatsLeft}g',
+                            'Fats left',
+                            'assets/images/fat.png',
+                            fatsProgress,
+                            Colors.blue,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Recently logged section
+                      const Text(
+                        'Recently logged',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Recently logged food items or empty state
+                      Expanded(
+                        child: _recentlyLoggedFood.isEmpty
+                            ? ListView(
+                                // Gunakan ListView untuk memungkinkan scroll bahkan saat kosong
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                children: [
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(20),
+                                    margin: const EdgeInsets.only(bottom: 20),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF1F7F6),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  "You haven't uploaded any food",
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 6),
+                                                Text(
+                                                  "Start tracking today's meals by taking a\nquick picture",
+                                                  style: TextStyle(
+                                                      fontSize: 14,
+                                                      height: 1.3),
+                                                ),
+                                              ],
+                                            ),
+                                            Transform.rotate(
+                                              angle: 0.5,
+                                              child: const Icon(
+                                                  Icons.arrow_forward,
+                                                  size: 24),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // Tambahkan SizedBox dengan height yang cukup besar
+                                  // untuk memastikan area dapat discroll
+                                  const SizedBox(height: 100),
+                                ],
+                              )
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.only(
+                                    bottom:
+                                        20), // Tambahkan padding bawah untuk jarak footer
+                                itemCount: _recentlyLoggedFood.length,
+                                itemBuilder: (context, index) {
+                                  final food = _recentlyLoggedFood[index];
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: _buildFoodItem(food),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -851,7 +1030,8 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
             children: [
               _buildNutrientInfo('P', '${food['protein']}g', Colors.red),
               const SizedBox(width: 15),
-              _buildNutrientInfo('C', '${food['carbs']}g', Colors.amber),
+              _buildNutrientInfo(
+                  'C', '${food['carbs'].toStringAsFixed(1)}g', Colors.amber),
               const SizedBox(width: 15),
               _buildNutrientInfo('F', '${food['fats']}g', Colors.blue),
             ],

@@ -9,7 +9,7 @@ class ChatbotService {
   static Future<String> getChatGPTResponse(
       String message, List<Map<String, String>> history) async {
     final apiKey =
-        "API-KEY-DISININ";
+        "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";
     final messages = [
       {
         'role': 'system',

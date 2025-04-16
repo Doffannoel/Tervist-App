@@ -14,13 +14,66 @@ from rest_framework.views import APIView
 from django.db.models import Avg, Sum, Count
 from calendar import monthrange
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.decorators import action 
+from rest_framework.decorators import action, api_view, permission_classes 
+from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import ValidationError
 from pytz import timezone as pytz_timezone 
+from decimal import Decimal
 
 def get_today_local():
     local_tz = pytz_timezone("Asia/Jakarta")
     return timezone.localtime(timezone.now(), local_tz).date()
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def calculate_nutrition_preview(request):
+    data = request.data
+    try:
+        weight = Decimal(str(data.get('weight', 0)))
+        height = Decimal(str(data.get('height', 0)))
+        age = Decimal(str(data.get('age', 25)))
+        gender = data.get('gender', 'Male')
+        goal = data.get('goal', 'Maintain Weight')
+        activity_level = data.get('activity_level', 'Low Active')
+
+        # BMR
+        bmr = Decimal('10') * weight + Decimal('6.25') * height - Decimal('5') * age
+        if gender == 'Male':
+            bmr += Decimal('5')
+        else:
+            bmr -= Decimal('161')
+
+        # TDEE multiplier
+        activity_multipliers = {
+            'Sedentary': Decimal('1.2'),
+            'Low Active': Decimal('1.375'),
+            'Active': Decimal('1.55'),
+            'Very Active': Decimal('1.725'),
+        }
+        multiplier = activity_multipliers.get(activity_level, Decimal('1.2'))
+        tdee = bmr * multiplier
+
+        # Calorie adjustment
+        if goal.lower() == 'weight gain':
+            calorie_target = tdee + Decimal('500')
+        elif goal.lower() == 'weight loss':
+            calorie_target = tdee - Decimal('500')
+        else:
+            calorie_target = tdee
+
+        protein_target = calorie_target * Decimal('0.15') / Decimal('4')
+        carbs_target = calorie_target * Decimal('0.55') / Decimal('4')
+        fats_target = calorie_target * Decimal('0.30') / Decimal('9')
+
+        return Response({
+            'calorie_target': round(calorie_target),
+            'protein_target': round(protein_target),
+            'carbs_target': round(carbs_target),
+            'fats_target': round(fats_target),
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class NutritionalTargetView(viewsets.ModelViewSet):
@@ -32,11 +85,14 @@ class NutritionalTargetView(viewsets.ModelViewSet):
         if self.request.user.is_authenticated:
             if NutritionalTarget.objects.filter(user=self.request.user).exists():
                 raise ValidationError("Target already exists for this user")
+            
             nutritional_target = serializer.save(user=self.request.user)
-            nutritional_target.calculate_targets()
-        else:
-            nutritional_target = serializer.save()
-            nutritional_target.calculate_targets(manual_data=self.request.data)
+
+            # Selalu hitung ulang target berdasarkan data yang dikirim
+            if self.request.data.get('calorie_target'):
+                nutritional_target.calculate_targets(manual_data=self.request.data)
+            else:
+                nutritional_target.calculate_targets()
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def daily_summary(self, request):
