@@ -295,10 +295,12 @@ class _SetTargetPageState extends State<SetTargetPage> {
             final result = await _showTargetPopup(title: title);
             if (result != null) {
               setState(() {
-                _selectedGoal = result['goal'];
-                widget.signupData.goal = result['goal'];
-                widget.signupData.targetWeight = result['targetWeight'];
-                widget.signupData.timeline = result['timeline'];
+                _selectedGoal = title;
+                widget.signupData.goal = title;
+                widget.signupData.targetWeight =
+                    result['targetWeight']; // Use result from popup
+                widget.signupData.timeline =
+                    result['timeline']; // Use result from popup
               });
             }
           } else {
@@ -425,10 +427,18 @@ class _SetTargetPageState extends State<SetTargetPage> {
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () {
+                        // Calculate target weight based on current weight and desired change
+                        double currentWeight = widget.signupData.weight ?? 0;
+                        double weightChange =
+                            double.tryParse(weightController.text) ?? 0;
+
+                        double targetWeight = title == "Weight gain"
+                            ? currentWeight + weightChange
+                            : currentWeight - weightChange;
+
                         Navigator.pop(context, {
                           'goal': title,
-                          'targetWeight':
-                              double.tryParse(weightController.text),
+                          'targetWeight': targetWeight,
                           'timeline': '${timeController.text} $timelineValue',
                         });
                       },

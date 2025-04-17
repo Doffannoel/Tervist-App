@@ -86,13 +86,38 @@ class NutritionalTargetView(viewsets.ModelViewSet):
             if NutritionalTarget.objects.filter(user=self.request.user).exists():
                 raise ValidationError("Target already exists for this user")
             
+            print("🔥 REQUEST.DATA:", self.request.data)  # <--- Tambahan pertama
+
+            # Simpan objek terlebih dahulu
             nutritional_target = serializer.save(user=self.request.user)
 
-            # Selalu hitung ulang target berdasarkan data yang dikirim
-            if self.request.data.get('calorie_target'):
-                nutritional_target.calculate_targets(manual_data=self.request.data)
+            # Cek apakah data preview dikirim dari frontend
+            if (
+                'calorie_target' in self.request.data
+                and 'protein_target' in self.request.data
+                and 'carbs_target' in self.request.data
+                and 'fats_target' in self.request.data
+            ):
+                # ✅ Preview dikirim, jadi gak perlu dihitung ulang
+                print("🔁 Skipping calculate_targets karena data preview sudah tersedia.")
+                return
             else:
+                # ❗Jika tidak ada data preview, hitung seperti biasa
+                print("⚙️ Menjalankan calculate_targets() dari backend")
                 nutritional_target.calculate_targets()
+
+
+            print("🔥 TERSIMPAN:", {
+            "calorie_target": nutritional_target.calorie_target,
+            "protein_target": nutritional_target.protein_target,
+            "carbs_target": nutritional_target.carbs_target,
+            "fats_target": nutritional_target.fats_target,
+        })
+        else:
+            # Jika user belum login (AllowAny), tetap bisa pakai manual_data
+            nutritional_target = serializer.save()
+            nutritional_target.calculate_targets(manual_data=self.request.data)
+
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def daily_summary(self, request):
