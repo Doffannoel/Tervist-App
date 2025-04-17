@@ -405,38 +405,70 @@ class _ShareScreenState extends State<ShareScreen> {
                 ),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Activity type and user avatar
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Tervist | ${widget.activityType}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top section with activity type, user, distance (matches the image)
+                Container(
+                  padding: const EdgeInsets.all(20.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.grey.withOpacity(0.2),
+                        width: 1,
                       ),
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundImage: const AssetImage('assets/images/profile.png'),
-                        backgroundColor: Colors.grey[300],
-                      ),
-                    ],
+                    ),
                   ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Distance with km unit
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Distance
+                      // Activity type and user avatar in one row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Left side - activity type
+                          Text(
+                            'Tervist | ${widget.activityType}',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          // Right side - user profile and date/time
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundImage: const AssetImage('assets/images/profile.png'),
+                                backgroundColor: Colors.grey[300],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.userName,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              Text(
+                                _formatDateTime(widget.workoutDate),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Distance with km unit - large display
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
@@ -444,108 +476,226 @@ class _ShareScreenState extends State<ShareScreen> {
                           Text(
                             '${widget.distance.toStringAsFixed(2)}',
                             style: GoogleFonts.poppins(
-                              fontSize: 48,
+                              fontSize: 64,
                               fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                              height: 0.9,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
+                            padding: const EdgeInsets.only(bottom: 12.0),
                             child: Text(
                               'Km',
                               style: GoogleFonts.poppins(
-                                fontSize: 20,
-                                color: Colors.grey,
+                                fontSize: 24,
+                                color: Colors.black,
                               ),
                             ),
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+                
+                // Time and Pace row
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Row(
+                    children: [
+                      // Time column - left side
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.formattedDuration,
+                              style: GoogleFonts.poppins(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            Text(
+                              'Time',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       
-                      // Timestamp in top-right
-                      Text(
-                        _formatDateTime(widget.workoutDate),
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.grey,
+                      // Vertical divider
+                      Container(
+                        height: 40,
+                        width: 1,
+                        color: Colors.grey.withOpacity(0.3),
+                      ),
+                      
+                      // Pace column - right side
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 40.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.formattedPace,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              Text(
+                                'Pace',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
+                ),
                   
-                  const SizedBox(height: 24),
-                  
-                  // Time and Speed row
+                  // Calories and Max speed containers
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Time column
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.formattedDuration,
-                            style: GoogleFonts.poppins(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      // Calories container
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 8.0),
+                          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'Time',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Image.asset(
+                                    'assets/images/fireicon.png',
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Calories Burned',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  Text(
+                                    '${widget.calories}',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange[400],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Kcal',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      
-                      // Average speed column
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${_calculateAverageSpeed()} Km/h',
-                            style: GoogleFonts.poppins(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Average speed',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Calories and Max speed as simple text
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Calories
-                      Text(
-                        '${widget.calories} Kcal',
-                        style: GoogleFonts.poppins(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange,
                         ),
                       ),
                       
-                      // Max speed
-                      Text(
-                        '${_calculateMaxSpeed()} Km/h',
-                        style: GoogleFonts.poppins(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                      // Max speed container
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(left: 8.0),
+                          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Image.asset(
+                                    'assets/images/stepicon.png',
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'steps',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  Text(
+                                    '${_calculateMaxSpeed()}',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue[400],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Km/h',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -553,7 +703,6 @@ class _ShareScreenState extends State<ShareScreen> {
                 ],
               ),
             ),
-          ),
         ],
       ),
     );
@@ -594,14 +743,39 @@ class _ShareScreenState extends State<ShareScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Date at top
-                Text(
-                  '${widget.workoutDate.day}/${widget.workoutDate.month}/${widget.workoutDate.year}',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                // Top section with date and username
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Date at top
+                    Text(
+                      '${widget.workoutDate.day}/${widget.workoutDate.month}/${widget.workoutDate.year}',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    // Username with small avatar
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundImage: const AssetImage('assets/images/profile.png'),
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.userName,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
                 
                 // Center content - Motivational text

@@ -4,7 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import '../follow_me_button.dart';
-import '../share_screen.dart';
+import 'share_screen_cycling.dart';
 import '../pace_statistics_widget.dart'; // Import widget pace statistics
 import '../pace_data_processor.dart'; // Import the data processor
 

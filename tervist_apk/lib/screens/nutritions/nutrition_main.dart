@@ -19,19 +19,14 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
   // Date handling
   DateTime _selectedDate = DateTime.now();
   DateTime _startDate = DateTime(2025, 2, 16);
-  // First, define the enum at the top of your nutrition_main.dart file:
 
-// Then add this method to your _NutritionMainPageState class:
   CalendarDayStatus _getDayStatus(DateTime date) {
-    // First check if we have this date in our cache
     if (_dayStatusCache.containsKey(date)) {
       return _dayStatusCache[date]!;
     }
 
-    // Format date for comparison - strip time
     final DateTime checkDate = DateTime(date.year, date.month, date.day);
 
-    // Check if this is today or selected date
     final DateTime today = DateTime.now();
     final bool isToday = checkDate.day == today.day &&
         checkDate.month == today.month &&
@@ -40,20 +35,18 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
     final bool isSelected = checkDate.day == _selectedDate.day &&
         checkDate.month == _selectedDate.month &&
         checkDate.year == _selectedDate.year;
-
-    // For the selected date, we already have the food data in _recentlyLoggedFood
     bool hasFoodEntries = false;
     double totalCalories = 0;
 
     if (isSelected) {
-      // Current selected date - use _recentlyLoggedFood
+      // Current selected date
       hasFoodEntries = _recentlyLoggedFood.isNotEmpty;
 
       for (var food in _recentlyLoggedFood) {
         totalCalories += food['calories'] ?? 0;
       }
     } else if (_foodIntakeCache.containsKey(checkDate)) {
-      // Other date but we have cached data
+      // Other date tapi kita punya cached data
       List<Map<String, dynamic>> foodEntries = _foodIntakeCache[checkDate]!;
       hasFoodEntries = foodEntries.isNotEmpty;
 
@@ -69,7 +62,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
     // Check if calories meet target
     bool meetsCalorieTarget = totalCalories >= caloriesTotal;
 
-    // Determine status based on rules
+    // Determine status
     CalendarDayStatus status;
     if (isToday || isSelected) {
       // Today or selected date
@@ -86,7 +79,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
       status = CalendarDayStatus.grayDashed;
     }
 
-    // Cache the result
+    // Result
     _dayStatusCache[checkDate] = status;
 
     return status;
@@ -130,11 +123,9 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
 
   //Refresh
   Future<void> _refreshData() async {
-    // Panggil fungsi untuk memperbarui data
     await getDailySummary();
     await _fetchFoodIntake();
 
-    // Perbarui status hari dalam kalender
     _dayStatusCache.clear(); // Reset cache status hari
     setState(() {}); // Refresh UI
   }
@@ -184,7 +175,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
         print(
             'Left - Cal: $caloriesLeft, Pro: $proteinLeft, Carb: $carbsLeft, Fat: $fatsLeft');
 
-        // Make sure we don't have negative values
+        // Jgn sampai negative values
         caloriesLeft = caloriesLeft < 0 ? 0 : caloriesLeft;
         proteinLeft = proteinLeft < 0 ? 0 : proteinLeft;
         carbsLeft = carbsLeft < 0 ? 0 : carbsLeft;
@@ -210,7 +201,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
       });
     } catch (e) {
       print('Error fetching nutritional data: $e');
-      // Handle error - show error message or retry
+      // Handle error
     } finally {
       setState(() {
         _isLoading = false;
@@ -235,7 +226,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
         final servingSize =
             double.tryParse(item['serving_size']?.toString() ?? '1') ?? 1;
 
-        // Get nutrition values - prefer manual values if available
+        // Get nutrition values
         double calories, protein, carbs, fats;
 
         if (item['manual_calories'] != null) {
@@ -278,10 +269,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
 
         Map<String, dynamic> foodItem = {
           'id': item['id'],
-          'name': item['name'] ?? // Pertama, coba ambil nama manual
-              item['food_data']
-                  ?['name'] ?? // Kedua, ambil nama dari food database
-              'Custom Meal', // Terakhir, gunakan d
+          'name': item['name'] ?? item['food_data']?['name'] ?? 'Custom Meal',
           'calories': calories,
           'protein': protein,
           'carbs': carbs,
@@ -343,17 +331,14 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
 
   // Show calendar popup
   void _showCalendarDialog() {
-    // Create a map of day statuses for the visible month
     Map<DateTime, CalendarDayStatus> dayStatuses = {};
 
-    // For each day in the current month, determine its status
     final daysInMonth =
         DateTime(_selectedDate.year, _selectedDate.month + 1, 0).day;
 
     for (int i = 1; i <= daysInMonth; i++) {
       final date = DateTime(_selectedDate.year, _selectedDate.month, i);
 
-      // Use getDayStatus to properly determine the status
       dayStatuses[date] = _getDayStatus(date);
     }
 
@@ -372,7 +357,6 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
     );
   }
 
-  // Change week in calendar
   void _changeWeek(int direction) {
     setState(() {
       _startDate = _startDate.add(Duration(days: direction * 7));
@@ -523,33 +507,43 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                             'assets/images/logotervist.png',
                             height: 28,
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Image.asset('assets/images/fireon.png',
-                                    height: 16),
-                                const SizedBox(width: 4),
-                                const Text(
-                                  '1',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 14,
+                          GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return const StreakPopupDialog();
+                                },
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Image.asset('assets/images/fireon.png',
+                                      height: 16),
+                                  const SizedBox(width: 4),
+                                  const Text(
+                                    '1',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -852,8 +846,6 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                                       ],
                                     ),
                                   ),
-                                  // Tambahkan SizedBox dengan height yang cukup besar
-                                  // untuk memastikan area dapat discroll
                                   const SizedBox(height: 100),
                                 ],
                               )
@@ -893,11 +885,10 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
   Widget _buildMacroCard(String value, String label, String imagePath,
       double progress, Color progressColor) {
     return Container(
-      width: 115, // Width consistent for all cards
-      height: 150, // Same height for all cards, fixing the overflow
+      width: 115,
+      height: 150,
       padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(
-          bottom: 10), // Add bottom margin to avoid overflow
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -911,7 +902,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, // Ensure content fits
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             value,
@@ -927,7 +918,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
               color: Colors.black87,
             ),
           ),
-          const Spacer(), // Use spacer instead of fixed height to distribute space evenly
+          const Spacer(),
           Center(
             child: Stack(
               alignment: Alignment.center,
@@ -946,9 +937,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
               ],
             ),
           ),
-          const SizedBox(
-              height:
-                  4), // Small padding at bottom to avoid cutting off the circle
+          const SizedBox(height: 4),
         ],
       ),
     );
