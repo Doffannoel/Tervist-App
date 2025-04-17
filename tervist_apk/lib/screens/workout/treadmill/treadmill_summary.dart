@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import 'share_screen_treadmill.dart';
+import '/api/auth_helper.dart'; // Import for user data
+import 'package:cached_network_image/cached_network_image.dart'; // Import for cached network images
+import 'package:intl/intl.dart'; // For date formatting
 
-class TreadmillSummary extends StatelessWidget {
+class TreadmillSummary extends StatefulWidget {
   final double distance;
   final String formattedDuration;
   final String formattedPace;
@@ -11,8 +14,10 @@ class TreadmillSummary extends StatelessWidget {
   final int steps;
   final Color primaryGreen;
   final VoidCallback onBackToHome;
+  final String
+      userName; // We'll keep this but also load from AuthHelper if needed
 
-  // Constructor yang menggunakan parameter yang sama seperti di kode asli
+  // Constructor
   const TreadmillSummary({
     super.key,
     required this.distance,
@@ -22,36 +27,38 @@ class TreadmillSummary extends StatelessWidget {
     required this.steps,
     required this.primaryGreen,
     required this.onBackToHome,
+    required this.userName,
   });
 
-  // Factory constructor untuk membuat instance dengan data acak
-  // Ini memungkinkan penggunaan TreadmillSummary dengan cara yang sama
+  // Factory constructor for random data
   factory TreadmillSummary.random({
     required Color primaryGreen,
     required VoidCallback onBackToHome,
   }) {
     final random = math.Random();
-    
+
     // Generate random distance between 2.0 and 8.0 km
     final distance = (200 + random.nextInt(600)) / 100;
-    
+
     // Generate random duration between 30 minutes and 90 minutes
     final durationMinutes = 30 + random.nextInt(60);
     final durationSeconds = random.nextInt(60);
-    final formattedDuration = '${durationMinutes ~/ 60 > 0 ? durationMinutes ~/ 60 : '00'}:${durationMinutes % 60 < 10 ? '0' : ''}${durationMinutes % 60}:${durationSeconds < 10 ? '0' : ''}$durationSeconds';
-    
+    final formattedDuration =
+        '${durationMinutes ~/ 60 > 0 ? durationMinutes ~/ 60 : '00'}:${durationMinutes % 60 < 10 ? '0' : ''}${durationMinutes % 60}:${durationSeconds < 10 ? '0' : ''}$durationSeconds';
+
     // Calculate random pace (minutes per km)
     final paceSeconds = (durationMinutes * 60 + durationSeconds) ~/ distance;
     final paceMinutes = paceSeconds ~/ 60;
     final paceRemainingSeconds = paceSeconds % 60;
-    final formattedPace = "$paceMinutes'${paceRemainingSeconds < 10 ? '0' : ''}$paceRemainingSeconds\"";
-    
+    final formattedPace =
+        "$paceMinutes'${paceRemainingSeconds < 10 ? '0' : ''}$paceRemainingSeconds\"";
+
     // Random calories between 150 and 500
     final calories = 150 + random.nextInt(350);
-    
+
     // Random steps between 3000 and 10000
     final steps = 3000 + random.nextInt(7000);
-    
+
     return TreadmillSummary(
       distance: distance,
       formattedDuration: formattedDuration,
@@ -60,6 +67,94 @@ class TreadmillSummary extends StatelessWidget {
       steps: steps,
       primaryGreen: primaryGreen,
       onBackToHome: onBackToHome,
+      userName:
+          'User', // Default name that will be replaced when data is loaded
+    );
+  }
+
+  @override
+  State<TreadmillSummary> createState() => _TreadmillSummaryState();
+}
+
+class _TreadmillSummaryState extends State<TreadmillSummary> {
+  String _userName = "";
+  String? _profileImageUrl;
+  bool _isLoading = true;
+  final DateTime _currentDateTime = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Initialize with the provided username
+      _userName = widget.userName;
+
+      // Try to get from AuthHelper
+      if (_userName.isEmpty || _userName == "User") {
+        String? storedName = await AuthHelper.getUserName();
+        if (storedName != null && storedName.isNotEmpty) {
+          setState(() {
+            _userName = storedName;
+          });
+        }
+      }
+
+      // Get profile image URL
+      String? imageUrl = await AuthHelper.getProfilePicture();
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        setState(() {
+          _profileImageUrl = imageUrl;
+        });
+      }
+    } catch (e) {
+      print('Error loading user profile: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Helper method to build bar with label
+  Widget _buildBarWithLabel(String timeLabel, String kmLabel, double height) {
+    return Column(
+      children: [
+        // Time label at top
+        Text(
+          timeLabel,
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Bar
+        Container(
+          width: 20,
+          height: height * 0.7, // Scale height
+          decoration: BoxDecoration(
+            color: widget.primaryGreen,
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Km label at bottom
+        Text(
+          kmLabel,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+        ),
+      ],
     );
   }
 
@@ -70,27 +165,28 @@ class TreadmillSummary extends StatelessWidget {
     final chartBars = <Map<String, dynamic>>[];
     for (int i = 1; i <= 5; i++) {
       final barHeight = 60 + random.nextInt(80); // Random height between 60-140
-      final barPaceMinutes = 10 + random.nextInt(11); // Random minutes between 10-20
+      final barPaceMinutes =
+          10 + random.nextInt(11); // Random minutes between 10-20
       final barPaceSeconds = random.nextInt(60); // Random seconds between 0-59
       chartBars.add({
         'km': i,
         'height': barHeight,
-        'pace': "$barPaceMinutes'${barPaceSeconds < 10 ? '0' : ''}$barPaceSeconds\""
+        'pace':
+            "$barPaceMinutes'${barPaceSeconds < 10 ? '0' : ''}$barPaceSeconds\""
       });
     }
 
     // Format the distance with comma as decimal separator
-    final distanceFormatted = distance.toStringAsFixed(2).replaceAll('.', ',');
-    
+    final distanceFormatted =
+        widget.distance.toStringAsFixed(2).replaceAll('.', ',');
+
     // Format the steps with dot as thousands separator
-    final formattedSteps = steps.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]}.'
-    );
-    
-    // Get current date and time
-    final now = DateTime.now();
-    final formattedDate = '${now.day}/${now.month < 10 ? '0' : ''}${now.month}/${now.year.toString().substring(2)} ${now.hour}:${now.minute < 10 ? '0' : ''}${now.minute} ${now.hour >= 12 ? 'PM' : 'AM'}';
+    final formattedSteps = widget.steps.toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
+
+    // Format date and time
+    String formattedDate = DateFormat('dd/MM/yyyy').format(_currentDateTime);
+    String formattedTime = DateFormat('HH:mm').format(_currentDateTime);
 
     return Scaffold(
       // Keeping the light mint green background
@@ -100,7 +196,7 @@ class TreadmillSummary extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: onBackToHome,
+          onPressed: widget.onBackToHome,
         ),
         actions: [
           // Share button
@@ -115,14 +211,15 @@ class TreadmillSummary extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => ShareScreen(
-                    distance: distance,
-                    formattedDuration: formattedDuration,
-                    formattedPace: formattedPace,
-                    calories: calories,
-                    steps: steps,
+                    distance: widget.distance,
+                    formattedDuration: widget.formattedDuration,
+                    formattedPace: widget.formattedPace,
+                    calories: widget.calories,
+                    steps: widget.steps,
                     activityType: 'Treadmill',
                     workoutDate: DateTime.now(),
-                    userName: 'Yesaya',
+                    userName: _userName,
+                    profileImageUrl: _profileImageUrl,
                   ),
                 ),
               );
@@ -147,7 +244,7 @@ class TreadmillSummary extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
               ),
-              
+
               // Tervist | Treadmill text
               Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
@@ -159,7 +256,7 @@ class TreadmillSummary extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Primary workout stats card - set to pure white (#FFFFFF)
               Card(
                 margin: const EdgeInsets.only(bottom: 16.0),
@@ -203,36 +300,87 @@ class TreadmillSummary extends StatelessWidget {
                               ),
                             ],
                           ),
-                          
-                          // User info with profile image
+
+                          // User info with profile image - updated to use cached network image
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                margin: const EdgeInsets.only(bottom: 4),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.grey[300]!,
-                                    width: 2,
-                                  ),
-                                  image: const DecorationImage(
-                                    image: AssetImage('assets/images/profile.png'),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
+                              _isLoading
+                                  ? Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.grey[300]!,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                widget.primaryGreen),
+                                      ),
+                                    )
+                                  : Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.grey[300]!,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: _profileImageUrl != null
+                                            ? CachedNetworkImage(
+                                                imageUrl: _profileImageUrl!,
+                                                fit: BoxFit.cover,
+                                                placeholder: (context, url) =>
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                              Color>(
+                                                          widget.primaryGreen),
+                                                ),
+                                                errorWidget:
+                                                    (context, url, error) =>
+                                                        Image.asset(
+                                                  'assets/images/profile.png',
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              )
+                                            : Image.asset(
+                                                'assets/images/profile.png',
+                                                fit: BoxFit.cover,
+                                              ),
+                                      ),
+                                    ),
+                              const SizedBox(height: 4),
+                              _isLoading
+                                  ? SizedBox(
+                                      width: 50,
+                                      height: 10,
+                                      child: LinearProgressIndicator(
+                                        backgroundColor: Colors.grey[200],
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                widget.primaryGreen),
+                                      ),
+                                    )
+                                  : Text(
+                                      _userName,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
                               Text(
-                                'Yesaya',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                formattedDate,
+                                '$formattedDate $formattedTime',
                                 style: GoogleFonts.poppins(
                                   fontSize: 11,
                                   color: Colors.grey,
@@ -242,9 +390,9 @@ class TreadmillSummary extends StatelessWidget {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Time and Pace
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -254,7 +402,7 @@ class TreadmillSummary extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                formattedDuration,
+                                widget.formattedDuration,
                                 style: GoogleFonts.poppins(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w600,
@@ -269,13 +417,13 @@ class TreadmillSummary extends StatelessWidget {
                               ),
                             ],
                           ),
-                          
+
                           // Pace column
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                formattedPace,
+                                widget.formattedPace,
                                 style: GoogleFonts.poppins(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w600,
@@ -296,7 +444,7 @@ class TreadmillSummary extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Two-column layout for Calories and Steps
               Row(
                 children: [
@@ -342,7 +490,7 @@ class TreadmillSummary extends StatelessWidget {
                             Row(
                               children: [
                                 Text(
-                                  '$calories',
+                                  '${widget.calories}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 28,
                                     fontWeight: FontWeight.bold,
@@ -364,7 +512,7 @@ class TreadmillSummary extends StatelessWidget {
                       ),
                     ),
                   ),
-                  
+
                   // Steps card - set to pure white (#FFFFFF)
                   Expanded(
                     child: Card(
@@ -419,7 +567,7 @@ class TreadmillSummary extends StatelessWidget {
                   ),
                 ],
               ),
-              
+
               // Performance chart - set to pure white (#FFFFFF)
               Card(
                 elevation: 2,
@@ -449,7 +597,7 @@ class TreadmillSummary extends StatelessWidget {
                           ),
                         ),
                       ),
-                      
+
                       // Pace indicator at bottom right - UPDATED to match image
                       Container(
                         alignment: Alignment.bottomRight,
@@ -459,7 +607,7 @@ class TreadmillSummary extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             // Running icon
-                            Container(
+                            SizedBox(
                               width: 24,
                               height: 24,
                               child: const Icon(
@@ -489,41 +637,6 @@ class TreadmillSummary extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  // Helper method to build bar with label
-  Widget _buildBarWithLabel(String timeLabel, String kmLabel, double height) {
-    return Column(
-      children: [
-        // Time label at top
-        Text(
-          timeLabel,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            color: Colors.grey,
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Bar
-        Container(
-          width: 20,
-          height: height * 0.7, // Scale height
-          decoration: BoxDecoration(
-            color: primaryGreen,
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Km label at bottom
-        Text(
-          kmLabel,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-      ],
     );
   }
 }

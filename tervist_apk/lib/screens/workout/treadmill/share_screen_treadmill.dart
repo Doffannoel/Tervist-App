@@ -7,6 +7,7 @@ import 'dart:math'; // Added for Random
 import 'package:path_provider/path_provider.dart';
 // import 'package:share_plus/share_plus.dart';
 import '../screenshot_helper.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // Import for cached network images
 
 class ShareScreen extends StatefulWidget {
   final double distance;
@@ -17,6 +18,7 @@ class ShareScreen extends StatefulWidget {
   final String activityType; // 'Treadmill' or 'Outdoor Running' or 'Walking'
   final DateTime workoutDate;
   final String userName;
+  final String? profileImageUrl; // Add profileImageUrl parameter
 
   const ShareScreen({
     Key? key,
@@ -28,6 +30,7 @@ class ShareScreen extends StatefulWidget {
     required this.activityType,
     required this.workoutDate,
     required this.userName,
+    this.profileImageUrl, // Make it optional
   }) : super(key: key);
 
   @override
@@ -39,14 +42,14 @@ class _ShareScreenState extends State<ShareScreen> {
   final GlobalKey _screenshotKey = GlobalKey();
   bool _isSaving = false;
   int _randomBackgroundIndex = 0;
-  
+
   // List of background images for custom template
   final List<String> _backgroundOptions = [
     'assets/images/workoutsummary1.jpeg',
     'assets/images/workoutsummary2.jpeg',
     'assets/images/workoutsummary3.jpeg',
   ];
-  
+
   // List of gradients to use over the backgrounds
   final List<LinearGradient> _gradientOptions = [
     LinearGradient(
@@ -74,20 +77,20 @@ class _ShareScreenState extends State<ShareScreen> {
       ],
     ),
   ];
-  
+
   // List of motivational phrases
   final List<String> _motivationalPhrases = [
     'Make exercise\nyour busyness',
     'Stronger\nevery day',
     'Pushing\nlimits',
   ];
-  
+
   @override
   void initState() {
     super.initState();
     _randomizeBackground();
   }
-  
+
   // Function to select a random background
   void _randomizeBackground() {
     setState(() {
@@ -119,9 +122,9 @@ class _ShareScreenState extends State<ShareScreen> {
 
   // Helper method to create metrics with icons
   Widget _buildMetricWithIcon(
-    IconData icon, 
-    String label, 
-    String value, 
+    IconData icon,
+    String label,
+    String value,
     Color color,
   ) {
     return Row(
@@ -192,19 +195,25 @@ class _ShareScreenState extends State<ShareScreen> {
                     });
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isDefaultTemplate ? Colors.white : Colors.transparent,
+                      color:
+                          isDefaultTemplate ? Colors.white : Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isDefaultTemplate ? Colors.grey[300]! : Colors.transparent,
+                        color: isDefaultTemplate
+                            ? Colors.grey[300]!
+                            : Colors.transparent,
                       ),
                     ),
                     child: Text(
                       'Default',
                       style: GoogleFonts.poppins(
                         color: Colors.black,
-                        fontWeight: isDefaultTemplate ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: isDefaultTemplate
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -220,19 +229,26 @@ class _ShareScreenState extends State<ShareScreen> {
                     });
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
-                      color: !isDefaultTemplate ? Colors.white : Colors.transparent,
+                      color: !isDefaultTemplate
+                          ? Colors.white
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: !isDefaultTemplate ? Colors.grey[300]! : Colors.transparent,
+                        color: !isDefaultTemplate
+                            ? Colors.grey[300]!
+                            : Colors.transparent,
                       ),
                     ),
                     child: Text(
                       'Custom',
                       style: GoogleFonts.poppins(
                         color: Colors.black,
-                        fontWeight: !isDefaultTemplate ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: !isDefaultTemplate
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -240,20 +256,20 @@ class _ShareScreenState extends State<ShareScreen> {
               ],
             ),
           ),
-          
+
           // Preview area
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: RepaintBoundary(
                 key: _screenshotKey,
-                child: isDefaultTemplate 
-                    ? _buildDefaultTemplate() 
+                child: isDefaultTemplate
+                    ? _buildDefaultTemplate()
                     : _buildCustomTemplate(),
               ),
             ),
           ),
-          
+
           // Bottom actions
           Padding(
             padding: const EdgeInsets.all(24.0),
@@ -351,9 +367,9 @@ class _ShareScreenState extends State<ShareScreen> {
               height: 200,
               width: 200,
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Workout Summary Card
             Container(
               width: 300,
@@ -386,17 +402,61 @@ class _ShareScreenState extends State<ShareScreen> {
                           color: Colors.grey[700],
                         ),
                       ),
-                      // Placeholder for user profile - you may want to replace with actual user avatar
-                      CircleAvatar(
-                        radius: 15,
-                        backgroundColor: Colors.grey[300],
-                        child: Icon(Icons.person, color: Colors.grey[600], size: 20),
-                      ),
+                      // User profile with network image support
+                      widget.profileImageUrl != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: CachedNetworkImage(
+                                imageUrl: widget.profileImageUrl!,
+                                width: 30,
+                                height: 30,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => CircleAvatar(
+                                  radius: 15,
+                                  backgroundColor: Colors.grey[300],
+                                  child: const SizedBox(
+                                    width: 15,
+                                    height: 15,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) =>
+                                    CircleAvatar(
+                                  radius: 15,
+                                  backgroundColor: Colors.grey[300],
+                                  child: Icon(Icons.person,
+                                      color: Colors.grey[600], size: 20),
+                                ),
+                              ),
+                            )
+                          : CircleAvatar(
+                              radius: 15,
+                              backgroundColor: Colors.grey[300],
+                              child: Icon(Icons.person,
+                                  color: Colors.grey[600], size: 20),
+                            ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
+                  // Username
+                  Center(
+                    child: Text(
+                      widget.userName,
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
                   // Distance
                   Center(
                     child: Text(
@@ -407,9 +467,9 @@ class _ShareScreenState extends State<ShareScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Time and Pace Row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -418,27 +478,27 @@ class _ShareScreenState extends State<ShareScreen> {
                       _buildMetricColumn('Pace', widget.formattedPace),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Divider
                   Divider(color: Colors.grey.shade300),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Calories and Steps Row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildMetricWithIcon(
-                        Icons.local_fire_department, 
-                        'Calories', 
+                        Icons.local_fire_department,
+                        'Calories',
                         '${widget.calories} kcal',
                         Colors.orange,
                       ),
                       _buildMetricWithIcon(
-                        Icons.directions_walk, 
-                        'Steps', 
+                        Icons.directions_walk,
+                        'Steps',
                         '${widget.steps}',
                         Colors.blue,
                       ),
@@ -475,7 +535,7 @@ class _ShareScreenState extends State<ShareScreen> {
               gradient: gradient,
             ),
           ),
-          
+
           // Content
           Padding(
             padding: const EdgeInsets.all(20.0),
@@ -483,15 +543,72 @@ class _ShareScreenState extends State<ShareScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Date at top
-                Text(
-                  '${widget.workoutDate.day}/${widget.workoutDate.month}/${widget.workoutDate.year}',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                // Top row with date and user profile
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Date at top
+                    Text(
+                      '${widget.workoutDate.day}/${widget.workoutDate.month}/${widget.workoutDate.year}',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+
+                    // User profile and name
+                    Row(
+                      children: [
+                        widget.profileImageUrl != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(15),
+                                child: CachedNetworkImage(
+                                  imageUrl: widget.profileImageUrl!,
+                                  width: 30,
+                                  height: 30,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => CircleAvatar(
+                                    radius: 15,
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.2),
+                                    child: const SizedBox(
+                                      width: 15,
+                                      height: 15,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      CircleAvatar(
+                                    radius: 15,
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.2),
+                                    child: Icon(Icons.person,
+                                        color: Colors.white, size: 20),
+                                  ),
+                                ),
+                              )
+                            : CircleAvatar(
+                                radius: 15,
+                                backgroundColor: Colors.white.withOpacity(0.2),
+                                child: Icon(Icons.person,
+                                    color: Colors.white, size: 20),
+                              ),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.userName,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                
+
                 // Center content - Motivational text
                 Center(
                   child: Text(
@@ -504,7 +621,7 @@ class _ShareScreenState extends State<ShareScreen> {
                     ),
                   ),
                 ),
-                
+
                 // Bottom area with activity info and logo
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,7 +636,7 @@ class _ShareScreenState extends State<ShareScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    
+
                     // Tervist logo
                     Row(
                       children: [
@@ -557,7 +674,8 @@ class _ShareScreenState extends State<ShareScreen> {
       });
 
       // Capture screenshot
-      final imageBytes = await ScreenshotHelper.captureFromWidget(_screenshotKey);
+      final imageBytes =
+          await ScreenshotHelper.captureFromWidget(_screenshotKey);
       if (imageBytes == null) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -572,7 +690,7 @@ class _ShareScreenState extends State<ShareScreen> {
 
       // Save to Downloads folder (should appear in gallery)
       final savedFile = await ScreenshotHelper.saveToDownloads(imageBytes);
-      
+
       if (context.mounted) {
         if (savedFile != null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -582,7 +700,8 @@ class _ShareScreenState extends State<ShareScreen> {
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
               content: Text('Gagal menyimpan gambar ke galeri'),
               backgroundColor: Colors.red,
             ),
@@ -613,7 +732,8 @@ class _ShareScreenState extends State<ShareScreen> {
       });
 
       // Capture screenshot
-      final imageBytes = await ScreenshotHelper.captureFromWidget(_screenshotKey);
+      final imageBytes =
+          await ScreenshotHelper.captureFromWidget(_screenshotKey);
       if (imageBytes == null) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -641,11 +761,9 @@ class _ShareScreenState extends State<ShareScreen> {
       }
 
       // Share file
-      final shared = await ScreenshotHelper.shareImage(
-        file, 
-        message: 'Check out my ${widget.activityType} workout with Tervist!'
-      );
-      
+      final shared = await ScreenshotHelper.shareImage(file,
+          message: 'Check out my ${widget.activityType} workout with Tervist!');
+
       if (!shared && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Gagal membagikan gambar')),

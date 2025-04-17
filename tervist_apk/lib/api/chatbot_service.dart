@@ -10,7 +10,7 @@ class ChatbotService {
     List<Map<String, String>> history,
   ) async {
     const apiKey =
-        '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';
+        'API KEY DI SINI';
 
     final messages = [
       {

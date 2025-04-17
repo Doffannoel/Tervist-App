@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tervist_apk/screens/workout/cycling/cycling_service.dart';
 import 'dart:math' as math;
 import '../follow_me_button.dart';
 import 'share_screen_cycling.dart';
 import '../pace_statistics_widget.dart'; // Import widget pace statistics
 import '../pace_data_processor.dart'; // Import the data processor
+import '/api/auth_helper.dart'; // Import for user data
+import 'package:cached_network_image/cached_network_image.dart'; // Import for cached network images
+import 'package:intl/intl.dart'; // For date formatting
 
 class CyclingSummary extends StatefulWidget {
   final double distance;
@@ -43,6 +47,48 @@ class CyclingSummary extends StatefulWidget {
 class _CyclingSummaryState extends State<CyclingSummary> {
   final MapController _mapController = MapController();
   bool _isFollowingUser = true; // Default state for the follow button
+  final CyclingService _cyclingService =
+      CyclingService(); // Add cycling service
+  String _userName = "User"; // Default username
+  String? _profileImageUrl; // Profile image URL
+  bool _isLoading = true; // Loading state
+  final DateTime _currentDateTime = DateTime.now(); // Current date and time
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  // Load user profile data
+  Future<void> _loadUserProfile() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Get user profile from service
+      final userProfile = await _cyclingService.getUserProfile();
+
+      if (userProfile['username'] != null) {
+        setState(() {
+          _userName = userProfile['username']!;
+        });
+      }
+
+      if (userProfile['profileImageUrl'] != null) {
+        setState(() {
+          _profileImageUrl = userProfile['profileImageUrl'];
+        });
+      }
+    } catch (e) {
+      print('Error loading user profile: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   LatLng _calculateMapCenter() {
     if (widget.routePoints.isEmpty) {
@@ -77,6 +123,10 @@ class _CyclingSummaryState extends State<CyclingSummary> {
 
   @override
   Widget build(BuildContext context) {
+    // Format date and time
+    String formattedDate = DateFormat('dd/MM/yyyy').format(_currentDateTime);
+    String formattedTime = DateFormat('HH:mm').format(_currentDateTime);
+
     // Ekstrak data pace untuk widget PaceStatistics
     List<Map<String, dynamic>> paceData;
 
@@ -216,8 +266,6 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                     ),
                   ),
 
-                  // Primary workout stats card
-                  
                   // Primary workout stats card - set to pure white (#FFFFFF)
                   Card(
                     margin: const EdgeInsets.only(bottom: 16.0),
@@ -262,36 +310,89 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                                 ],
                               ),
 
-                              // User info with profile image
+                              // User info with profile image - updated to use cached network image
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    margin: const EdgeInsets.only(bottom: 4),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.grey[300]!,
-                                        width: 2,
-                                      ),
-                                      image: const DecorationImage(
-                                        image: AssetImage(
-                                            'assets/images/profile.png'),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
+                                  _isLoading
+                                      ? Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.grey[300]!,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    widget.primaryGreen),
+                                          ),
+                                        )
+                                      : Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.grey[300]!,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            child: _profileImageUrl != null
+                                                ? CachedNetworkImage(
+                                                    imageUrl: _profileImageUrl!,
+                                                    fit: BoxFit.cover,
+                                                    placeholder: (context,
+                                                            url) =>
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                                  Color>(
+                                                              widget
+                                                                  .primaryGreen),
+                                                    ),
+                                                    errorWidget:
+                                                        (context, url, error) =>
+                                                            Image.asset(
+                                                      'assets/images/profile.png',
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                  )
+                                                : Image.asset(
+                                                    'assets/images/profile.png',
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                          ),
+                                        ),
+                                  const SizedBox(height: 4),
+                                  _isLoading
+                                      ? SizedBox(
+                                          width: 50,
+                                          height: 10,
+                                          child: LinearProgressIndicator(
+                                            backgroundColor: Colors.grey[200],
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    widget.primaryGreen),
+                                          ),
+                                        )
+                                      : Text(
+                                          _userName,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
                                   Text(
-                                    'Yesaya',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateTime.now().hour}:${DateTime.now().minute}',
+                                    '$formattedDate $formattedTime',
                                     style: GoogleFonts.poppins(
                                       fontSize: 11,
                                       color: Colors.grey,
@@ -424,8 +525,6 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                         ),
                       ),
 
-                      // Steps card
-                      
                       // Steps card - set to pure white (#FFFFFF)
                       Expanded(
                         child: Card(
@@ -533,7 +632,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                   ),
                 ),
 
-                // Share button
+                // Share button - updated to pass profile data
                 InkWell(
                   onTap: () {
                     Navigator.push(
@@ -546,8 +645,12 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                           calories: widget.calories,
                           steps: widget.steps,
                           activityType: 'Outdoor cycling',
-                          workoutDate: DateTime.now(),
-                          userName: 'Yesaya',
+                          workoutDate: _currentDateTime,
+                          userName: _userName,
+                          routePoints: widget.routePoints,
+                          polylines: widget.polylines,
+                          markers: widget.markers,
+                          profileImageUrl: _profileImageUrl,
                         ),
                       ),
                     );

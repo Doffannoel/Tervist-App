@@ -27,7 +27,7 @@ class CyclingService {
         },
         body: jsonEncode({
           'date': date.toIso8601String().split('T')[0],
-          'duration': durationSeconds, // Kirim durasi dalam detik
+          'duration': durationSeconds,
           'distance_km': distanceKm,
           'avg_speed_kmh': avgSpeedKmh,
           'max_speed_kmh': maxSpeedKmh,
@@ -48,7 +48,6 @@ class CyclingService {
     }
   }
 
-  // Method untuk mengambil statistik cycling
   Future<Map<String, dynamic>> getCyclingStats() async {
     try {
       final token = await AuthHelper.getToken();
@@ -73,5 +72,120 @@ class CyclingService {
       print('Error fetching cycling stats: $e');
       rethrow;
     }
+  }
+
+  Future<String?> getUserName() async {
+    try {
+      String? cachedName = await AuthHelper.getUserName();
+      if (cachedName != null && cachedName.isNotEmpty) {
+        return cachedName;
+      }
+
+      final token = await AuthHelper.getToken();
+      if (token == null) {
+        print('No authentication token found');
+        return null;
+      }
+
+      final response = await http.get(
+        ApiConfig.profile,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final username = data['username'];
+
+        if (username != null) {
+          await AuthHelper.saveUserName(username);
+        }
+
+        return username;
+      } else {
+        print('Failed to fetch profile: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching username: $e');
+      return null;
+    }
+  }
+
+  Future<String?> getProfileImageUrl() async {
+    try {
+      String? cachedImageUrl = await AuthHelper.getProfilePicture();
+      if (cachedImageUrl != null && cachedImageUrl.isNotEmpty) {
+        return cachedImageUrl;
+      }
+
+      final token = await AuthHelper.getToken();
+      if (token == null) {
+        print('No authentication token found');
+        return null;
+      }
+
+      final response = await http.get(
+        ApiConfig.profile,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final profileImageUrl = data['profile_picture'];
+
+        if (profileImageUrl != null) {
+          await AuthHelper.saveProfilePicture(profileImageUrl);
+        }
+
+        return profileImageUrl;
+      } else {
+        print('Failed to fetch profile: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching profile image URL: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, String?>> getUserProfile() async {
+    String? cachedName = await AuthHelper.getUserName();
+    String? cachedProfilePic = await AuthHelper.getProfilePicture();
+
+    if (cachedName != null && cachedProfilePic != null) {
+      return {'username': cachedName, 'profileImageUrl': cachedProfilePic};
+    }
+
+    try {
+      final token = await AuthHelper.getToken();
+      if (token == null) {
+        return {'username': cachedName, 'profileImageUrl': cachedProfilePic};
+      }
+
+      final response = await http.get(
+        ApiConfig.profile,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final username = data['username'];
+        final profileImageUrl = data['profile_picture'];
+
+        if (username != null) {
+          await AuthHelper.saveUserName(username);
+        }
+
+        if (profileImageUrl != null) {
+          await AuthHelper.saveProfilePicture(profileImageUrl);
+        }
+
+        return {'username': username, 'profileImageUrl': profileImageUrl};
+      }
+    } catch (e) {
+      print('Error fetching user profile: $e');
+    }
+
+    return {'username': cachedName, 'profileImageUrl': cachedProfilePic};
   }
 }

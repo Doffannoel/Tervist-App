@@ -1,7 +1,7 @@
+import 'package:tervist_apk/api/api_config.dart';
+import 'package:tervist_apk/api/auth_helper.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'auth_helper.dart';
-import 'api_config.dart';
 
 class RunningService {
   Future<bool> saveRunningActivity({
@@ -47,5 +47,45 @@ class RunningService {
       return data['username'];
     }
     return null;
+  }
+
+  // New method to get both username and profile image in one call
+  Future<Map<String, String?>> getUserProfile() async {
+    // First check if we have cached values
+    String? cachedName = await AuthHelper.getUserName();
+    String? cachedProfilePic = await AuthHelper.getProfilePicture();
+
+    // If both values are cached, return them without API call
+    if (cachedName != null && cachedProfilePic != null) {
+      return {'username': cachedName, 'profileImageUrl': cachedProfilePic};
+    }
+
+    // Otherwise fetch from API
+    final token = await AuthHelper.getToken();
+    final response = await http.get(
+      ApiConfig.profile,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final username = data['username'];
+      final profileImageUrl =
+          data['profile_picture']; // Adjust field name to match your API
+
+      // Save to local storage for future use
+      if (username != null) {
+        AuthHelper.saveUserName(username);
+      }
+
+      if (profileImageUrl != null) {
+        AuthHelper.saveProfilePicture(profileImageUrl);
+      }
+
+      return {'username': username, 'profileImageUrl': profileImageUrl};
+    }
+
+    // Fallback to cached values if API call fails
+    return {'username': cachedName, 'profileImageUrl': cachedProfilePic};
   }
 }

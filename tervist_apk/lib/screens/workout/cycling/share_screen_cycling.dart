@@ -16,15 +16,16 @@ class ShareScreen extends StatefulWidget {
   final String formattedPace;
   final int calories;
   final int steps;
-  final String activityType; 
+  final String activityType;
   final DateTime workoutDate;
   final String userName;
   final List<LatLng> routePoints;
   final List<Marker> markers;
   final List<Polyline> polylines;
+  final String? profileImageUrl;
 
   const ShareScreen({
-    Key? key,
+    super.key,
     required this.distance,
     required this.formattedDuration,
     required this.formattedPace,
@@ -36,7 +37,8 @@ class ShareScreen extends StatefulWidget {
     this.routePoints = const [],
     this.markers = const [],
     this.polylines = const [],
-  }) : super(key: key);
+    this.profileImageUrl, // Add this paramete
+  });
 
   @override
   State<ShareScreen> createState() => _ShareScreenState();
@@ -47,14 +49,14 @@ class _ShareScreenState extends State<ShareScreen> {
   final GlobalKey _screenshotKey = GlobalKey();
   bool _isSaving = false;
   int _randomBackgroundIndex = 0;
-  
+
   // List of background images for custom template
   final List<String> _backgroundOptions = [
     'assets/images/workoutsummary1.jpeg',
     'assets/images/workoutsummary2.jpeg',
     'assets/images/workoutsummary3.jpeg',
   ];
-  
+
   // List of gradients to use over the backgrounds
   final List<LinearGradient> _gradientOptions = [
     LinearGradient(
@@ -82,27 +84,27 @@ class _ShareScreenState extends State<ShareScreen> {
       ],
     ),
   ];
-  
+
   // List of motivational phrases
   final List<String> _motivationalPhrases = [
     'Make exercise\nyour busyness',
     'Stronger\nevery day',
     'Pushing\nlimits',
   ];
-  
+
   @override
   void initState() {
     super.initState();
     _randomizeBackground();
   }
-  
+
   // Function to select a random background
   void _randomizeBackground() {
     setState(() {
       _randomBackgroundIndex = Random().nextInt(_backgroundOptions.length);
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -156,25 +158,30 @@ class _ShareScreenState extends State<ShareScreen> {
                         });
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 12),
                         decoration: BoxDecoration(
-                          color: isDefaultTemplate ? Colors.white : Colors.transparent,
+                          color: isDefaultTemplate
+                              ? Colors.white
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(30),
-                          boxShadow: isDefaultTemplate 
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : null,
+                          boxShadow: isDefaultTemplate
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Text(
                           'Default',
                           style: GoogleFonts.poppins(
                             color: Colors.black,
-                            fontWeight: isDefaultTemplate ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: isDefaultTemplate
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -188,25 +195,30 @@ class _ShareScreenState extends State<ShareScreen> {
                         });
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 12),
                         decoration: BoxDecoration(
-                          color: !isDefaultTemplate ? Colors.white : Colors.transparent,
+                          color: !isDefaultTemplate
+                              ? Colors.white
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(30),
-                          boxShadow: !isDefaultTemplate 
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ]
-                            : null,
+                          boxShadow: !isDefaultTemplate
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Text(
                           'Custom',
                           style: GoogleFonts.poppins(
                             color: Colors.black,
-                            fontWeight: !isDefaultTemplate ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: !isDefaultTemplate
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -216,19 +228,17 @@ class _ShareScreenState extends State<ShareScreen> {
               ),
             ),
           ),
-          
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: RepaintBoundary(
                 key: _screenshotKey,
-                child: isDefaultTemplate 
-                    ? _buildDefaultTemplate() 
+                child: isDefaultTemplate
+                    ? _buildDefaultTemplate()
                     : _buildCustomTemplate(),
               ),
             ),
           ),
-          
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24.0),
             child: Row(
@@ -265,7 +275,7 @@ class _ShareScreenState extends State<ShareScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(width: 80),  // Increased spacing between buttons
+                const SizedBox(width: 80), // Increased spacing between buttons
                 Column(
                   children: [
                     CircleAvatar(
@@ -303,34 +313,35 @@ class _ShareScreenState extends State<ShareScreen> {
   Widget _buildDefaultTemplate() {
     // Calculate map center
     LatLng mapCenter = _calculateMapCenter();
-    
+
     // Ensure we have valid polylines even if empty
-    final List<Polyline> displayPolylines = widget.polylines.isEmpty || widget.routePoints.isEmpty ? 
-      [
-        Polyline(
-          points: [LatLng(-7.767, 110.378)], // Use default point if empty
-          color: Colors.green,
-          strokeWidth: 4,
-        )
-      ] : 
-      widget.polylines;
-      
+    final List<Polyline> displayPolylines = widget.polylines.isEmpty ||
+            widget.routePoints.isEmpty
+        ? [
+            Polyline(
+              points: [LatLng(-7.767, 110.378)], // Use default point if empty
+              color: Colors.green,
+              strokeWidth: 4,
+            )
+          ]
+        : widget.polylines;
+
     // Ensure we have valid markers even if empty
-    final List<Marker> displayMarkers = widget.markers.isEmpty ? 
-      [
-        Marker(
-          point: LatLng(-7.767, 110.378),
-          width: 15,
-          height: 15,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
-            ),
-          ),
-        )
-      ] : 
-      widget.markers;
+    final List<Marker> displayMarkers = widget.markers.isEmpty
+        ? [
+            Marker(
+              point: LatLng(-7.767, 110.378),
+              width: 15,
+              height: 15,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            )
+          ]
+        : widget.markers;
 
     return Container(
       color: Colors.white,
@@ -353,7 +364,8 @@ class _ShareScreenState extends State<ShareScreen> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.example.running_app',
                     ),
                     PolylineLayer(
@@ -364,7 +376,7 @@ class _ShareScreenState extends State<ShareScreen> {
                     ),
                   ],
                 ),
-                
+
                 // Tervist logo overlay at top left
                 Positioned(
                   top: 16,
@@ -391,12 +403,13 @@ class _ShareScreenState extends State<ShareScreen> {
               ],
             ),
           ),
-          
+
           // Bottom card with workout details
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -442,7 +455,11 @@ class _ShareScreenState extends State<ShareScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 24,
-                                backgroundImage: const AssetImage('assets/images/profile.png'),
+                                backgroundImage: widget.profileImageUrl != null
+                                    ? NetworkImage(widget.profileImageUrl!)
+                                    : const AssetImage(
+                                            'assets/images/profile.png')
+                                        as ImageProvider,
                                 backgroundColor: Colors.grey[300],
                               ),
                               const SizedBox(height: 4),
@@ -465,16 +482,16 @@ class _ShareScreenState extends State<ShareScreen> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Distance with km unit - large display
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            '${widget.distance.toStringAsFixed(2)}',
+                            widget.distance.toStringAsFixed(2),
                             style: GoogleFonts.poppins(
                               fontSize: 64,
                               fontWeight: FontWeight.bold,
@@ -498,7 +515,7 @@ class _ShareScreenState extends State<ShareScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Time and Pace row
                 Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -527,14 +544,14 @@ class _ShareScreenState extends State<ShareScreen> {
                           ],
                         ),
                       ),
-                      
+
                       // Vertical divider
                       Container(
                         height: 40,
                         width: 1,
                         color: Colors.grey.withOpacity(0.3),
                       ),
-                      
+
                       // Pace column - right side
                       Expanded(
                         child: Padding(
@@ -564,145 +581,147 @@ class _ShareScreenState extends State<ShareScreen> {
                     ],
                   ),
                 ),
-                  
-                  // Calories and Max speed containers
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Calories container
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 8.0),
-                          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Image.asset(
-                                    'assets/images/fireicon.png',
-                                    width: 20,
-                                    height: 20,
+
+                // Calories and Max speed containers
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Calories container
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8.0),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16.0, horizontal: 20.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Image.asset(
+                                  'assets/images/fireon.png',
+                                  width: 20,
+                                  height: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Calories Burned',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[600],
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Calories Burned',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey[600],
-                                    ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  '${widget.calories}',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange[400],
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    '${widget.calories}',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.orange[400],
-                                    ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Kcal',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: Colors.grey,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Kcal',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      
-                      // Max speed container
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.only(left: 8.0),
-                          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Image.asset(
-                                    'assets/images/stepicon.png',
-                                    width: 20,
-                                    height: 20,
+                    ),
+
+                    // Max speed container
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 8.0),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16.0, horizontal: 20.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Image.asset(
+                                  'assets/images/stepicon.png',
+                                  width: 20,
+                                  height: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Max speed',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[600],
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Max speed',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey[600],
-                                    ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Text(
+                                  '${_calculateMaxSpeed()}',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue[400],
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    '${_calculateMaxSpeed()}',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue[400],
-                                    ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Km/h',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: Colors.grey,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Km/h',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
+          ),
         ],
       ),
     );
@@ -713,7 +732,7 @@ class _ShareScreenState extends State<ShareScreen> {
     final backgroundImage = _backgroundOptions[_randomBackgroundIndex];
     final gradient = _gradientOptions[_randomBackgroundIndex];
     final motivationalPhrase = _motivationalPhrases[_randomBackgroundIndex];
-    
+
     // Modern design with background image (no map option)
     return Container(
       color: Colors.white,
@@ -728,14 +747,14 @@ class _ShareScreenState extends State<ShareScreen> {
               ),
             ),
           ),
-          
+
           // Overlay gradient to make text readable
           Container(
             decoration: BoxDecoration(
               gradient: gradient,
             ),
           ),
-          
+
           // Content overlay
           Padding(
             padding: const EdgeInsets.all(20.0),
@@ -761,8 +780,11 @@ class _ShareScreenState extends State<ShareScreen> {
                       children: [
                         CircleAvatar(
                           radius: 14,
-                          backgroundImage: const AssetImage('assets/images/profile.png'),
-                          backgroundColor: Colors.white.withOpacity(0.2),
+                          backgroundImage: widget.profileImageUrl != null
+                              ? NetworkImage(widget.profileImageUrl!)
+                              : const AssetImage('assets/images/profile.png')
+                                  as ImageProvider,
+                          backgroundColor: Colors.grey[300],
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -777,7 +799,7 @@ class _ShareScreenState extends State<ShareScreen> {
                     ),
                   ],
                 ),
-                
+
                 // Center content - Motivational text
                 Center(
                   child: Column(
@@ -794,7 +816,7 @@ class _ShareScreenState extends State<ShareScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Bottom area with activity info and logo
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -843,15 +865,15 @@ class _ShareScreenState extends State<ShareScreen> {
     if (widget.routePoints.isEmpty) {
       return const LatLng(-7.767, 110.378); // Default center (Yogyakarta)
     }
-    
+
     double latSum = 0;
     double lngSum = 0;
-    
+
     for (var point in widget.routePoints) {
       latSum += point.latitude;
       lngSum += point.longitude;
     }
-    
+
     return LatLng(
       latSum / widget.routePoints.length,
       lngSum / widget.routePoints.length,
@@ -868,16 +890,16 @@ class _ShareScreenState extends State<ShareScreen> {
     // Extract hours, minutes, seconds from formatted duration
     List<String> timeParts = widget.formattedDuration.split(':');
     double hours = 0;
-    
+
     if (timeParts.length == 3) {
-      hours = double.parse(timeParts[0]) + 
-             (double.parse(timeParts[1]) / 60) + 
-             (double.parse(timeParts[2]) / 3600);
+      hours = double.parse(timeParts[0]) +
+          (double.parse(timeParts[1]) / 60) +
+          (double.parse(timeParts[2]) / 3600);
     }
-    
+
     // Avoid division by zero
     if (hours == 0) return 0;
-    
+
     // Calculate speed in km/h
     double speed = widget.distance / hours;
     return speed.round();
@@ -898,7 +920,8 @@ class _ShareScreenState extends State<ShareScreen> {
       });
 
       // Capture screenshot
-      final imageBytes = await ScreenshotHelper.captureFromWidget(_screenshotKey);
+      final imageBytes =
+          await ScreenshotHelper.captureFromWidget(_screenshotKey);
       if (imageBytes == null) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -913,7 +936,7 @@ class _ShareScreenState extends State<ShareScreen> {
 
       // Save to Downloads folder (should appear in gallery)
       final savedFile = await ScreenshotHelper.saveToDownloads(imageBytes);
-      
+
       if (context.mounted) {
         if (savedFile != null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -923,7 +946,8 @@ class _ShareScreenState extends State<ShareScreen> {
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
               content: Text('Gagal menyimpan gambar ke galeri'),
               backgroundColor: Colors.red,
             ),
@@ -954,7 +978,8 @@ class _ShareScreenState extends State<ShareScreen> {
       });
 
       // Capture screenshot
-      final imageBytes = await ScreenshotHelper.captureFromWidget(_screenshotKey);
+      final imageBytes =
+          await ScreenshotHelper.captureFromWidget(_screenshotKey);
       if (imageBytes == null) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -982,11 +1007,9 @@ class _ShareScreenState extends State<ShareScreen> {
       }
 
       // Share file
-      final shared = await ScreenshotHelper.shareImage(
-        file, 
-        message: 'Check out my ${widget.activityType} workout with Tervist!'
-      );
-      
+      final shared = await ScreenshotHelper.shareImage(file,
+          message: 'Check out my ${widget.activityType} workout with Tervist!');
+
       if (!shared && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Gagal membagikan gambar')),

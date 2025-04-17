@@ -5,8 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import '../follow_me_button.dart';
 import '../share_screen.dart';
+import '/api/auth_helper.dart'; // Import for user data
+import 'package:intl/intl.dart'; // Import for date formatting
 import '../pace_statistics_widget.dart'; // Import widget pace statistics
 import '../pace_data_processor.dart'; // Import the data processor
+import 'package:cached_network_image/cached_network_image.dart'; // Import for cached network images
 
 class WalkingSummary extends StatefulWidget {
   final double distance;
@@ -20,6 +23,7 @@ class WalkingSummary extends StatefulWidget {
   final Color primaryGreen;
   final VoidCallback onBackToHome;
   final Duration duration;
+  final String userName; // Add username parameter
 
   const WalkingSummary({
     super.key,
@@ -34,6 +38,7 @@ class WalkingSummary extends StatefulWidget {
     required this.primaryGreen,
     required this.onBackToHome,
     required this.duration,
+    this.userName = "User", // Default to "User" if not provided
   });
 
   @override
@@ -43,6 +48,53 @@ class WalkingSummary extends StatefulWidget {
 class _WalkingSummaryState extends State<WalkingSummary> {
   final MapController _mapController = MapController();
   bool _isFollowingUser = true; // Default state for the follow button
+  String _userName = "User"; // Default username
+  final DateTime _currentDateTime = DateTime.now(); // Current date and time
+  bool _isLoading = true;
+  String? _profileImageUrl; // Add profile image URL
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  // Load user data if needed
+  Future<void> _loadUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // If username is provided in widget, use it
+      if (widget.userName.isNotEmpty && widget.userName != "User") {
+        setState(() {
+          _userName = widget.userName;
+        });
+      } else {
+        // Otherwise try to get it from AuthHelper
+        String? storedName = await AuthHelper.getUserName();
+        if (storedName != null && storedName.isNotEmpty) {
+          setState(() {
+            _userName = storedName;
+          });
+        }
+      }
+      // Get profile image URL from AuthHelper
+      String? imageUrl = await AuthHelper.getProfilePicture();
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        setState(() {
+          _profileImageUrl = imageUrl;
+        });
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   LatLng _calculateMapCenter() {
     if (widget.routePoints.isEmpty) {
@@ -77,6 +129,10 @@ class _WalkingSummaryState extends State<WalkingSummary> {
 
   @override
   Widget build(BuildContext context) {
+    // Format date and time
+    String formattedDate = DateFormat('dd/MM/yyyy').format(_currentDateTime);
+    String formattedTime = DateFormat('HH:mm').format(_currentDateTime);
+
     // Extract pace data for PaceStatistics
     List<Map<String, dynamic>> paceData;
 
@@ -215,7 +271,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                       ),
                     ),
                   ),
-                  
+
                   // Primary workout stats card - set to pure white (#FFFFFF)
                   Card(
                     margin: const EdgeInsets.only(bottom: 16.0),
@@ -260,36 +316,90 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                                 ],
                               ),
 
-                              // User info with profile image
+                              // User info with profile image - Updated to match RunningSummary
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    margin: const EdgeInsets.only(bottom: 4),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.grey[300]!,
-                                        width: 2,
-                                      ),
-                                      image: const DecorationImage(
-                                        image: AssetImage(
-                                            'assets/images/profile.png'),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
+                                  _isLoading
+                                      ? Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.grey[300]!,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              widget.primaryGreen,
+                                            ),
+                                          ),
+                                        )
+                                      : Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.grey[300]!,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: _profileImageUrl != null
+                                              ? ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                  child: CachedNetworkImage(
+                                                    imageUrl: _profileImageUrl!,
+                                                    fit: BoxFit.cover,
+                                                    placeholder: (context,
+                                                            url) =>
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                              Color>(
+                                                        widget.primaryGreen,
+                                                      ),
+                                                    ),
+                                                    errorWidget:
+                                                        (context, url, error) =>
+                                                            Image.asset(
+                                                      'assets/images/profile.png',
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                  ),
+                                                )
+                                              : Image.asset(
+                                                  'assets/images/profile.png',
+                                                  fit: BoxFit.cover,
+                                                ),
+                                        ),
+                                  const SizedBox(height: 4),
+                                  _isLoading
+                                      ? SizedBox(
+                                          width: 50,
+                                          height: 10,
+                                          child: LinearProgressIndicator(
+                                            backgroundColor: Colors.grey[200],
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    widget.primaryGreen),
+                                          ),
+                                        )
+                                      : Text(
+                                          _userName,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
                                   Text(
-                                    'Yesaya',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateTime.now().hour}:${DateTime.now().minute}',
+                                    '$formattedDate $formattedTime',
                                     style: GoogleFonts.poppins(
                                       fontSize: 11,
                                       color: Colors.grey,
@@ -421,7 +531,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                           ),
                         ),
                       ),
-                      
+
                       // Steps card - set to pure white (#FFFFFF)
                       Expanded(
                         child: Card(
@@ -476,7 +586,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                       ),
                     ],
                   ),
-                  
+
                   // REPLACED: Performance chart with PaceStatisticsWidget - wrapped in a Card with pure white background
                   Card(
                     elevation: 2,
@@ -498,7 +608,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
               ),
             ),
           ),
-          
+
           // Custom back and share buttons at the top - set to pure white (#FFFFFF)
           Positioned(
             top: 16,
@@ -527,7 +637,7 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                     child: const Icon(Icons.arrow_back, color: Colors.black),
                   ),
                 ),
-                
+
                 // Share button - set to pure white (#FFFFFF)
                 InkWell(
                   onTap: () {
@@ -541,11 +651,12 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                           calories: widget.calories,
                           steps: widget.steps,
                           activityType: 'Outdoor Walking',
-                          workoutDate: DateTime.now(),
-                          userName: 'Yesaya',
+                          workoutDate: _currentDateTime,
+                          userName: _userName,
                           routePoints: widget.routePoints,
                           polylines: widget.polylines,
                           markers: widget.markers,
+                          profileImageUrl: _profileImageUrl,
                         ),
                       ),
                     );

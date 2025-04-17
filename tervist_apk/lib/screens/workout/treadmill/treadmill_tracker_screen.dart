@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tervist_apk/screens/workout/treadmill/treadmill_service.dart';
 import 'treadmill_timestamp.dart';
 import 'treadmill_summary.dart';
 import '../workout_countdown.dart';
@@ -9,12 +10,11 @@ import 'package:flutter/scheduler.dart';
 import '../weather_service.dart';
 import '../workout_navbar.dart';
 
-
 class TreadmillTrackerScreen extends StatefulWidget {
   final Function(String)? onWorkoutTypeChanged;
 
   const TreadmillTrackerScreen({
-    super.key, 
+    super.key,
     this.onWorkoutTypeChanged,
   });
 
@@ -22,23 +22,32 @@ class TreadmillTrackerScreen extends StatefulWidget {
   State<TreadmillTrackerScreen> createState() => _TreadmillTrackerScreenState();
 }
 
-class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with SingleTickerProviderStateMixin {
+class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen>
+    with SingleTickerProviderStateMixin {
   int currentStep = 0; // 0: initial, 1: workout tracking, 2: summary
   bool isWorkoutActive = false;
   bool isPaused = false;
   Timer? _timer;
   Ticker? _ticker; // Ticker for more efficient updates
-  
+
   // Cache for UI updates to prevent rebuilds
   bool _needsUpdate = false;
-  
+
+  // User profile data
+  String _userName = "User";
+  String? _profileImageUrl;
+
+  // Service for retrieving user profile data
+  final TreadmillService _treadmillService = TreadmillService();
+
   // Workout metrics
   double distance = 0.0;
   Duration duration = const Duration(seconds: 0);
   int calories = 0;
   int steps = 0;
   int stepsPerMinute = 0;
-  List<double> performanceData = List.generate(7, (index) => math.Random().nextDouble() * 3 + 5);
+  List<double> performanceData =
+      List.generate(7, (index) => math.Random().nextDouble() * 3 + 5);
 
   final Color primaryGreen = const Color(0xFF4CB9A0);
 
@@ -53,6 +62,31 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
       }
     });
     _ticker?.start();
+
+    // Load user profile data
+    _loadUserProfile();
+  }
+
+  // Load user profile data
+  Future<void> _loadUserProfile() async {
+    try {
+      // Get user profile from service
+      final userProfile = await _treadmillService.getUserProfile();
+
+      if (userProfile['username'] != null) {
+        setState(() {
+          _userName = userProfile['username']!;
+        });
+      }
+
+      if (userProfile['profileImageUrl'] != null) {
+        setState(() {
+          _profileImageUrl = userProfile['profileImageUrl'];
+        });
+      }
+    } catch (e) {
+      print('Error loading user profile: $e');
+    }
   }
 
   @override
@@ -98,19 +132,21 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
       isPaused = false;
       currentStep = 2; // Move to summary screen
     });
+
+    // Removed the activity saving since it's not needed
   }
 
   void _startTimer() {
     _timer?.cancel();
-    
+
     // Use an isolate-like approach by spawning a single computation future
     Future.microtask(() {
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
         if (isPaused) return;
-        
+
         // Update values but don't trigger setState yet
         await _computeUpdatedMetrics();
-        
+
         // Signal the ticker that we need an update
         _needsUpdate = true;
       });
@@ -121,27 +157,27 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
   Future<void> _computeUpdatedMetrics() async {
     // Update duration - now 1 second at a time
     final newDuration = duration + const Duration(seconds: 1);
-    
+
     // Update steps - exactly 1 step per second
     final newStepsCount = steps + 1;
-    
+
     // Calculate distance based on steps (1300 steps = 1 km)
     final newDistance = newStepsCount / 1300;
-    
+
     // Calculate calories (using a simple approximation, adjusted for 1-second intervals)
     final caloriesPerSecond = 400.0 / 3600.0; // calories burned per second
     final newCalories = (newDuration.inSeconds * caloriesPerSecond).round();
-    
+
     // Update steps per minute - 60 steps per minute (1 per second)
     stepsPerMinute = 60;
-    
+
     // Apply updates all at once
     duration = newDuration;
     steps = newStepsCount;
     distance = newDistance;
     calories = newCalories;
   }
-  
+
   String get formattedDuration {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     String hours = twoDigits(duration.inHours);
@@ -156,15 +192,15 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
     if (distance <= 0) {
       return "0'00\""; // Default when no distance
     }
-    
+
     // Convert total duration to minutes and divide by distance
     double paceMinutes = duration.inMinutes + (duration.inSeconds % 60) / 60;
     double pacePerKm = paceMinutes / distance;
-    
+
     // Format pace as minutes and seconds
     int paceWholeMinutes = pacePerKm.floor();
     int paceSeconds = ((pacePerKm - paceWholeMinutes) * 60).round();
-    
+
     return "$paceWholeMinutes'${paceSeconds.toString().padLeft(2, '0')}\"";
   }
 
@@ -175,8 +211,6 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
       body: SafeArea(
         child: _buildCurrentStep(),
       ),
-      // Keep the bottom navigation bar consistent
-      
     );
   }
 
@@ -206,10 +240,11 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
           calories: calories,
           steps: steps,
           primaryGreen: primaryGreen,
+          userName: _userName, // Pass username to summary
           onBackToHome: () {
             setState(() {
               currentStep = 0; // Back to initial screen
-              
+
               // Reset workout metrics
               distance = 0.0;
               duration = const Duration(seconds: 0);
@@ -237,22 +272,43 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Hi, Noel!',
+                  'Hi, $_userName!',
                   style: GoogleFonts.poppins(
                     fontSize: 24,
                     fontWeight: FontWeight.w600,
                     color: Colors.black,
                   ),
                 ),
-                CircleAvatar(
-                  radius: 20,
-                  backgroundImage: const AssetImage('assets/images/profile.png'),
-                  backgroundColor: Colors.grey[300],
+                // Updated profile image to use network image when available
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.grey[300],
+                  ),
+                  child: _profileImageUrl != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Image.network(
+                            _profileImageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Image.asset(
+                              'assets/images/profile.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        )
+                      : Image.asset(
+                          'assets/images/profile.png',
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ],
             ),
           ),
-          
+
           // Distance and weather
           Padding(
             padding: const EdgeInsets.only(bottom: 10.0),
@@ -287,13 +343,13 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
                     ),
                   ],
                 ),
-                
+
                 // Weather information
                 const WeatherWidget(),
               ],
             ),
           ),
-          
+
           // Workout type selector - Pass the callback from the parent
           WorkoutNavbar(
             currentWorkoutType: 'Treadmill',
@@ -304,7 +360,7 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
               }
             },
           ),
-          
+
           // Phone placement info
           Padding(
             padding: const EdgeInsets.only(top: 8.0, bottom: 10.0),
@@ -325,12 +381,13 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
                     color: Colors.black,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.question_mark, color: Colors.white, size: 10),
+                  child: const Icon(Icons.question_mark,
+                      color: Colors.white, size: 10),
                 ),
               ],
             ),
           ),
-          
+
           // Treadmill image
           Expanded(
             child: Container(
@@ -346,7 +403,7 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
               ),
             ),
           ),
-          
+
           // GO button
           Center(
             child: Padding(
@@ -389,213 +446,213 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen> with Si
   }
 
   void _showBottomSheetPhonePosition(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) {
-      return Container(
-        height: MediaQuery.of(context).size.height * 0.6,
-        decoration: const BoxDecoration(
-          color: Color(0xFFF0F4F7),
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          decoration: const BoxDecoration(
+            color: Color(0xFFF0F4F7),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with back button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 5.0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with back button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 5.0),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.black,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        'Where should you put your phone?',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Recommended section
+              Padding(
+                padding: const EdgeInsets.fromLTRB(30.0, 20.0, 30.0, 0.0),
+                child: Text(
+                  'Recommended',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+
+              // Backpack option
+              Padding(
+                padding: const EdgeInsets.fromLTRB(30.0, 10.0, 30.0, 0.0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
                       decoration: const BoxDecoration(
-                        color: Colors.black,
+                        color: Color(0xFF4CB9A0), // Green circle
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 20,
-                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: Text(
-                      'Where should you put your phone?',
+                    const SizedBox(width: 12),
+                    Text(
+                      'Backpack',
                       style: GoogleFonts.poppins(
-                        fontSize: 16, // Reduced from 18
-                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                         color: Colors.black,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Recommended section
-            Padding(
-              padding: const EdgeInsets.fromLTRB(30.0, 20.0, 30.0, 0.0),
-              child: Text(
-                'Recommended',
-                style: GoogleFonts.poppins(
-                  fontSize: 16, // Reduced from 18
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
+                  ],
                 ),
               ),
-            ),
-            
-            // Backpack option
-            Padding(
-              padding: const EdgeInsets.fromLTRB(30.0, 10.0, 30.0, 0.0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF4CB9A0), // Green circle
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Backpack',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16, // Reduced from 18
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // In your hand option
-            Padding(
-              padding: const EdgeInsets.fromLTRB(30.0, 15.0, 30.0, 0.0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF4CB9A0), // Green circle
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'In your hand',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16, // Reduced from 18
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Don't section
-            Padding(
-              padding: const EdgeInsets.fromLTRB(30.0, 25.0, 30.0, 0.0),
-              child: Text(
-                'Don\'t',
-                style: GoogleFonts.poppins(
-                  fontSize: 16, // Reduced from 18
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-            
-            // Treadmill option (don't)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(30.0, 10.0, 30.0, 0.0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE74C3C), // Red circle
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Treadmill',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16, // Reduced from 18
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const Spacer(),
-            
-            // Got it button
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Center(
-                child: Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.symmetric(horizontal: 40.0),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      // Show countdown then start workout
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => WorkoutCountdown(
-                            onCountdownComplete: () {
-                              Navigator.of(context).pop();
-                              startWorkout();
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      elevation: 4,
-                      padding: const EdgeInsets.symmetric(vertical: 15.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+
+              // In your hand option
+              Padding(
+                padding: const EdgeInsets.fromLTRB(30.0, 15.0, 30.0, 0.0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF4CB9A0), // Green circle
+                        shape: BoxShape.circle,
                       ),
-                      shadowColor: Colors.black26,
                     ),
-                    child: Text(
-                      'Got it',
+                    const SizedBox(width: 12),
+                    Text(
+                      'In your hand',
                       style: GoogleFonts.poppins(
-                        fontSize: 18, // Reduced from 20
-                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Don't section
+              Padding(
+                padding: const EdgeInsets.fromLTRB(30.0, 25.0, 30.0, 0.0),
+                child: Text(
+                  'Don\'t',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+
+              // Treadmill option (don't)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(30.0, 10.0, 30.0, 0.0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE74C3C), // Red circle
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Treadmill',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Spacer(),
+
+              // Got it button
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Center(
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 40.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        // Show countdown then start workout
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => WorkoutCountdown(
+                              onCountdownComplete: () {
+                                Navigator.of(context).pop();
+                                startWorkout();
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        elevation: 4,
+                        padding: const EdgeInsets.symmetric(vertical: 15.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        shadowColor: Colors.black26,
+                      ),
+                      child: Text(
+                        'Got it',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

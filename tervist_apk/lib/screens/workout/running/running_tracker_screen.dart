@@ -778,7 +778,8 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
                         radius: 20,
                         backgroundImage: _profileImageUrl != null
                             ? NetworkImage(_profileImageUrl!)
-                            : const AssetImage('assets/images/profilepicture.png')
+                            : const AssetImage(
+                                    'assets/images/profilepicture.png')
                                 as ImageProvider,
                         backgroundColor: Colors.grey[300],
                       ),
