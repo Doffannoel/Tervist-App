@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../map_service.dart';
 import '../follow_me_button.dart'; // Import the follow me button
+import 'dart:async'; // ⬅️ ini yang dibutuhkan untuk StreamSubscription
 
 class RunningTimestamp extends StatefulWidget {
   final double distance;
@@ -46,12 +47,12 @@ class _RunningTimestampState extends State<RunningTimestamp> {
   List<Polyline> currentPolylines = [];
   LatLng? currentLocation;
   bool _isFollowingUser = true; // Start with follow mode enabled
-  
+
   // Toggle follow mode
   void _toggleFollowMode() {
     setState(() {
       _isFollowingUser = !_isFollowingUser;
-      
+
       // If enabling follow mode, immediately center on user
       if (_isFollowingUser && currentLocation != null) {
         _mapController.move(currentLocation!, _mapController.camera.zoom);
@@ -66,50 +67,50 @@ class _RunningTimestampState extends State<RunningTimestamp> {
     currentRoutePoints = List.from(widget.routePoints);
     currentMarkers = List.from(widget.markers);
     currentPolylines = List.from(widget.polylines);
-    
+
     // Set default location if routePoints is empty
     if (currentRoutePoints.isEmpty) {
       currentRoutePoints = [MapService.defaultCenter];
     }
-    
+
     if (currentLocation == null && currentRoutePoints.isNotEmpty) {
       currentLocation = currentRoutePoints.last;
     }
-    
+
     // Start listening to location updates
     _subscribeToLocationUpdates();
   }
-  
+
+  late StreamSubscription<LatLng> _locationSubscription;
+
   void _subscribeToLocationUpdates() {
-    MapService.getLiveLocationStream().listen((newLocation) {
-      // Update UI with the new location only if not paused
+    _locationSubscription =
+        MapService.getLiveLocationStream().listen((newLocation) {
+      if (!mounted) return;
+
       if (!widget.isPaused) {
         setState(() {
           currentLocation = newLocation;
-          
-          // Get updated map data
           final mapData = MapService.getCurrentMapData();
           currentRoutePoints = mapData.routePoints;
           currentMarkers = mapData.markers;
           currentPolylines = mapData.polylines;
-          
-          // Move map to current location only if follow mode is enabled
-          if (_isFollowingUser && _mapController.camera != null) {
+
+          if (_isFollowingUser) {
             _mapController.move(newLocation, _mapController.camera.zoom);
           }
         });
       } else {
-        // When paused, just update current location without adding to route
         setState(() {
           currentLocation = newLocation;
-          // Don't update route points, markers, or polylines
         });
       }
     });
   }
-  
+
   @override
   void dispose() {
+    _locationSubscription.cancel(); // Batalkan stream saat dispose
     // No need to stop location updates here, as it's managed by the parent RunningTrackerScreen
     super.dispose();
   }
@@ -118,33 +119,40 @@ class _RunningTimestampState extends State<RunningTimestamp> {
   Widget build(BuildContext context) {
     // Ensure we always have a current location
     final displayLocation = currentLocation ?? MapService.defaultCenter;
-    
+
     // Ensure we always have at least one point in polylines
-    final displayPolylines = currentPolylines.isEmpty ? 
-      [Polyline(points: [displayLocation], color: Colors.transparent, strokeWidth: 0)] : 
-      currentPolylines;
-      
+    final displayPolylines = currentPolylines.isEmpty
+        ? [
+            Polyline(
+                points: [displayLocation],
+                color: Colors.transparent,
+                strokeWidth: 0)
+          ]
+        : currentPolylines;
+
     // Ensure we always have markers
-    final displayMarkers = currentMarkers.isEmpty ?
-      [Marker(
-        point: displayLocation,
-        width: 80,
-        height: 80,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.3),
-            shape: BoxShape.circle,
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.location_on,
-              color: Colors.blue,
-              size: 30,
-            ),
-          ),
-        ),
-      )] : 
-      currentMarkers;
+    final displayMarkers = currentMarkers.isEmpty
+        ? [
+            Marker(
+              point: displayLocation,
+              width: 80,
+              height: 80,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.location_on,
+                    color: Colors.blue,
+                    size: 30,
+                  ),
+                ),
+              ),
+            )
+          ]
+        : currentMarkers;
 
     return Scaffold(
       body: Stack(
@@ -203,7 +211,7 @@ class _RunningTimestampState extends State<RunningTimestamp> {
                 ),
             ],
           ),
-          
+
           // Follow Me Button using the custom widget
           Positioned(
             right: 16,
@@ -214,7 +222,7 @@ class _RunningTimestampState extends State<RunningTimestamp> {
               activeColor: widget.primaryGreen,
             ),
           ),
-          
+
           // Top overlay with basic info
           Positioned(
             top: 40,
@@ -254,7 +262,7 @@ class _RunningTimestampState extends State<RunningTimestamp> {
               ),
             ),
           ),
-          
+
           // Bottom overlay with metrics
           Positioned(
             bottom: 0,
@@ -289,11 +297,13 @@ class _RunningTimestampState extends State<RunningTimestamp> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               // Distance
-                              _buildMetricColumn(widget.distance.toStringAsFixed(2), "Km"),
-                              
+                              _buildMetricColumn(
+                                  widget.distance.toStringAsFixed(2), "Km"),
+
                               // Time
-                              _buildMetricColumn(widget.formattedDuration, "Time"),
-                              
+                              _buildMetricColumn(
+                                  widget.formattedDuration, "Time"),
+
                               // Pace
                               _buildMetricColumn(widget.formattedPace, "Pace"),
                             ],
@@ -390,7 +400,7 @@ class _RunningTimestampState extends State<RunningTimestamp> {
       ),
     );
   }
-  
+
   Widget _buildMetricColumn(String value, String label) {
     return Column(
       children: [

@@ -7,7 +7,44 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tervist_apk/api/api_config.dart';
 import 'package:tervist_apk/api/api_service.dart';
 import 'package:tervist_apk/screens/login/signup_screen.dart';
+import 'package:tervist_apk/screens/main_navigation.dart';
 import 'package:tervist_apk/screens/nutritions/streak_popup_dialog.dart';
+import 'package:tervist_apk/screens/profile/userprofile_page.dart';
+
+// Custom shape class for the popup menu with a "tail" pointing to the profile picture
+class TooltipShape extends ShapeBorder {
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.zero;
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) {
+    return getOuterPath(rect, textDirection: textDirection);
+  }
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
+    final double radius = 25.0;
+    final double tailSize = 15.0;
+    final double tailXPosition =
+        rect.width * 0.75; // Position from the left side
+
+    final Path path = Path()
+      ..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(radius)))
+      // Add the tail at the top of the popup
+      ..moveTo(tailXPosition, rect.top)
+      ..lineTo(tailXPosition + tailSize, rect.top - tailSize)
+      ..lineTo(tailXPosition + tailSize * 2, rect.top)
+      ..close();
+
+    return path;
+  }
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {}
+
+  @override
+  ShapeBorder scale(double t) => this;
+}
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -352,29 +389,78 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildProfileMenu() {
-    return PopupMenuButton<String>(
-      color: Colors.white,
-      icon: CircleAvatar(
-        backgroundImage: _userProfileData?['profile_picture'] != null
-            ? NetworkImage(_userProfileData!['profile_picture'])
-            : const AssetImage('assets/images/profile.png') as ImageProvider,
-        radius: 20,
+    return Theme(
+      // Override popup menu theme to add a custom shape with a "tail"
+      data: Theme.of(context).copyWith(
+        popupMenuTheme: PopupMenuThemeData(
+          shape: TooltipShape(),
+          textStyle: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
+        ),
       ),
-      onSelected: (value) {
-        if (value == 'logout') {
-          showDialog(context: context, builder: (_) => _buildLogoutDialog());
-        }
-      },
-      itemBuilder: (BuildContext context) => [
-        const PopupMenuItem<String>(
-          value: 'profile',
-          child: Text('View profile'),
+      child: PopupMenuButton<String>(
+        color: Colors.white,
+        offset: const Offset(-15, 50),
+        elevation: 5,
+        icon: CircleAvatar(
+          backgroundImage: _userProfileData?['profile_picture'] != null
+              ? NetworkImage(_userProfileData!['profile_picture'])
+              : const AssetImage('assets/images/profile.png') as ImageProvider,
+          radius: 20,
         ),
-        const PopupMenuItem<String>(
-          value: 'logout',
-          child: Text('Log out', style: TextStyle(color: Colors.red)),
-        ),
-      ],
+        onSelected: (value) {
+          if (value == 'logout') {
+            showDialog(context: context, builder: (_) => _buildLogoutDialog());
+          }
+        },
+        itemBuilder: (BuildContext context) => [
+          PopupMenuItem<String>(
+            value: 'profile',
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: const Center(
+              child: Text(
+                'View profile',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            onTap: () {
+              // Use a small delay to allow the menu to close before navigation
+              Future.delayed(
+                const Duration(milliseconds: 10),
+                () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          const MainNavigation(initialIndex: 3)),
+                ),
+              );
+            },
+          ),
+          const PopupMenuItem<String>(
+            value: 'logout',
+            height: 40,
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+            child: Center(
+              child: Text(
+                'Log out',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -442,7 +528,6 @@ class _HomePageState extends State<HomePage>
   // Removed redundant local declaration of _calculateConsumedCalories
 
   // Method untuk meal summary
-// Method untuk meal summary dengan konsistensi perhitungan
   Widget _buildMealSummary(Map<String, dynamic> data) {
     print('Full categorized food data: ${data['categorized_food']}');
 
@@ -474,6 +559,7 @@ class _HomePageState extends State<HomePage>
     print(
         'Total calculated calories across all meals: $totalCalculatedCalories');
 
+    // Define active states based on calories or food items
     bool isBreakfastActive = breakfastCalories > 0;
     bool isLunchActive = lunchCalories > 0;
     bool isDinnerActive = dinnerCalories > 0;
@@ -745,26 +831,26 @@ class _HomePageState extends State<HomePage>
   }
 
   // Method untuk kolom makanan
-// Method untuk kolom makanan dengan warna yang diperbarui
+// Modified _buildMealColumn method to change calorie box color
   Widget _buildMealColumn(
       String label, int calories, String imagePath, bool isActive) {
-    // Tentukan warna berdasarkan label makanan
+    // Determine color based on label meal type
     Color mealColor;
     switch (label) {
       case 'Breakfast':
-        mealColor = const Color(0xFF425E8E); // Warna untuk Breakfast
+        mealColor = const Color(0xFF425E8E); // Color for Breakfast
         break;
       case 'Lunch':
-        mealColor = const Color(0xFF587DBD); // Warna untuk Lunch
+        mealColor = const Color(0xFF587DBD); // Color for Lunch
         break;
       case 'Dinner':
-        mealColor = const Color(0xFF00A991); // Warna untuk Dinner
+        mealColor = const Color(0xFF00A991); // Color for Dinner
         break;
       case 'Snack':
-        mealColor = const Color(0xFF007F6D); // Warna untuk Snack
+        mealColor = const Color(0xFF007F6D); // Color for Snack
         break;
       default:
-        mealColor = const Color(0xFF828282); // Warna default
+        mealColor = const Color(0xFF828282); // Default color
     }
 
     return Column(
@@ -781,7 +867,7 @@ class _HomePageState extends State<HomePage>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isActive ? const Color(0xFFE2E8EF) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -806,7 +892,7 @@ class _HomePageState extends State<HomePage>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              // Gunakan warna yang ditentukan jika aktif, jika tidak gunakan warna abu-abu
+              // Use defined color if active, otherwise gray
               color: isActive ? mealColor : const Color(0xFF828282),
               width: 3,
             ),
@@ -919,7 +1005,7 @@ class _HomePageState extends State<HomePage>
               },
             ),
             const SizedBox(height: 12),
-            Text('Distance: $distance km'),
+            Text('Distance: ${distance.ceil()} km'),
             Text('Avg. Pace: $pace'),
           ],
         ),

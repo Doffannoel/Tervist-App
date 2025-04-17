@@ -1,15 +1,17 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../api/api_config.dart';
 
 class ChatbotService {
   static const _chatKey = 'tervy_messages_context';
 
-  static Future<String> getChatGPTResponse(
-      String message, List<Map<String, String>> history) async {
-    final apiKey =
-        "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";
+  static Future<String> getChatResponse(
+    String message,
+    List<Map<String, String>> history,
+  ) async {
+    const apiKey =
+        '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';
+
     final messages = [
       {
         'role': 'system',
@@ -24,22 +26,35 @@ class ChatbotService {
     final headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $apiKey',
-      'HTTP-Referer': 'https://tervyapp', // optional referer
       'X-Title': 'Tervy Nutrition Chatbot',
     };
+
     final body = jsonEncode({
-      'model': 'openai/gpt-3.5-turbo',
+      'model': 'mistralai/mistral-small-3.1-24b-instruct:free',
       'messages': messages,
       'temperature': 0.5,
     });
 
-    final response = await http.post(url, headers: headers, body: body);
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['choices'][0]['message']['content'];
-    } else {
-      print('OpenRouter API error: ${response.statusCode} - ${response.body}');
-      return "Maaf, aku mengalami kendala. Silakan coba lagi nanti.";
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+
+      print('📡 Status Code: ${response.statusCode}');
+      print('📦 Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final content = data['choices'][0]['message']?['content'] ??
+            data['choices'][0]['text'] ??
+            "Tidak ada respons dari model.";
+        return content;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        return "Akses ditolak. Pastikan API key benar dan tidak melebihi batas penggunaan.";
+      } else {
+        return "Maaf, ada kendala (kode ${response.statusCode}). Coba lagi nanti.";
+      }
+    } catch (e) {
+      print('❌ Network error: $e');
+      return "Terjadi kesalahan jaringan. Pastikan koneksi internet kamu stabil.";
     }
   }
 

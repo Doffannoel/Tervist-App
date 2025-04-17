@@ -9,6 +9,7 @@ import '/api/auth_helper.dart'; // Import for user data
 import 'package:intl/intl.dart'; // Import for date formatting
 import '../pace_statistics_widget.dart'; // Import widget pace statistics
 import '../pace_data_processor.dart'; // Import the data processor
+import 'package:cached_network_image/cached_network_image.dart'; 
 
 class RunningSummary extends StatefulWidget {
   final double distance;
@@ -57,6 +58,7 @@ class _RunningSummaryState extends State<RunningSummary> {
   String _userName = "User"; // Default username
   final DateTime _currentDateTime = DateTime.now(); // Current date and time
   bool _isLoading = true;
+  String? _profileImageUrl; // Add profile image URL
 
   @override
   void initState() {
@@ -84,6 +86,13 @@ class _RunningSummaryState extends State<RunningSummary> {
             _userName = storedName;
           });
         }
+      }
+      // Get profile image URL from AuthHelper
+      String? imageUrl = await AuthHelper.getProfilePicture();
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        setState(() {
+          _profileImageUrl = imageUrl;
+        });
       }
     } catch (e) {
       print('Error loading user data: $e');
@@ -269,7 +278,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                       ),
                     ),
                   ),
-                  
+
                   // Primary workout stats card - changed to pure white background
                   Card(
                     margin: const EdgeInsets.only(bottom: 16.0),
@@ -315,26 +324,69 @@ class _RunningSummaryState extends State<RunningSummary> {
                               ),
 
                               // User info with profile image
-                              Column(
+Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    margin: const EdgeInsets.only(bottom: 4),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.grey[300]!,
-                                        width: 2,
-                                      ),
-                                      image: const DecorationImage(
-                                        image: AssetImage(
-                                            'assets/images/profile.png'),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
+                                  _isLoading
+                                      ? Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.grey[300]!,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                              widget.primaryGreen,
+                                            ),
+                                          ),
+                                        )
+                                      : Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.grey[300]!,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: _profileImageUrl != null
+                                              ? ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                  child: CachedNetworkImage(
+                                                    imageUrl: _profileImageUrl!,
+                                                    fit: BoxFit.cover,
+                                                    placeholder: (context,
+                                                            url) =>
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                              Color>(
+                                                        widget.primaryGreen,
+                                                      ),
+                                                    ),
+                                                    errorWidget:
+                                                        (context, url, error) =>
+                                                            Image.asset(
+                                                      'assets/images/profile.png',
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                  ),
+                                                )
+                                              : Image.asset(
+                                                  'assets/images/profile.png',
+                                                  fit: BoxFit.cover,
+                                                ),
+                                        ),
+                                  const SizedBox(height: 4),
                                   _isLoading
                                       ? SizedBox(
                                           width: 50,
@@ -418,7 +470,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                       ),
                     ),
                   ),
-                  
+
                   // Two-column layout for Calories and Steps - changed to pure white background
                   Row(
                     children: [
@@ -541,7 +593,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                       ),
                     ],
                   ),
-                  
+
                   // Pace statistics chart - changed to pure white background
                   Card(
                     elevation: 2,
@@ -611,6 +663,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                           routePoints: widget.routePoints,
                           polylines: widget.polylines,
                           markers: widget.markers,
+                          profileImageUrl: _profileImageUrl
                         ),
                       ),
                     );

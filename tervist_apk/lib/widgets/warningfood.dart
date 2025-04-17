@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class WarningFoodDialog extends StatelessWidget {
   final VoidCallback onLeave;
   final VoidCallback onBack;
 
   const WarningFoodDialog({
-    Key? key,
+    super.key,
     required this.onLeave,
     required this.onBack,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -45,69 +46,51 @@ class WarningFoodDialog extends StatelessWidget {
             alignment: Alignment.topLeft,
             child: Row(
               children: [
-                const Icon(
-                  Icons.favorite,
-                  color: Colors.black,
-                  size: 20,
+                Image.asset(
+                  'assets/images/logotervist copy.png',
+                  width: 60,
                 ),
                 const SizedBox(width: 2),
-                const Text(
-                  'ervist',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
               ],
             ),
           ),
           const SizedBox(height: 30),
-          
+
           // Warning icon
           Container(
-            width: 54,
-            height: 54,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFC107),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.priority_high,
-                color: Colors.black,
-                size: 30,
-                weight: 900,
+            child: Center(
+              child: Image.asset(
+                'assets/images/warning.png',
+                width: 65,
+                height: 65,
               ),
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Warning title
-          const Text(
+          Text(
             'Warning!',
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 26,
               fontWeight: FontWeight.bold,
               color: Colors.black,
-              fontFamily: 'Poppins',
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Warning message
-          const Text(
+          Text(
             'You haven\'t saved your food log yet! Are you sure you want to leave? Any unsaved data will be lost.',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               fontSize: 16,
               color: Colors.black,
-              fontFamily: 'Poppins',
               height: 1.4,
             ),
           ),
           const SizedBox(height: 28),
-          
+
           // Buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -121,7 +104,7 @@ class WarningFoodDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(50),
                     ),
                     side: const BorderSide(color: Colors.black, width: 1),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                   child: const Text(
                     'Leave',
@@ -135,7 +118,7 @@ class WarningFoodDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              
+
               // Back button
               Expanded(
                 child: ElevatedButton(
@@ -146,7 +129,7 @@ class WarningFoodDialog extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(50),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                   child: const Text(
                     'Back',
@@ -191,7 +174,7 @@ void showWarningFoodDialog(BuildContext context) {
 
 // Example of how to trigger this dialog when user attempts to leave a food logging screen
 class ExampleUsage extends StatelessWidget {
-  const ExampleUsage({Key? key}) : super(key: key);
+  const ExampleUsage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -199,7 +182,7 @@ class ExampleUsage extends StatelessWidget {
       onWillPop: () async {
         // Check if there are unsaved changes
         bool hasUnsavedChanges = true; // Replace with your actual logic
-        
+
         if (hasUnsavedChanges) {
           showWarningFoodDialog(context);
           return false; // Prevent default back behavior
@@ -214,7 +197,7 @@ class ExampleUsage extends StatelessWidget {
             onPressed: () {
               // Check if there are unsaved changes
               bool hasUnsavedChanges = true; // Replace with your actual logic
-              
+
               if (hasUnsavedChanges) {
                 showWarningFoodDialog(context);
               } else {

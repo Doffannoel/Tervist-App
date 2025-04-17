@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tervist_apk/api/chatbot_service.dart';
 import 'package:tervist_apk/api/nutritisi_service.dart';
 import 'package:tervist_apk/screens/nutritions/chatbot.dart';
+import 'package:tervist_apk/widgets/warningfood.dart';
 import 'changefoodname_page.dart';
 import 'edit_nutrition_page.dart';
 
@@ -55,6 +56,38 @@ class _SelectedFoodPageState extends State<SelectedFoodPage> {
     _carbsController.dispose();
     _fatsController.dispose();
     super.dispose();
+  }
+
+  // Cek apakah ada perubahan yang belum disimpan
+  bool _hasUnsavedChanges() {
+    return foodName != 'Tap to Name' ||
+        int.parse(_caloriesController.text) > 0 ||
+        int.parse(_proteinController.text) > 0 ||
+        int.parse(_carbsController.text) > 0 ||
+        int.parse(_fatsController.text) > 0 ||
+        selectedMeal != null;
+  }
+
+  // Tampilkan dialog peringatan
+  void _showWarningDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (BuildContext context) {
+        return WarningFoodDialog(
+          onLeave: () {
+            // Tutup dialog dan kembali ke halaman sebelumnya
+            Navigator.of(context).pop(); // Tutup dialog
+            Navigator.of(context).pop(); // Kembali ke layar sebelumnya
+          },
+          onBack: () {
+            // Kembali ke food log untuk melanjutkan pengeditan
+            Navigator.of(context).pop(); // Tutup dialog saja
+          },
+        );
+      },
+    );
   }
 
   void _logManualFood() async {
@@ -135,7 +168,9 @@ class _SelectedFoodPageState extends State<SelectedFoodPage> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChangeFoodNamePage(initialName: foodName),
+        builder: (context) => ChangeFoodNamePage(
+          initialName: foodName == 'Tap to Name' ? '' : foodName,
+        ),
       ),
     );
     if (result != null && result is String) {
@@ -145,225 +180,241 @@ class _SelectedFoodPageState extends State<SelectedFoodPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF1F7F6),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      Text(
-                        'Create Meal',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+    return WillPopScope(
+      onWillPop: () async {
+        // Cek apakah ada perubahan yang belum disimpan
+        if (_hasUnsavedChanges()) {
+          _showWarningDialog();
+          return false; // Cegah default back behavior
+        }
+        return true; // Izinkan kembali jika tidak ada perubahan
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF1F7F6),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios),
+                          onPressed: () {
+                            // Cek apakah ada perubahan yang belum disimpan
+                            if (_hasUnsavedChanges()) {
+                              _showWarningDialog();
+                            } else {
+                              Navigator.pop(context);
+                            }
+                          },
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.help, color: Colors.grey),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
+                        Text(
+                          'Create Meal',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.help, color: Colors.grey),
+                          onPressed: () {},
+                        ),
+                      ],
+                    ),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: _showFoodNameDialog,
-                          child: Text(
-                            foodName.isEmpty ? 'Tap to Name' : foodName,
-                            style: GoogleFonts.poppins(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: _showFoodNameDialog,
+                            child: Text(
+                              foodName.isEmpty ? 'Tap to Name' : foodName,
+                              style: GoogleFonts.poppins(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.black),
-                        ),
-                        child: Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.remove),
-                              onPressed: () {
-                                setState(() {
-                                  if (quantity > 1) quantity--;
-                                });
-                              },
-                            ),
-                            Text(
-                              '$quantity',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.black),
+                          ),
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove),
+                                onPressed: () {
+                                  setState(() {
+                                    if (quantity > 1) quantity--;
+                                  });
+                                },
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.add),
-                              onPressed: () {
-                                setState(() {
-                                  quantity++;
-                                });
-                              },
-                            ),
-                          ],
+                              Text(
+                                '$quantity',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add),
+                                onPressed: () {
+                                  setState(() {
+                                    quantity++;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
                         ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    Text(
+                      'Meals Category',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 8),
 
-                  const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildMealButton('Breakfast'),
+                        _buildMealButton('Lunch'),
+                        _buildMealButton('Dinner'),
+                        _buildMealButton('Snack'),
+                      ],
+                    ),
 
-                  Text(
-                    'Meals Category',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                    const SizedBox(height: 16),
+
+                    _buildCaloriesCard(),
+
+                    const SizedBox(height: 12),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _navigateToEdit(
+                                'Protein', protein, proteinTarget),
+                            child: _buildMacroCard('Protein', protein,
+                                'assets/images/protein.png', Colors.red),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () =>
+                                _navigateToEdit('Carbs', carbs, carbsTarget),
+                            child: _buildMacroCard('Carbs', carbs,
+                                'assets/images/carb.png', Colors.amber),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () =>
+                                _navigateToEdit('Fats', fats, fatsTarget),
+                            child: _buildMacroCard('Fats', fats,
+                                'assets/images/fat.png', Colors.blue),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(), // biar gak ketimpa tombol
+                  ],
+                ),
+              ),
+              Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  // 1. Latar putih di bagian bawah
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: 100,
+                      color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 8),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildMealButton('Breakfast'),
-                      _buildMealButton('Lunch'),
-                      _buildMealButton('Dinner'),
-                      _buildMealButton('Snack'),
-                    ],
+                  // 2. Tombol Log (posisi di atas container putih)
+                  Positioned(
+                    bottom: 20,
+                    left: 30,
+                    right: 30,
+                    child: SizedBox(
+                      height: 55,
+                      child: ElevatedButton(
+                        onPressed: _logManualFood,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(40),
+                          ),
+                        ),
+                        child: Text(
+                          'Log',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
 
-                  const SizedBox(height: 16),
-
-                  _buildCaloriesCard(),
-
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _navigateToEdit(
-                              'Protein', protein, proteinTarget),
-                          child: _buildMacroCard('Protein', protein,
-                              'assets/images/protein.png', Colors.red),
-                        ),
+                  // 3. Icon senyum di atas tombol Log
+                  Positioned(
+                    bottom: 150, // lebih tinggi dari tombol Log
+                    right: 30,
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: const BoxDecoration(
+                        color: Colors.black,
+                        shape: BoxShape.circle,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () =>
-                              _navigateToEdit('Carbs', carbs, carbsTarget),
-                          child: _buildMacroCard('Carbs', carbs,
-                              'assets/images/carb.png', Colors.amber),
+                      child: IconButton(
+                        icon: Image.asset(
+                          'assets/images/iconsenyum.png',
+                          height: 24,
+                          width: 24,
+                          color: Colors.white,
                         ),
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => TervyChatScreen()));
+                        },
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () =>
-                              _navigateToEdit('Fats', fats, fatsTarget),
-                          child: _buildMacroCard('Fats', fats,
-                              'assets/images/fat.png', Colors.blue),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-
-                  const Spacer(), // biar gak ketimpa tombol
                 ],
               ),
-            ),
-            Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                // 1. Latar putih di bagian bawah
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: 100,
-                    color: Colors.white,
-                  ),
-                ),
-
-                // 2. Tombol Log (posisi di atas container putih)
-                Positioned(
-                  bottom: 20,
-                  left: 30,
-                  right: 30,
-                  child: SizedBox(
-                    height: 55,
-                    child: ElevatedButton(
-                      onPressed:
-                          _logManualFood, // Perbaikan: Langsung panggil _logManualFood
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(40),
-                        ),
-                      ),
-                      child: Text(
-                        'Log',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // 3. Icon senyum di atas tombol Log
-                Positioned(
-                  bottom: 150, // lebih tinggi dari tombol Log
-                  right: 30,
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: const BoxDecoration(
-                      color: Colors.black,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: Image.asset(
-                        'assets/images/iconsenyum.png',
-                        height: 24,
-                        width: 24,
-                        color: Colors.white,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => TervyChatScreen()));
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

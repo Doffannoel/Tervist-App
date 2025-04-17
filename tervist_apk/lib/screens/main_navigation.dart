@@ -9,14 +9,15 @@ import 'package:tervist_apk/screens/workout/workout_module.dart';
 import 'package:tervist_apk/widgets/navigation_bar.dart';
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+  final int initialIndex;
+  const MainNavigation({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 0;
+  late int _currentIndex = 0;
   bool _checkingToken = true;
 
   // Use a key for each page to maintain state
@@ -31,6 +32,7 @@ class _MainNavigationState extends State<MainNavigation> {
   void initState() {
     super.initState();
     _checkTokenValidity();
+    _currentIndex = widget.initialIndex;
   }
 
   Future<void> _checkTokenValidity() async {

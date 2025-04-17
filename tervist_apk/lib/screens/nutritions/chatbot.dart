@@ -111,8 +111,16 @@ class _TervyChatScreenState extends State<TervyChatScreen>
     _textController.clear();
     setState(() => _isTyping = true);
     try {
-      final response = await ChatbotService.getChatGPTResponse(
+      final response = await ChatbotService.getChatResponse(
           userMessage, _conversationHistory);
+      _addBotMessage(response);
+
+// debug tambahan
+      print("USER MSG: $userMessage");
+      print("BOT RESPONSE: $response");
+
+      _addBotMessage(response);
+
       _addBotMessage(response);
     } catch (e) {
       _addBotMessage("Maaf, aku mengalami kendala. Silakan coba lagi nanti.");

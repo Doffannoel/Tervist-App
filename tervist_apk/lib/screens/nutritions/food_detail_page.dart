@@ -45,8 +45,10 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   // Helper function to format nutrition values without .0 for whole numbers
   String formatNutritionValue(double value, String unit) {
     if (value == value.toInt().toDouble()) {
+      // If the value is a whole number (e.g., 34.0), show as integer
       return '${value.toInt()}$unit';
     } else {
+      // If it has decimal places, round to 1 decimal place
       return '${value.toStringAsFixed(1)}$unit';
     }
   }
@@ -448,14 +450,16 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(
+              // Use a fixed width container or FittedBox to ensure text fits
+              FittedBox(
+                fit: BoxFit.scaleDown,
                 child: Text(
                   value,
                   style: GoogleFonts.poppins(
-                      fontSize: 18, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
+                      fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
+              const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(

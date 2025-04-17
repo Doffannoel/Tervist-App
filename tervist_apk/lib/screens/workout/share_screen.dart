@@ -35,7 +35,7 @@ class ShareScreen extends StatefulWidget {
     required this.userName,
     this.routePoints = const [],
     this.markers = const [],
-    this.polylines = const [],
+    this.polylines = const [], String? profileImageUrl,
   }) : super(key: key);
 
   @override
