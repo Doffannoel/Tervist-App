@@ -444,8 +444,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
             child: Text(
               _selectedBirthday != null
                   ? DateFormat('dd MMM yyyy').format(_selectedBirthday!)
-                  : '',
-              style: GoogleFonts.poppins(fontSize: 10),
+                  : 'Tap To Select Date',
+              style: GoogleFonts.poppins(
+                fontSize: 10,
+                color: _selectedBirthday != null
+                    ? Colors.black
+                    : const Color.fromARGB(255, 225, 223, 223),
+              ),
             ),
           ),
         ],

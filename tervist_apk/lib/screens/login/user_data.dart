@@ -137,7 +137,7 @@ class _UserDataPageState extends State<UserDataPage> {
                             const SizedBox(height: 8),
                             _buildGoalItem(
                               'Target:',
-                              '${widget.signupData.targetWeight?.toStringAsFixed(1) ?? 60} kg',
+                              '${widget.signupData.targetWeight != null ? widget.signupData.targetWeight!.toStringAsFixed(1) : widget.signupData.weight?.toStringAsFixed(1)} kg',
                             ),
                             const SizedBox(height: 8),
                             _buildGoalItem(
@@ -264,7 +264,24 @@ class _UserDataPageState extends State<UserDataPage> {
                                         'Authorization': 'Bearer $token',
                                         'Content-Type': 'application/json',
                                       },
-                                      body: jsonEncode(nutritionalData),
+                                      body: jsonEncode({
+                                        "calorie_target": (nutritionalData![
+                                                    'calorie_target'] ??
+                                                0)
+                                            .toDouble(),
+                                        "protein_target": (nutritionalData![
+                                                    'protein_target'] ??
+                                                0)
+                                            .toDouble(),
+                                        "carbs_target":
+                                            (nutritionalData!['carbs_target'] ??
+                                                    0)
+                                                .toDouble(),
+                                        "fats_target":
+                                            (nutritionalData!['fats_target'] ??
+                                                    0)
+                                                .toDouble(),
+                                      }),
                                     );
 
                                     print(
