@@ -1,33 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tervist_apk/api/notification_service.dart';
-import 'package:tervist_apk/screens/main_navigation.dart';
 import 'package:http/http.dart' as http;
 import 'package:tervist_apk/api/api_config.dart';
+import 'package:tervist_apk/screens/main_navigation.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
-import 'dart:async';
-
-void main() async {
-  // Ensure Flutter is initialized before calling any platform methods
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize notifications service
-  await NotificationService().init();
-
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
-    );
-  }
-}
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -40,9 +17,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 8), () {
-      navigateToNextScreen();
-    });
+    _navigateAfterSplash();
   }
 
   Future<bool> isLoggedIn() async {
@@ -68,32 +43,34 @@ class _SplashScreenState extends State<SplashScreen> {
     }
   }
 
-  void navigateToNextScreen() async {
-    bool isUserLoggedIn = await isLoggedIn();
+  void _navigateAfterSplash() async {
+    // Tunggu 3 detik untuk menampilkan splashscreen
+    await Future.delayed(const Duration(seconds: 3));
     
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => isUserLoggedIn
-              ? const MainNavigation()
-              : const OnboardingScreen(),
-        ),
-      );
-    }
+    // Cek status login setelah splash screen
+    final loggedIn = await isLoggedIn();
+    
+    if (!mounted) return;
+    
+    // Navigate to the appropriate screen
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => loggedIn 
+            ? const MainNavigation() 
+            : const OnboardingScreen(),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        child: FittedBox(
-          fit: BoxFit.contain,
-          child: Image.asset(
-            'assets/svg/splashtervist.gif',
-          ),
+      body: Center(
+        child: Image.asset(
+          'assets/svg/splashtervist.gif',
+          width: 200,
+          height: 200,
         ),
       ),
     );
