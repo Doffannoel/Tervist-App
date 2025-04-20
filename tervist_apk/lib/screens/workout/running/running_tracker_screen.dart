@@ -10,6 +10,7 @@ import 'package:tervist_apk/main.dart';
 import 'package:tervist_apk/screens/login/signup_screen.dart';
 import 'running_timestamp.dart';
 import 'running_summary.dart';
+import 'running_history.dart'; // Import the RunningHistoryScreen
 import '../map_service.dart';
 import '../workout_countdown.dart';
 import '../workout_navbar.dart';
@@ -42,8 +43,6 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
   bool isPaused = false;
   Timer? _timer;
   Ticker? _ticker; // Ticker for more efficient updates
-  // final MapController _mapController = MapController();
-  // Try this
   MapController? _mapController;
 
   // Follow me button state
@@ -749,7 +748,6 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
   }
 
   Widget _buildInitialScreen() {
-    // PENTING: Menghapus Scaffold di sini untuk menghindari nested Scaffold
     return Column(
       children: [
         Expanded(
@@ -793,15 +791,39 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Distance section
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Distance label with icon
-                          Row(
+                      // Distance section - Made tappable to navigate to history
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RunningHistoryScreen(),
+                            ),
+                          );
+                        },
+                        splashColor: primaryGreen.withOpacity(0.1), // Add splash effect
+                        borderRadius: BorderRadius.circular(8), // Round the splash effect
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Distance label with icon
+                              Row(
+                                children: [
+                                  Text(
+                                    'Distance >',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // Distance value
                               Text(
-                                'Distance >',
+                                '0.00 KM', // Always start with 0.00 in initial screen
                                 style: GoogleFonts.poppins(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
@@ -810,16 +832,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
                               ),
                             ],
                           ),
-                          // Distance value
-                          Text(
-                            '0.00 KM', // Always start with 0.00 in initial screen
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
 
                       // Weather information
@@ -992,7 +1005,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
                       ),
 
                       // Follow Me Button
-                      Positioned(
+Positioned(
                         right: 10,
                         bottom: 10,
                         child: FollowMeButton(

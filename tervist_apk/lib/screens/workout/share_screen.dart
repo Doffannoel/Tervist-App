@@ -19,6 +19,8 @@ class ShareScreen extends StatefulWidget {
   final String activityType;
   final DateTime workoutDate;
   final String userName;
+  final double averageSpeed;
+  final double maxSpeed;
 
   final String? profileImageUrl;
   final List<LatLng> routePoints;
@@ -36,6 +38,8 @@ class ShareScreen extends StatefulWidget {
     required this.workoutDate,
     required this.profileImageUrl,
     required this.userName,
+    this.averageSpeed = 0,
+    this.maxSpeed = 0,
     this.routePoints = const [],
     this.markers = const [],
     this.polylines = const [],
@@ -106,13 +110,21 @@ class _ShareScreenState extends State<ShareScreen> {
     });
   }
 
+  // Method to show snackbar message
+  void showSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Updated background color to F1F7F6
-      backgroundColor: const Color(0xFFF1F7F6),
+      backgroundColor: const Color(0xFFF1F7F6), // Light gray background
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent, // Remove background from AppBar
         elevation: 0,
         leading: CircleAvatar(
           backgroundColor: Colors.black,
@@ -128,105 +140,117 @@ class _ShareScreenState extends State<ShareScreen> {
           style: GoogleFonts.poppins(
             color: Colors.black,
             fontWeight: FontWeight.w600,
+            fontSize: 20,
           ),
         ),
         centerTitle: true,
       ),
       body: Column(
         children: [
+          // Toggle buttons with matching style to the image
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: Center(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          isDefaultTemplate = true;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isDefaultTemplate
-                              ? Colors.white
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: isDefaultTemplate
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          'Default',
-                          style: GoogleFonts.poppins(
-                            color: Colors.black,
-                            fontWeight: isDefaultTemplate
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Container for both buttons with connected look
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Default button
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            isDefaultTemplate = true;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: const BorderRadius.horizontal(
+                              left: Radius.circular(30), 
+                              right: Radius.circular(0)
+                            ),
+                            boxShadow: isDefaultTemplate
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Text(
+                            'Default',
+                            style: GoogleFonts.poppins(
+                              color: Colors.black,
+                              fontWeight: isDefaultTemplate
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        // Always randomize the background when pressing the custom button
-                        _randomizeBackground();
-                        setState(() {
-                          isDefaultTemplate = false;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: !isDefaultTemplate
-                              ? Colors.white
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: !isDefaultTemplate
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Text(
-                          'Custom',
-                          style: GoogleFonts.poppins(
-                            color: Colors.black,
-                            fontWeight: !isDefaultTemplate
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+                      
+                      // Custom button
+                      GestureDetector(
+                        onTap: () {
+                          _randomizeBackground();
+                          setState(() {
+                            isDefaultTemplate = false;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: const BorderRadius.horizontal(
+                              left: Radius.circular(0), 
+                              right: Radius.circular(30)
+                            ),
+                            boxShadow: !isDefaultTemplate
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Text(
+                            'Custom',
+                            style: GoogleFonts.poppins(
+                              color: Colors.black,
+                              fontWeight: !isDefaultTemplate
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
           Expanded(
@@ -235,7 +259,7 @@ class _ShareScreenState extends State<ShareScreen> {
               child: RepaintBoundary(
                 key: _screenshotKey,
                 child: isDefaultTemplate
-                    ? _buildDefaultTemplate()
+                    ? _buildUpdatedDefaultTemplate()
                     : _buildCustomTemplate(),
               ),
             ),
@@ -311,7 +335,8 @@ class _ShareScreenState extends State<ShareScreen> {
     );
   }
 
-  Widget _buildDefaultTemplate() {
+  // New method that matches the design in the second image
+  Widget _buildUpdatedDefaultTemplate() {
     // Calculate map center
     LatLng mapCenter = _calculateMapCenter();
 
@@ -320,12 +345,19 @@ class _ShareScreenState extends State<ShareScreen> {
             widget.routePoints.isEmpty
         ? [
             Polyline(
-              points: [LatLng(-7.767, 110.378)], // Use default point if empty
-              color: Colors.green,
+              points: [LatLng(-7.767, 110.378), LatLng(-7.763, 110.380)], // Use default points if empty
+              color: Colors.green, // Changed to green to match the second image
               strokeWidth: 4,
             )
           ]
-        : widget.polylines;
+        : [
+            // Override polyline color to green
+            Polyline(
+              points: widget.routePoints,
+              color: Colors.green,
+              strokeWidth: 4,
+            )
+          ];
 
     // Ensure we have valid markers even if empty
     final List<Marker> displayMarkers = widget.markers.isEmpty
@@ -335,7 +367,7 @@ class _ShareScreenState extends State<ShareScreen> {
               width: 15,
               height: 15,
               child: Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.blue,
                   shape: BoxShape.circle,
                 ),
@@ -345,22 +377,26 @@ class _ShareScreenState extends State<ShareScreen> {
         : widget.markers;
 
     return Container(
-      color: Colors.white,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Top section with map view
           Expanded(
-            flex: 6,
             child: Stack(
               children: [
                 // Actual map with route
                 FlutterMap(
                   options: MapOptions(
                     initialCenter: mapCenter,
-                    initialZoom: 14,
+                    initialZoom: 15, // Increased zoom level
                     interactionOptions: const InteractionOptions(
                       enableMultiFingerGestureRace: true,
+                      flags: InteractiveFlag.none, // Disable map interactions
                     ),
                   ),
                   children: [
@@ -405,320 +441,286 @@ class _ShareScreenState extends State<ShareScreen> {
             ),
           ),
 
-          // Bottom card with workout details
+          // Bottom section with workout info
           Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(24)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top section with activity type, user, distance (matches the image)
-                Container(
-                  padding: const EdgeInsets.all(20.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: Colors.grey.withOpacity(0.2),
-                        width: 1,
+                // Activity type and user info
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Left side - Activity type
+                    Text(
+                      'Tervist | ${widget.activityType}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey[600],
                       ),
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Activity type and user avatar in one row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    
+                    // Right side - User photo
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundImage: widget.profileImageUrl != null
+                          ? NetworkImage(widget.profileImageUrl!) as ImageProvider
+                          : const AssetImage('assets/images/profile.png'),
+                      backgroundColor: Colors.grey[200],
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 4),
+                
+                // Username and date
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          widget.userName,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        Text(
+                          _formatDateTime(widget.workoutDate),
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Distance display
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      widget.distance.toStringAsFixed(2),
+                      style: GoogleFonts.poppins(
+                        fontSize: 42,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6.0),
+                      child: Text(
+                        'Km',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const Divider(height: 32),
+                
+                // Time and Average Speed row
+                Row(
+                  children: [
+                    // Time column
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Left side - activity type
                           Text(
-                            'Tervist | ${widget.activityType}',
+                            widget.formattedDuration,
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
+                          ),
+                          Text(
+                            'Time',
                             style: GoogleFonts.poppins(
                               fontSize: 14,
                               color: Colors.grey[600],
                             ),
                           ),
-                          // Right side - user profile and date/time
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundImage: widget.profileImageUrl != null
-                                    ? NetworkImage(widget.profileImageUrl!)
-                                        as ImageProvider
-                                    : const AssetImage(
-                                        'assets/images/profile.png'),
-                                backgroundColor: Colors.grey[300],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.userName,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                              Text(
-                                _formatDateTime(widget.workoutDate),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
-                          ),
                         ],
                       ),
-
-                      const SizedBox(height: 20),
-
-                      // Distance with km unit - large display
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
+                    ),
+                    
+                    // Average Speed column
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            widget.distance.toStringAsFixed(2),
-                            style: GoogleFonts.poppins(
-                              fontSize: 64,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                              height: 0.9,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: Text(
-                              'Km',
-                              style: GoogleFonts.poppins(
-                                fontSize: 24,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Time and Pace row
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Row(
-                    children: [
-                      // Time column - left side
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.formattedDuration,
-                              style: GoogleFonts.poppins(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            Text(
-                              'Time',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Vertical divider
-                      Container(
-                        height: 40,
-                        width: 1,
-                        color: Colors.grey.withOpacity(0.3),
-                      ),
-
-                      // Pace column - right side
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 40.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Row(
                             children: [
                               Text(
-                                widget.formattedPace,
+                                '${widget.averageSpeed > 0 ? widget.averageSpeed.toInt() : _calculateAverageSpeed()}',
                                 style: GoogleFonts.poppins(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
                                   color: Colors.black,
                                 ),
                               ),
                               Text(
-                                'Pace',
+                                ' Km/h',
                                 style: GoogleFonts.poppins(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   color: Colors.grey[600],
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Calories and Max speed containers
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Calories container
-                    Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 8.0),
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16.0, horizontal: 20.0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
+                          Text(
+                            'Average speed',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.grey[600],
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Image.asset(
-                                  'assets/images/fireon.png',
-                                  width: 30,
-                                  height: 30,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Calories Burned',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.baseline,
-                              textBaseline: TextBaseline.alphabetic,
-                              children: [
-                                Text(
-                                  '${widget.calories}',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange[400],
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Kcal',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Max speed container
-                    Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.only(left: 8.0),
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16.0, horizontal: 20.0),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Image.asset(
-                                  'assets/images/stepicon.png',
-                                  width: 20,
-                                  height: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'steps',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.baseline,
-                              textBaseline: TextBaseline.alphabetic,
-                              children: [
-                                Text(
-                                  '${_calculateMaxSpeed()}',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue[400],
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Km/h',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Calories and Max Speed row
+                Row(
+  children: [
+    // Calories container
+    Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12), // Reduced horizontal padding
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.grey.withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Image.asset(
+                  'assets/images/fireon.png',
+                  width: 18, // Slightly smaller icon
+                  height: 18, // Slightly smaller icon
+                ),
+                const SizedBox(width: 6), // Reduced spacing
+                Text(
+                  'Calories Burned',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  '${widget.calories}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 22, // Slightly smaller font
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange[400],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Kcal',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+    
+    const SizedBox(width: 12), // Reduced spacing between containers
+    
+    // Max Speed container
+    Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12), // Reduced horizontal padding
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.grey.withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Image.asset(
+                  'assets/images/stepicon.png',
+                  width: 18, // Slightly smaller icon
+                  height: 18, // Slightly smaller icon
+                ),
+                const SizedBox(width: 6), // Reduced spacing
+                Text(
+                  'Max speed',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  '${widget.maxSpeed > 0 ? widget.maxSpeed.toInt() : _calculateMaxSpeed()}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 22, // Slightly smaller font
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[400],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Km/h',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  ],
                 ),
               ],
             ),
@@ -777,27 +779,7 @@ class _ShareScreenState extends State<ShareScreen> {
                       ),
                     ),
                     // Username with small avatar
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 14,
-                          backgroundImage: widget.profileImageUrl != null
-                              ? NetworkImage(widget.profileImageUrl!)
-                                  as ImageProvider
-                              : const AssetImage('assets/images/profile.png'),
-                          backgroundColor: Colors.white.withOpacity(0.2),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          widget.userName,
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+                    
                   ],
                 ),
 
@@ -883,7 +865,12 @@ class _ShareScreenState extends State<ShareScreen> {
 
   // Helper method to format date and time as shown in the UI
   String _formatDateTime(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    // Format to match second image: "12/07/25 8:30 AM"
+    String period = date.hour >= 12 ? 'PM' : 'AM';
+    int hour = date.hour > 12 ? date.hour - 12 : date.hour;
+    if (hour == 0) hour = 12;
+    
+    return '${date.day}/${date.month}/${date.year} ${hour}:${date.minute.toString().padLeft(2, '0')} $period';
   }
 
   // Calculate an approximate average speed based on distance and time
@@ -906,11 +893,11 @@ class _ShareScreenState extends State<ShareScreen> {
     return speed.round();
   }
 
-  // Placeholder for max speed calculation
+  // Calculate max speed (estimated)
   int _calculateMaxSpeed() {
     // In a real app, this would be calculated from actual GPS data
-    // For now, return a value slightly higher than average speed
-    return _calculateAverageSpeed() + 4;
+    // For now, return a value higher than average speed
+    return _calculateAverageSpeed() + Random().nextInt(5) + 3; // More variation
   }
 
   Future<void> _saveImage() async {
@@ -924,10 +911,8 @@ class _ShareScreenState extends State<ShareScreen> {
       final imageBytes =
           await ScreenshotHelper.captureFromWidget(_screenshotKey);
       if (imageBytes == null) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Gagal mengambil gambar')),
-          );
+        if (mounted) {
+          showSnackBar('Gagal mengambil gambar');
         }
         setState(() {
           _isSaving = false;
@@ -938,10 +923,10 @@ class _ShareScreenState extends State<ShareScreen> {
       // Save to Downloads folder (should appear in gallery)
       final savedFile = await ScreenshotHelper.saveToDownloads(imageBytes);
 
-      if (context.mounted) {
+      if (mounted) {
         if (savedFile != null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text('Gambar berhasil disimpan ke galeri'),
               backgroundColor: Colors.green,
             ),
@@ -956,10 +941,8 @@ class _ShareScreenState extends State<ShareScreen> {
         }
       }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+      if (mounted) {
+        showSnackBar('Error: $e');
       }
     } finally {
       // Reset saving state
@@ -982,10 +965,8 @@ class _ShareScreenState extends State<ShareScreen> {
       final imageBytes =
           await ScreenshotHelper.captureFromWidget(_screenshotKey);
       if (imageBytes == null) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Gagal mengambil gambar')),
-          );
+        if (mounted) {
+          showSnackBar('Gagal mengambil gambar');
         }
         setState(() {
           _isSaving = false;
@@ -996,10 +977,8 @@ class _ShareScreenState extends State<ShareScreen> {
       // Save to file
       final file = await ScreenshotHelper.saveToFile(imageBytes);
       if (file == null) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Gagal menyimpan gambar')),
-          );
+        if (mounted) {
+          showSnackBar('Gagal menyimpan gambar');
         }
         setState(() {
           _isSaving = false;
@@ -1008,19 +987,17 @@ class _ShareScreenState extends State<ShareScreen> {
       }
 
       // Share file
-      final shared = await ScreenshotHelper.shareImage(file,
-          message: 'Check out my ${widget.activityType} workout with Tervist!');
+      final shared = await ScreenshotHelper.shareImage(
+        file,
+        message: 'Check out my ${widget.activityType} workout with Tervist!',
+      );
 
       if (!shared && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal membagikan gambar')),
-        );
+        showSnackBar('Gagal membagikan gambar');
       }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+      if (mounted) {
+        showSnackBar('Error: $e');
       }
     } finally {
       // Reset saving state
