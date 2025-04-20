@@ -54,4 +54,48 @@ class LoginService {
       throw Exception('Login gagal: ${jsonDecode(response.body)["detail"]}');
     }
   }
+
+  static Future<bool> loginWithGoogle(String idToken) async {
+    final url = ApiConfig.socialLogin;
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'access_token': idToken}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final accessToken = data['access_token'];
+      final refreshToken = data['refresh_token'];
+
+      await AuthHelper.saveToken(accessToken);
+
+      final profileRes = await http.get(
+        ApiConfig.profile,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
+
+      if (profileRes.statusCode == 200) {
+        final profile = jsonDecode(profileRes.body);
+
+        await AuthHelper.saveUserId(profile['id']);
+        await AuthHelper.saveUserName(profile['username'] ?? 'User');
+      } else {
+        print('⚠️ Gagal mengambil profil setelah login Google');
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('refresh_token', refreshToken);
+
+      return true;
+    } else {
+      print("Login Google failed: ${response.statusCode}");
+      print("Response body: ${response.body}");
+      throw Exception(
+          'Login Google gagal: ${jsonDecode(response.body)["detail"]}');
+    }
+  }
 }

@@ -1,89 +1,47 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tervist_apk/api/api_config.dart';
+import 'dart:math' as math;
 
-class ChatbotService {
-  static const _chatKey = 'tervy_messages_context';
+class ApiService {
+  // Fungsi untuk mendapatkan data dashboard
+  Future<Map<String, dynamic>> fetchDashboardData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
 
-  static Future<String> getChatResponse(
-    String message,
-    List<Map<String, String>> history,
-  ) async {
-    const apiKey =
-        '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';
+    if (token == null) {
+      throw Exception('User is not authenticated');
+    }
 
-    final messages = [
-      {
-        'role': 'system',
-        'content':
-            'Kamu adalah Tervy, asisten nutrisi cerdas dan ramah. Selalu balas dalam Bahasa Indonesia. Jika pengguna menyebut makanan (misal: pisang, ayam goreng, nasi uduk, cokelat), berikan estimasi kandungan kalori, protein, lemak, dan karbohidrat per takaran yang disebutkan. Jika pengguna menulis "saya makan 3 ayam goreng", langsung berikan estimasi nutrisinya (contoh: 3 ayam goreng = 600 kalori, 45g protein, dll). Balasan harus langsung ke poin, ringkas, jelas, dan tidak mengulang pertanyaan.'
+    print(
+        'Fetching dashboard with token: ${token.substring(0, math.min(10, token.length))}...'); // Debug logging tanpa menampilkan seluruh token
+
+    final response = await http.get(
+      ApiConfig.dashboard,
+      headers: {
+        'Authorization':
+            'Bearer $token', // Menggunakan 'Bearer' sesuai dengan JWTAuthentication
+        'Content-Type': 'application/json',
       },
-      ...history,
-      {'role': 'user', 'content': message},
-    ];
+    );
 
-    final url = Uri.parse('https://openrouter.ai/api/v1/chat/completions');
-    final headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $apiKey',
-      'HTTP-Referer': 'https://tervy.vercel.app', // ganti sesuai domain kamu
-      'X-Title': 'Tervy Nutrition Chatbot',
-    };
+    print('Dashboard response status: ${response.statusCode}');
 
-    final body = jsonEncode({
-      'model': 'mistralai/mistral-7b-instruct',
-      'messages': messages,
-      'temperature': 0.5,
-    });
-
-    try {
-      final response = await http.post(url, headers: headers, body: body);
-
-      print("📡 Status Code: ${response.statusCode}");
-      print("📦 Raw Response: ${response.body}");
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final choices = data['choices'];
-
-        if (choices != null && choices.isNotEmpty) {
-          final choice = choices[0];
-
-          if (choice.containsKey('message') &&
-              choice['message'].containsKey('content')) {
-            return choice['message']['content'];
-          } else if (choice.containsKey('text')) {
-            return choice['text'];
-          } else {
-            return "Model tidak memberikan jawaban. Coba ganti pertanyaan.";
-          }
-        } else {
-          return "Tidak ada respons dari model. Coba beberapa saat lagi.";
-        }
-      } else if (response.statusCode == 401 || response.statusCode == 403) {
-        return "Akses ditolak. Cek API key, Referer URL, dan saldo akun kamu.";
-      } else {
-        return "Error ${response.statusCode}: ${response.reasonPhrase}";
-      }
-    } catch (e) {
-      print("❌ Network error: $e");
-      return "Terjadi kesalahan jaringan. Coba lagi nanti ya.";
+    // Hanya tampilkan sebagian dari response jika terlalu besar
+    if (response.body.length > 500) {
+      print(
+          'Dashboard response preview: ${response.body.substring(0, 500)}...');
+    } else {
+      print('Dashboard response body: ${response.body}');
     }
-  }
 
-  static Future<void> saveConversationHistory(
-      List<Map<String, String>> history) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_chatKey, jsonEncode(history));
-  }
-
-  static Future<List<Map<String, String>>> loadConversationHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final historyJson = prefs.getString(_chatKey);
-    if (historyJson != null) {
-      final List<dynamic> parsed = jsonDecode(historyJson);
-      return parsed.map((e) => Map<String, String>.from(e)).toList();
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401) {
+      throw Exception('Session expired. Please log in again.');
+    } else {
+      throw Exception('Failed to load dashboard data: ${response.statusCode}');
     }
-    return [];
   }
 }

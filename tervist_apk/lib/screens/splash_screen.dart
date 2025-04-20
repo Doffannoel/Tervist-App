@@ -7,7 +7,7 @@ import 'package:tervist_apk/screens/main_navigation.dart';
 import 'package:tervist_apk/screens/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -46,18 +46,17 @@ class _SplashScreenState extends State<SplashScreen> {
   void _navigateAfterSplash() async {
     // Tunggu 3 detik untuk menampilkan splashscreen
     await Future.delayed(const Duration(seconds: 3));
-    
+
     // Cek status login setelah splash screen
     final loggedIn = await isLoggedIn();
-    
+
     if (!mounted) return;
-    
+
     // Navigate to the appropriate screen
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => loggedIn 
-            ? const MainNavigation() 
-            : const OnboardingScreen(),
+        builder: (context) =>
+            loggedIn ? const MainNavigation() : const OnboardingScreen(),
       ),
     );
   }
@@ -65,12 +64,37 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Image.asset(
-          'assets/svg/splashtervist.gif',
-          width: 200,
-          height: 200,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: Color(0xFFE6F4F1),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ClipRect(
+              child: Transform.scale(
+                scale: 2, // 👉 nambah scale supaya gambar melebar
+                child: Image.asset(
+                  'assets/svg/splashscreennew.gif',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 30),
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade600,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

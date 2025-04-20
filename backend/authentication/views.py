@@ -9,10 +9,17 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
-
+from django.contrib.auth import get_user_model
+from rest_framework.views import APIView
 from .models import CustomUser, PasswordResetOTP
 from .serializers import ForgotPasswordSerializer, ResetPasswordSerializer, SignUpSerializer, LoginSerializer, ProfileSerializer
 from authentication import serializers
+import requests
+from django.contrib.auth.base_user import BaseUserManager
+import secrets
+import string
+from django.contrib.auth.hashers import make_password
+
 
 class SignUpView(CreateAPIView):
     queryset = CustomUser.objects.all()
@@ -146,3 +153,56 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         # Ensure we return the currently authenticated user
         return self.request.user
     
+
+User = get_user_model()    
+class GoogleLoginView(APIView):
+    permission_classes = []  # AllowAny
+
+    def generate_random_password(self, length=12):
+        # Menghasilkan password acak dengan kombinasi huruf, angka, dan karakter khusus
+        alphabet = string.ascii_letters + string.digits + string.punctuation
+        return ''.join(secrets.choice(alphabet) for i in range(length))
+
+    def post(self, request):
+        id_token = request.data.get('access_token')
+
+        if not id_token:
+            return Response({'error': 'ID token is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verifikasi ID token ke server Google
+        google_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token}"
+        try:
+            response = requests.get(google_url)
+            if response.status_code != 200:
+                return Response({'error': 'Invalid ID token'}, status=status.HTTP_400_BAD_REQUEST)
+            data = response.json()
+        except Exception as e:
+            return Response({'error': f'Error verifying token: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        email = data.get('email')
+        username = email.split('@')[0] if email else None
+
+        if not email:
+            return Response({'error': 'Email not available from Google'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Gunakan metode generate_random_password untuk membuat password acak
+        random_password = self.generate_random_password()
+
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                'username': username,
+                'password': make_password(random_password),  # Gunakan make_password untuk mengenkripsi
+                'gender': 'Other',  # Default value
+                'activity_level': 'Sedentary',  # Default value
+                'goal': 'Maintain Weight',  # Default value
+            }
+        )
+
+        # Generate JWT token
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access_token': str(refresh.access_token),
+            'refresh_token': str(refresh),
+            'is_new_user': created
+        }, status=status.HTTP_200_OK)

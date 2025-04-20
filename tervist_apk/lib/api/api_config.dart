@@ -3,7 +3,7 @@ class ApiConfig {
   // terus cari IPv4 Address.
 
   static const String baseUrl =
-      'http://192.168.0.164:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
+      'http://192.168.1.6:8000'; //8000 jangan diganti ya cukup ganti yang di depan aja 'http://<IP_KAMU>:8000';
 
   // ---------------- AUTHENTICATION ----------------
   static Uri get signup => Uri.parse('$baseUrl/auth/signup/');
@@ -12,7 +12,7 @@ class ApiConfig {
   static Uri get resetPassword => Uri.parse('$baseUrl/auth/reset-password/');
   static Uri get verifyOtp => Uri.parse('$baseUrl/auth/verify-otp/');
   static Uri get profile => Uri.parse('$baseUrl/auth/profile/');
-  static Uri get socialLogin => Uri.parse('$baseUrl/auth/social/login/');
+  static Uri get socialLogin => Uri.parse('$baseUrl/auth/social-login/');
 
   // Debugging endpoint to check token validity
   static Uri get tokenVerify => Uri.parse('$baseUrl/auth/token/verify/');

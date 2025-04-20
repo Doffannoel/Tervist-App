@@ -71,7 +71,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${widget.food.name} added to your food log')),
       );
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error logging food: ${e.toString()}')),
