@@ -113,14 +113,8 @@ class _TervyChatScreenState extends State<TervyChatScreen>
     try {
       final response = await ChatbotService.getChatResponse(
           userMessage, _conversationHistory);
-      _addBotMessage(response);
 
-// debug tambahan
-      print("USER MSG: $userMessage");
-      print("BOT RESPONSE: $response");
-
-      _addBotMessage(response);
-
+      // Hanya satu kali pemanggilan
       _addBotMessage(response);
     } catch (e) {
       _addBotMessage("Maaf, aku mengalami kendala. Silakan coba lagi nanti.");
