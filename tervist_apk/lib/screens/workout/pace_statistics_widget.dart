@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-
 class PaceStatisticsWidget extends StatefulWidget {
   final String activityType; // 'Running', 'Treadmill', 'Cycling', 'Walking'
   final List<Map<String, dynamic>> paceData; // Data dari screen summary atau timestamp
@@ -21,6 +20,11 @@ class PaceStatisticsWidget extends StatefulWidget {
 class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
   @override
   Widget build(BuildContext context) {
+    // Check if paceData is empty (kilometer is 0)
+    if (widget.paceData.isEmpty) {
+      return _buildEmptyStateCard();
+    }
+    
     // Validasi data pace untuk memastikan tidak kosong
     final List<Map<String, dynamic>> validPaceData = widget.paceData.isEmpty 
         ? [{'km': 1, 'pace': 0}] 
@@ -50,7 +54,6 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
           children: [
             // Header with activity type
            
-            
             const SizedBox(height: 16),
             
             // Km/h label
@@ -175,10 +178,6 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
               ],
             ),
             
-            // Info text
-            
-
-            
             // Icon and title at bottom
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -198,6 +197,68 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
         ),
       ),
     );
+  }
+
+  // Card to display when there's no data (kilometer is 0)
+  Widget _buildEmptyStateCard() {
+    return Card(
+      elevation: 4,
+      color: const Color(0xFFFFFFFF), // Set the background to pure white
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SizedBox(
+          height: 220,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Empty state icon
+              Icon(
+                _getEmptyStateIcon(widget.activityType),
+                size: 64,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 16),
+              // Empty state message
+              Text(
+                "You haven't run yet",
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Subtitle
+              Text(
+                "Start your activity to see your pace statistics",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[500],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  // Helper method untuk mendapatkan icon untuk tampilan empty state
+  IconData _getEmptyStateIcon(String activityType) {
+    switch (activityType.toLowerCase()) {
+      case 'running':
+        return Icons.directions_run;
+      case 'treadmill':
+        return Icons.fitness_center;
+      case 'cycling':
+        return Icons.directions_bike;
+      case 'walking':
+        return Icons.directions_walk;
+      default:
+        return Icons.directions_run;
+    }
   }
   
   // Helper method untuk membuat icon berdasarkan tipe aktivitas
