@@ -263,7 +263,7 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
                       final currentSeconds = _paceTimeToSeconds(pace.toString());
                       // Invert relationship so faster pace (lower time) gets taller bar
                       heightPercentage = range > 0 
-                          ? 0.3 + 0.7 * ((maxSeconds - currentSeconds) / range)
+                          ? 0.2 + 0.3 * ((maxSeconds - currentSeconds) / range)
                           : 1.0;
                     } else {
                       // For regular numeric pace, higher value means faster pace

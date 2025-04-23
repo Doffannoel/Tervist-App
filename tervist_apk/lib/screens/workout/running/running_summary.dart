@@ -362,7 +362,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                               ),
 
                               // User info with profile image
-                              Column(
+                              
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
