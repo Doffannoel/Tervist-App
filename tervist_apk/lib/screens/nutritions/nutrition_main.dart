@@ -26,27 +26,15 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
     }
 
     final DateTime checkDate = DateTime(date.year, date.month, date.day);
-
     final DateTime today = DateTime.now();
     final bool isToday = checkDate.day == today.day &&
         checkDate.month == today.month &&
         checkDate.year == today.year;
 
-    final bool isSelected = checkDate.day == _selectedDate.day &&
-        checkDate.month == _selectedDate.month &&
-        checkDate.year == _selectedDate.year;
     bool hasFoodEntries = false;
     double totalCalories = 0;
 
-    if (isSelected) {
-      // Current selected date
-      hasFoodEntries = _recentlyLoggedFood.isNotEmpty;
-
-      for (var food in _recentlyLoggedFood) {
-        totalCalories += food['calories'] ?? 0;
-      }
-    } else if (_foodIntakeCache.containsKey(checkDate)) {
-      // Other date tapi kita punya cached data
+    if (_foodIntakeCache.containsKey(checkDate)) {
       List<Map<String, dynamic>> foodEntries = _foodIntakeCache[checkDate]!;
       hasFoodEntries = foodEntries.isNotEmpty;
 
@@ -54,34 +42,28 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
         totalCalories += food['calories'] ?? 0;
       }
     } else {
-      // Default to no food entries
       hasFoodEntries = false;
       totalCalories = 0;
     }
 
-    // Check if calories meet target
+    // Ini diperbaiki
     bool meetsCalorieTarget = totalCalories >= caloriesTotal;
 
-    // Determine status
     CalendarDayStatus status;
-    if (isToday || isSelected) {
-      // Today or selected date
+    if (isToday) {
       status = meetsCalorieTarget
           ? CalendarDayStatus.blackSolid
-          : CalendarDayStatus.blackDashed;
+          : CalendarDayStatus
+              .redSolid; // <-- kalau TODAY & TIDAK MEET TARGET, HARUS RED SOLID, bukan blackDashed
     } else if (hasFoodEntries) {
-      // Has food entries but is not today or selected date
       status = meetsCalorieTarget
           ? CalendarDayStatus.graySolid
           : CalendarDayStatus.redSolid;
     } else {
-      // No food entries
       status = CalendarDayStatus.grayDashed;
     }
 
-    // Result
     _dayStatusCache[checkDate] = status;
-
     return status;
   }
 
@@ -119,6 +101,34 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
     super.initState();
     getDailySummary();
     _fetchFoodIntake();
+  }
+
+  Future<void> _fetchFoodIntakeForMonth(DateTime month) async {
+    try {
+      final firstDay = DateTime(month.year, month.month, 1);
+      final lastDay = DateTime(month.year, month.month + 1, 0);
+
+      for (int i = 0; i <= lastDay.day - 1; i++) {
+        final date = firstDay.add(Duration(days: i));
+
+        final response = await _nutritionService.getFoodIntake(date);
+        final List<Map<String, dynamic>> foodData = [];
+
+        double totalCalories = 0;
+        for (var item in response) {
+          double calories = (item['manual_calories'] ?? 0).toDouble();
+          foodData.add({'calories': calories});
+          totalCalories += calories;
+        }
+
+        _foodIntakeCache[date] = foodData;
+        _dayStatusCache.remove(date); // Reset status buat di-recompute
+      }
+
+      setState(() {});
+    } catch (e) {
+      print('Error fetching month food intake: $e');
+    }
   }
 
   //Refresh
@@ -330,7 +340,9 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
   }
 
   // Show calendar popup
-  void _showCalendarDialog() {
+  void _showCalendarDialog() async {
+    await _fetchFoodIntakeForMonth(_selectedDate);
+
     Map<DateTime, CalendarDayStatus> dayStatuses = {};
 
     final daysInMonth =
@@ -338,7 +350,6 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
 
     for (int i = 1; i <= daysInMonth; i++) {
       final date = DateTime(_selectedDate.year, _selectedDate.month, i);
-
       dayStatuses[date] = _getDayStatus(date);
     }
 
@@ -387,10 +398,10 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                       MaterialPageRoute(
                         builder: (context) => FoodDatabasePage(),
                       ),
-                    ).then((_) {
-                      // Refresh data when returning from food database
-                      getDailySummary();
-                      _fetchFoodIntake();
+                    ).then((result) {
+                      if (result == true) {
+                        _refreshData(); // ini yang aku maksud
+                      }
                     });
                   },
                   child: Container(

@@ -2,6 +2,7 @@ import 'package:tervist_apk/api/api_config.dart';
 import 'package:tervist_apk/api/auth_helper.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:tervist_apk/models/running_history_model.dart';
 
 class RunningService {
   Future<bool> saveRunningActivity({
@@ -87,5 +88,64 @@ class RunningService {
 
     // Fallback to cached values if API call fails
     return {'username': cachedName, 'profileImageUrl': cachedProfilePic};
+  }
+
+  Future<RunningHistoryModel> getRunningHistory() async {
+    final token = await AuthHelper.getToken();
+
+    if (token == null) {
+      throw Exception('Not authenticated');
+    }
+
+    try {
+      final response = await http.get(
+        ApiConfig.runningHistory, // Add this to your ApiConfig.dart
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(Duration(seconds: ApiConfig.timeoutDuration));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return RunningHistoryModel.fromJson(data);
+      } else {
+        throw Exception(
+            'Failed to load running history: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching running history: $e');
+    }
+  }
+
+  // Add this to your RunningService class
+  Future<Map<String, dynamic>> getRunningDetail(int id) async {
+    final token = await AuthHelper.getToken();
+
+    if (token == null) {
+      throw Exception('Not authenticated');
+    }
+
+    try {
+      final response = await http.get(
+        ApiConfig.runningDetail(id.toString()),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(Duration(seconds: ApiConfig.timeoutDuration));
+
+      print("RESPONSE STATUS: ${response.statusCode}");
+      print("RESPONSE BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception(
+            'Failed to load running detail: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching running detail: $e');
+    }
   }
 }

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "606020137217",
+    "project_id": "tervist-6584c",
+    "storage_bucket": "tervist-6584c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:606020137217:android:74d44a897efc9e0dd1eb00",
+        "android_client_info": {
+          "package_name": "com.example.tervist_apk"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "606020137217-10qu94actke8mi62dc9f79tv7qenj9vk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.tervist_apk",
+            "certificate_hash": "fc8395c7ebe629b0dca2274cdafafc379e6ff657"
+          }
+        },
+        {
+          "client_id": "606020137217-6p5fpttdgil2f7urmakodm9334k4d3p7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtOsLOhrVj_zxDgyPYmqDLswkA2B_KD84"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "606020137217-6p5fpttdgil2f7urmakodm9334k4d3p7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

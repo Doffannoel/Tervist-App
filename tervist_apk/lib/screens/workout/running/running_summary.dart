@@ -8,7 +8,6 @@ import '../share_screen.dart';
 import '/api/auth_helper.dart'; // Import for user data
 import 'package:intl/intl.dart'; // Import for date formatting
 import '../pace_statistics_widget.dart'; // Import widget pace statistics
-import '../pace_data_processor.dart'; // Import the data processor
 import 'package:cached_network_image/cached_network_image.dart'; 
 
 class RunningSummary extends StatefulWidget {
@@ -47,13 +46,6 @@ class RunningSummary extends StatefulWidget {
 
 class _RunningSummaryState extends State<RunningSummary> {
   final MapController _mapController = MapController();
-  final List<double> paceData = [
-    0.5,
-    0.7,
-    0.4,
-    0.6,
-    0.5
-  ]; // Fixed pace data for summary
   bool _isFollowingUser = true; // Default state for the follow button
   String _userName = "User"; // Default username
   final DateTime _currentDateTime = DateTime.now(); // Current date and time
@@ -134,30 +126,47 @@ class _RunningSummaryState extends State<RunningSummary> {
     });
   }
 
+  // Generate random pace data for use with PaceStatisticsWidget
+  List<Map<String, dynamic>> _generateRandomPaceData() {
+    if (widget.distance <= 0) {
+      return []; // Empty list for zero distance
+    }
+    
+    // Base pace for running activity (km/h)
+    double basePace = 10.0;
+    
+    // Determine number of kilometers to display (up to 7 max)
+    int totalKm = widget.distance < 1 ? 1 : widget.distance.floor();
+    totalKm = math.min(totalKm, 7); // Max 7 km for visualization
+    
+    // Random generator
+    final random = math.Random();
+    
+    List<Map<String, dynamic>> paceData = [];
+    
+    // Generate random pace data for each kilometer
+    for (int i = 1; i <= totalKm; i++) {
+      // Random variation of ±30% from base pace
+      double randomVariation = 0.7 + (0.6 * random.nextDouble());
+      double adjustedPace = basePace * randomVariation;
+      
+      paceData.add({
+        'km': i,
+        'pace': adjustedPace.round(),
+      });
+    }
+    
+    return paceData;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Format date and time
     String formattedDate = DateFormat('dd/MM/yyyy').format(_currentDateTime);
     String formattedTime = DateFormat('HH:mm').format(_currentDateTime);
 
-    // Extract pace data for PaceStatistics
-    List<Map<String, dynamic>> paceData;
-
-    if (widget.routePoints.isNotEmpty) {
-      // If route points exist, use them for pace data extraction
-      paceData = PaceDataProcessor.extractPaceFromRoutePoints(
-        widget.routePoints,
-        widget.distance,
-        widget.duration.inMinutes.toDouble(),
-      );
-    } else {
-      // If no route points, use formattedPace
-      paceData = PaceDataProcessor.extractPaceFromSummary(
-        widget.formattedPace,
-        widget.distance,
-        null,
-      );
-    }
+    // Generate random pace data for the PaceStatisticsWidget
+    final List<Map<String, dynamic>> paceData = _generateRandomPaceData();
 
     // Ensure we have valid polylines even if empty
     final List<Polyline> displayPolylines =
@@ -324,7 +333,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                               ),
 
                               // User info with profile image
-Column(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   _isLoading
@@ -594,7 +603,7 @@ Column(
                     ],
                   ),
 
-                  // Pace statistics chart - changed to pure white background
+                  // Pace statistics chart - now using randomly generated pace data
                   Card(
                     elevation: 2,
                     color: const Color(0xFFFFFFFF),

@@ -7,7 +7,6 @@ import 'dart:math' as math;
 import '../follow_me_button.dart';
 import 'share_screen_cycling.dart';
 import '../pace_statistics_widget.dart'; // Import widget pace statistics
-import '../pace_data_processor.dart'; // Import the data processor
 import '/api/auth_helper.dart'; // Import for user data
 import 'package:cached_network_image/cached_network_image.dart'; // Import for cached network images
 import 'package:intl/intl.dart'; // For date formatting
@@ -121,30 +120,47 @@ class _CyclingSummaryState extends State<CyclingSummary> {
     });
   }
 
+  // Generate random pace data for use with PaceStatisticsWidget
+  List<Map<String, dynamic>> _generateRandomPaceData() {
+    if (widget.distance <= 0) {
+      return []; // Empty list for zero distance
+    }
+    
+    // Base pace for cycling activity (km/h)
+    double basePace = 20.0; // Cycling is typically faster than running
+    
+    // Determine number of kilometers to display (up to 7 max)
+    int totalKm = widget.distance < 1 ? 1 : widget.distance.floor();
+    totalKm = math.min(totalKm, 7); // Max 7 km for visualization
+    
+    // Random generator
+    final random = math.Random();
+    
+    List<Map<String, dynamic>> paceData = [];
+    
+    // Generate random pace data for each kilometer
+    for (int i = 1; i <= totalKm; i++) {
+      // Random variation of ±30% from base pace
+      double randomVariation = 0.7 + (0.6 * random.nextDouble());
+      double adjustedPace = basePace * randomVariation;
+      
+      paceData.add({
+        'km': i,
+        'pace': adjustedPace.round(),
+      });
+    }
+    
+    return paceData;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Format date and time
     String formattedDate = DateFormat('dd/MM/yyyy').format(_currentDateTime);
     String formattedTime = DateFormat('HH:mm').format(_currentDateTime);
 
-    // Ekstrak data pace untuk widget PaceStatistics
-    List<Map<String, dynamic>> paceData;
-
-    if (widget.routePoints.isNotEmpty) {
-      // Jika ada route points, gunakan itu untuk ekstraksi data pace
-      paceData = PaceDataProcessor.extractPaceFromRoutePoints(
-        widget.routePoints,
-        widget.distance,
-        widget.duration.inMinutes.toDouble(),
-      );
-    } else {
-      // Jika tidak ada route points, gunakan formattedPace
-      paceData = PaceDataProcessor.extractPaceFromSummary(
-        widget.formattedPace,
-        widget.distance,
-        null,
-      );
-    }
+    // Generate random pace data
+    final List<Map<String, dynamic>> paceData = _generateRandomPaceData();
 
     // Ensure we have valid polylines even if empty
     final List<Polyline> displayPolylines =
@@ -580,8 +596,7 @@ class _CyclingSummaryState extends State<CyclingSummary> {
                     ],
                   ),
 
-                  // REPLACED: Performance chart with PaceStatisticsWidget
-                  // Wrapped in Card with pure white background
+                  // Pace statistics chart with randomly generated data
                   Card(
                     elevation: 2,
                     color: const Color(0xFFFFFFFF),

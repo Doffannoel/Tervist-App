@@ -1,8 +1,9 @@
 from collections import defaultdict
 from django.db import IntegrityError
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions, status, filters
 from datetime import datetime, timedelta
-from django.db.models import Sum
+from django.db.models import Sum, Min
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
@@ -843,3 +844,79 @@ class WalkingActivityView(viewsets.ModelViewSet):
             calories_obj.total_calories += calories_burned
 
         calories_obj.save()
+
+class RunningHistoryViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def list(self, request):
+        """Get summary of all running activities"""
+        user = request.user
+        
+        # Get all running activities for this user
+        activities = RunningActivity.objects.filter(user=user).order_by('-date')
+        
+        if not activities.exists():
+            return Response({
+                "message": "No running activities found",
+                "start_date": datetime.now().strftime('%Y-%m-%d'),
+                "total_workouts": 0,
+                "total_time_seconds": 0,
+                "total_distance": 0,
+                "total_calories": 0,
+                "records": []
+            }, status=status.HTTP_200_OK)
+        
+        # Calculate summary statistics
+        total_workouts = activities.count()
+        total_time_seconds = activities.aggregate(Sum('time_seconds'))['time_seconds__sum'] or 0
+        total_distance = activities.aggregate(Sum('distance_km'))['distance_km__sum'] or 0
+        total_distance = round(total_distance, 2)  # Round to 2 decimal places
+        total_calories = activities.aggregate(Sum('calories_burned'))['calories_burned__sum'] or 0
+        
+        # Get the first activity date (when the user started)
+        start_date = activities.aggregate(Min('date'))['date__min']
+        
+        # Prepare records for the list
+        records = []
+        for activity in activities:
+            records.append({
+                'id': activity.id,
+                'distance': round(activity.distance_km, 2),  # Round to 2 decimal places
+                'date': activity.date.strftime('%Y-%m-%d'),
+            })
+        
+        return Response({
+            "start_date": start_date.strftime('%Y-%m-%d'),
+            "total_workouts": total_workouts,
+            "total_time_seconds": total_time_seconds,
+            "total_distance": total_distance,
+            "total_calories": total_calories,
+            "records": records
+        }, status=status.HTTP_200_OK)
+    
+    def retrieve(self, request, pk=None):
+        """Get detailed information for a specific running activity"""
+        user = request.user
+        
+        try:
+            # Get the specific running activity
+            activity = RunningActivity.objects.get(id=pk, user=user)
+            
+            # Create response data
+            response_data = {
+                "id": activity.id,
+                "distance_km": round(activity.distance_km, 2),
+                "time_seconds": activity.time_seconds,
+                "pace": activity.pace,
+                "calories_burned": activity.calories_burned,
+                "steps": activity.steps,
+                "date": activity.date.strftime('%Y-%m-%d'),
+                # Include any other fields you need
+            }
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+        except RunningActivity.DoesNotExist:
+            return Response(
+                {"error": "Running activity not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )

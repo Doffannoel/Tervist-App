@@ -64,163 +64,166 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF1F7F6),
       body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            Container(
-              width: 370,
-              height: 119,
-              margin: const EdgeInsets.only(
-                  left: 20, right: 20, top: 90, bottom: 44),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.black, width: 1),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 45,
-                    height: 45,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.shade300),
+        child: RefreshIndicator(
+          onRefresh: fetchUserProfile,
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              Container(
+                width: 370,
+                height: 119,
+                margin: const EdgeInsets.only(
+                    left: 20, right: 20, top: 90, bottom: 44),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.black, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 45,
+                      height: 45,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: ClipOval(
+                        child: profilePictureUrl != null
+                            ? Image.network(
+                                profilePictureUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey.shade300,
+                                    child: const Icon(Icons.person,
+                                        color: Colors.grey),
+                                  );
+                                },
+                              )
+                            : Image.asset(
+                                'assets/images/profile.png',
+                                fit: BoxFit.cover,
+                              ),
+                      ),
                     ),
-                    child: ClipOval(
-                      child: profilePictureUrl != null
-                          ? Image.network(
-                              profilePictureUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: Colors.grey.shade300,
-                                  child: const Icon(Icons.person,
-                                      color: Colors.grey),
-                                );
-                              },
-                            )
-                          : Image.asset(
-                              'assets/images/profile.png',
-                              fit: BoxFit.cover,
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 11),
-                  Text(
-                    username,
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const Spacer(),
-                  OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.ios_share,
-                        size: 10, color: Colors.orange),
-                    label: Text(
-                      'Share',
+                    const SizedBox(width: 11),
+                    Text(
+                      username,
                       style: GoogleFonts.poppins(
-                          color: Colors.orange, fontSize: 8),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.orange),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      minimumSize: const Size(58, 20),
+                    const Spacer(),
+                    OutlinedButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(Icons.ios_share,
+                          size: 10, color: Colors.orange),
+                      label: Text(
+                        'Share',
+                        style: GoogleFonts.poppins(
+                            color: Colors.orange, fontSize: 8),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.orange),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        minimumSize: const Size(58, 20),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const EditProfilePage()),
-                      ).then((_) {
-                        fetchUserProfile(); // ini akan refresh data setelah kembali dari edit
-                      });
-                    },
-                    icon: const Icon(Icons.edit_square,
-                        size: 10, color: Colors.orange),
-                    label: Text(
-                      'Edit',
-                      style: GoogleFonts.poppins(
-                          color: Colors.orange, fontSize: 8),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const EditProfilePage()),
+                        ).then((_) {
+                          fetchUserProfile(); // ini akan refresh data setelah kembali dari edit
+                        });
+                      },
+                      icon: const Icon(Icons.edit_square,
+                          size: 10, color: Colors.orange),
+                      label: Text(
+                        'Edit',
+                        style: GoogleFonts.poppins(
+                            color: Colors.orange, fontSize: 8),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.orange),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        minimumSize: const Size(58, 20),
+                      ),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.orange),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      minimumSize: const Size(58, 20),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const WeeklyChart(),
               ),
-              child: const WeeklyChart(),
-            ),
-            const SizedBox(height: 40),
-            buildMenuItem(
-              icon: Icons.show_chart_outlined,
-              title: 'Statistic',
-              value: '---',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const StatisticPage()),
-                );
-              },
-            ),
-            const Divider(height: 1),
-            buildMenuItem(
-              icon: Icons.restaurant_outlined,
-              title: 'Nutrition',
-              value: '---',
-              onTap: () {
-                Navigator.push(
+              const SizedBox(height: 40),
+              buildMenuItem(
+                icon: Icons.show_chart_outlined,
+                title: 'Statistic',
+                value: '---',
+                onTap: () {
+                  Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const NutritionPage()));
-              },
-            ),
-            const Divider(height: 1),
-            buildMenuItem(
-              icon: Icons.emoji_events,
-              title: 'Achievement',
-              value: '---',
-              onTap: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const AchievementPage()));
-              },
-            ),
-            const Divider(height: 1),
-            buildMenuItem(
-                icon: Icons.access_time,
-                title: 'Reminder',
+                        builder: (context) => const StatisticPage()),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              buildMenuItem(
+                icon: Icons.restaurant_outlined,
+                title: 'Nutrition',
                 value: '---',
                 onTap: () {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const ReminderPage()));
-                }),
-          ],
+                          builder: (context) => const NutritionPage()));
+                },
+              ),
+              const Divider(height: 1),
+              buildMenuItem(
+                icon: Icons.emoji_events,
+                title: 'Achievement',
+                value: '---',
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const AchievementPage()));
+                },
+              ),
+              const Divider(height: 1),
+              buildMenuItem(
+                  icon: Icons.access_time,
+                  title: 'Reminder',
+                  value: '---',
+                  onTap: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const ReminderPage()));
+                  }),
+            ],
+          ),
         ),
       ),
     );
@@ -317,7 +320,7 @@ class _WeeklyChartState extends State<WeeklyChart> {
         time += item['time_minutes'];
       }
 
-      setState(() {
+       setState(() {
         spots = tempSpots;
         labels = tempLabels;
         totalDistance = distance;

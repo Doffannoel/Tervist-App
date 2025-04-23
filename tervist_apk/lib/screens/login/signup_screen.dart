@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tervist_apk/api/api_config.dart';
+import 'package:tervist_apk/api/auth_helper.dart';
 import 'package:tervist_apk/api/login_service.dart';
 import 'package:tervist_apk/screens/forgetpassword/reset_password.dart';
 import 'package:tervist_apk/screens/homepage/homepage.dart';
@@ -36,6 +38,8 @@ class _AuthPageState extends State<AuthPage> {
 
   Future<void> _signInWithGoogle() async {
     try {
+      await _googleSignIn
+          .signOut(); // << Tambahin ini supaya muncul pilihan akun
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
@@ -50,24 +54,43 @@ class _AuthPageState extends State<AuthPage> {
       final response = await http.post(
         ApiConfig.socialLogin,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'provider': 'google',
-          'access_token': idToken,
-        }),
+        body: jsonEncode({'access_token': idToken}),
       );
 
       if (response.statusCode == 200) {
-        print('Login Google berhasil');
-        // Misalnya kamu mau simpan access token ke local storage atau pindah ke MainNavigation:
+        final data = jsonDecode(response.body);
+        final accessToken = data['access_token'];
+        final isNewUser = data['is_new_user'];
+        // SAVE token ke AuthHelper
+        await AuthHelper.saveToken(accessToken);
+
+        // SAVE access_token ke SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('access_token', accessToken);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                isNewUser ? "Selamat datang pengguna baru!" : "Welcome back!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const MainNavigation()),
         );
       } else {
-        print('Login gagal: ${response.body}');
+        print('Login Google gagal: ${response.body}');
       }
     } catch (e) {
       print('Error login google: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login Google gagal: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -383,76 +406,95 @@ class _AuthPageState extends State<AuthPage> {
                       ),
 
                       // Confirm Password - Only for Sign Up
-                      if (!_isSignIn) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          'Confirm password',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: !_isConfirmPasswordValid
-                                ? Colors.red
-                                : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: _isConfirmPasswordValid
-                                  ? Colors.grey.shade300
-                                  : Colors.red,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: TextField(
-                            controller: _confirmPasswordController,
-                            obscureText: !_isConfirmPasswordVisible,
-                            decoration: InputDecoration(
-                              hintText: 'Repeat Password',
-                              hintStyle: TextStyle(
-                                  color: _isConfirmPasswordValid
-                                      ? Colors.grey
-                                      : Colors.red,
-                                  fontSize: 14),
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 14),
-                              border: InputBorder.none,
-                              suffixIcon: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (!_isConfirmPasswordValid)
-                                    const Icon(Icons.warning_amber_rounded,
-                                        color: Colors.red),
-                                  IconButton(
-                                    icon: Icon(
-                                      _isConfirmPasswordVisible
-                                          ? Icons.visibility_off
-                                          : Icons.visibility,
-                                      color: Colors.grey,
-                                      size: 20,
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        child: AnimatedOpacity(
+                          opacity: _isSignIn ? 0.0 : 1.0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          child: _isSignIn
+                              ? const SizedBox() // ketika Sign In, kosong (tidak ada Confirm Password)
+                              : Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Confirm password',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: !_isConfirmPasswordValid
+                                            ? Colors.red
+                                            : Colors.black,
+                                      ),
                                     ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _isConfirmPasswordVisible =
-                                            !_isConfirmPasswordVisible;
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            onChanged: (value) {
-                              setState(() {
-                                _isConfirmPasswordValid = value.isNotEmpty;
-                                if (_passwordController.text != value) {
-                                  _isConfirmPasswordValid = false;
-                                }
-                              });
-                            },
-                          ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: _isConfirmPasswordValid
+                                              ? Colors.grey.shade300
+                                              : Colors.red,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: TextField(
+                                        controller: _confirmPasswordController,
+                                        obscureText: !_isConfirmPasswordVisible,
+                                        decoration: InputDecoration(
+                                          hintText: 'Repeat Password',
+                                          hintStyle: TextStyle(
+                                            color: _isConfirmPasswordValid
+                                                ? Colors.grey
+                                                : Colors.red,
+                                            fontSize: 14,
+                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 16, vertical: 14),
+                                          border: InputBorder.none,
+                                          suffixIcon: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (!_isConfirmPasswordValid)
+                                                const Icon(
+                                                    Icons.warning_amber_rounded,
+                                                    color: Colors.red),
+                                              IconButton(
+                                                icon: Icon(
+                                                  _isConfirmPasswordVisible
+                                                      ? Icons.visibility_off
+                                                      : Icons.visibility,
+                                                  color: Colors.grey,
+                                                  size: 20,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _isConfirmPasswordVisible =
+                                                        !_isConfirmPasswordVisible;
+                                                  });
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            _isConfirmPasswordValid =
+                                                value.isNotEmpty;
+                                            if (_passwordController.text !=
+                                                value) {
+                                              _isConfirmPasswordValid = false;
+                                            }
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
                         ),
-                      ],
+                      ),
 
                       // Remember Me & Forgot Password (Sign In)
                       if (_isSignIn)
@@ -679,19 +721,22 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   Widget _socialButton(String iconAsset, {VoidCallback? onTap}) {
-    return Container(
-      width: 80,
-      height: 44,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Image.asset(
-          iconAsset,
-          width: 24,
-          height: 24,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 80,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Image.asset(
+            iconAsset,
+            width: 24,
+            height: 24,
+          ),
         ),
       ),
     );
