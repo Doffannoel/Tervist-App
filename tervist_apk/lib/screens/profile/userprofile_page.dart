@@ -1,3 +1,4 @@
+// Tetap import seperti sebelumnya
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -23,6 +24,8 @@ class _ProfilePageState extends State<ProfilePage> {
   String username = 'Yesaya';
   String? profilePictureUrl;
 
+  final GlobalKey<_WeeklyChartState> chartKey = GlobalKey<_WeeklyChartState>();
+
   @override
   void initState() {
     super.initState();
@@ -47,7 +50,6 @@ class _ProfilePageState extends State<ProfilePage> {
         profilePictureUrl = data['profile_picture'];
       });
     } else if (response.statusCode == 401) {
-      // TOKEN EXPIRED → LOGOUT OTOMATIS
       await prefs.remove('access_token');
       if (context.mounted) {
         Navigator.pushAndRemoveUntil(
@@ -65,7 +67,10 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: const Color(0xFFF1F7F6),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: fetchUserProfile,
+          onRefresh: () async {
+            await fetchUserProfile();
+            await chartKey.currentState?.refreshSummary();
+          },
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
@@ -143,7 +148,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           MaterialPageRoute(
                               builder: (context) => const EditProfilePage()),
                         ).then((_) {
-                          fetchUserProfile(); // ini akan refresh data setelah kembali dari edit
+                          fetchUserProfile();
                         });
                       },
                       icon: const Icon(Icons.edit_square,
@@ -172,7 +177,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const WeeklyChart(),
+                child: WeeklyChart(key: chartKey),
               ),
               const SizedBox(height: 40),
               buildMenuItem(
@@ -291,7 +296,11 @@ class _WeeklyChartState extends State<WeeklyChart> {
   @override
   void initState() {
     super.initState();
-    fetchMonthlySummary(); // Ganti fetch ke versi monthly
+    fetchMonthlySummary();
+  }
+
+  Future<void> refreshSummary() async {
+    await fetchMonthlySummary();
   }
 
   Future<void> fetchMonthlySummary() async {

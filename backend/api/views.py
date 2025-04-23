@@ -1,4 +1,5 @@
 from collections import defaultdict
+import json, ast
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions, status, filters
@@ -504,15 +505,29 @@ class RunningActivityView(viewsets.ModelViewSet):
             distance = serializer.validated_data['distance_km']
             time = serializer.validated_data['time_seconds']
             steps = serializer.validated_data['steps']
+            
+            # Fix: handle route_data correctly whether it's a list or string
+            route_data_raw = self.request.data.get('route_data', '[]')
+            try:
+                if isinstance(route_data_raw, str):
+                    route_data_parsed = ast.literal_eval(route_data_raw)
+                else:
+                    route_data_parsed = route_data_raw
+            except Exception as e:
+                print("❌ Failed to parse route_data:", e)
+                route_data_parsed = []
+
+            route_data_str = json.dumps(route_data_parsed)
+            
             calories_burned = self.calculate_calories_burned(distance, time, steps)
 
             running_activity = serializer.save(
                 user=user,
-                calories_burned=calories_burned
+                calories_burned=calories_burned,
+                route_data=route_data_str
             )
             running_activity.calculate_pace()
 
-            # Update steps and calories burned in DailySteps and CaloriesBurned
             self.update_daily_steps(user, steps)
             self.update_calories_burned(user, calories_burned)
 
@@ -911,6 +926,7 @@ class RunningHistoryViewSet(viewsets.ViewSet):
                 "calories_burned": activity.calories_burned,
                 "steps": activity.steps,
                 "date": activity.date.strftime('%Y-%m-%d'),
+                "route_data": json.loads(activity.route_data) if activity.route_data else [],
                 # Include any other fields you need
             }
             

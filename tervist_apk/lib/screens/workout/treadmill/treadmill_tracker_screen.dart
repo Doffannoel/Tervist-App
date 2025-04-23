@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tervist_apk/api/auth_helper.dart';
+import 'package:tervist_apk/screens/login/signup_screen.dart';
 import 'package:tervist_apk/screens/workout/treadmill/treadmill_service.dart';
 import 'treadmill_timestamp.dart';
 import 'treadmill_summary.dart';
@@ -54,7 +56,7 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen>
   @override
   void initState() {
     super.initState();
-    // Create a ticker for more efficient UI updates
+
     _ticker = createTicker((elapsed) {
       if (_needsUpdate) {
         _needsUpdate = false;
@@ -63,7 +65,22 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen>
     });
     _ticker?.start();
 
-    // Load user profile data
+    _ensureTokenAndLoad();
+  }
+
+  Future<void> _ensureTokenAndLoad() async {
+    final token = await AuthHelper.getToken();
+    if (token == null) {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => AuthPage()),
+        );
+      }
+      return;
+    }
+
+    // lanjut load profil
     _loadUserProfile();
   }
 
@@ -260,10 +277,14 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen>
   }
 
   Widget _buildInitialScreen() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return RefreshIndicator(
+      onRefresh: () async {
+        await AuthHelper.refreshTokenIfNeeded();
+        await _loadUserProfile();
+      },
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
           // App bar with profile image
           Padding(
@@ -279,7 +300,6 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen>
                     color: Colors.black,
                   ),
                 ),
-                // Updated profile image to use network image when available
                 Container(
                   width: 40,
                   height: 40,
@@ -294,45 +314,34 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen>
                             _profileImageUrl!,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) =>
-                                Image.asset(
-                              'assets/images/profile.png',
-                              fit: BoxFit.cover,
-                            ),
+                                Image.asset('assets/images/profile.png',
+                                    fit: BoxFit.cover),
                           ),
                         )
-                      : Image.asset(
-                          'assets/images/profile.png',
-                          fit: BoxFit.cover,
-                        ),
+                      : Image.asset('assets/images/profile.png',
+                          fit: BoxFit.cover),
                 ),
               ],
             ),
           ),
 
-          // Distance and weather
+          // Distance & weather
           Padding(
             padding: const EdgeInsets.only(bottom: 10.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Distance section
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Distance label with icon
-                    Row(
-                      children: [
-                        Text(
-                          'Distance >',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'Distance >',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
                     ),
-                    // Distance value
                     Text(
                       '${distance.toStringAsFixed(2)} KM',
                       style: GoogleFonts.poppins(
@@ -343,44 +352,37 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen>
                     ),
                   ],
                 ),
-
-                // Weather information
                 const WeatherWidget(),
               ],
             ),
           ),
 
-          // Workout type selector - Pass the callback from the parent
+          // Workout type switcher
           WorkoutNavbar(
             currentWorkoutType: 'Treadmill',
             onWorkoutTypeChanged: (newType) {
-              // Pass the type change to the parent
               if (widget.onWorkoutTypeChanged != null) {
                 widget.onWorkoutTypeChanged!(newType);
               }
             },
           ),
 
-          // Phone placement info
+          // Phone placement
           Padding(
             padding: const EdgeInsets.only(top: 8.0, bottom: 10.0),
             child: Row(
               children: [
                 Text(
                   'Where should you put your phone?',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.black54,
-                  ),
+                  style:
+                      GoogleFonts.poppins(fontSize: 12, color: Colors.black54),
                 ),
                 const SizedBox(width: 4),
                 Container(
                   width: 14,
                   height: 14,
                   decoration: const BoxDecoration(
-                    color: Colors.black,
-                    shape: BoxShape.circle,
-                  ),
+                      color: Colors.black, shape: BoxShape.circle),
                   child: const Icon(Icons.question_mark,
                       color: Colors.white, size: 10),
                 ),
@@ -389,18 +391,17 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen>
           ),
 
           // Treadmill image
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Image.asset(
-                'assets/images/treadmill.png',
-                fit: BoxFit.contain,
-              ),
+          Container(
+            width: double.infinity,
+            height: 420,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Image.asset(
+              'assets/images/treadmill.png',
+              fit: BoxFit.contain,
             ),
           ),
 
@@ -440,6 +441,8 @@ class _TreadmillTrackerScreenState extends State<TreadmillTrackerScreen>
               ),
             ),
           ),
+
+          const SizedBox(height: 30), // ✅ biar bisa swipe nyaman
         ],
       ),
     );

@@ -63,7 +63,7 @@ class RunningActivitySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RunningActivity
-        fields = ['id', 'user', 'distance_km', 'time_seconds', 'pace', 'calories_burned', 'steps', 'date']
+        fields = ['id', 'user', 'distance_km', 'time_seconds', 'pace', 'calories_burned', 'steps', 'date', 'route_data']
 
 class WalkingActivitySerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')

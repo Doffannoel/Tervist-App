@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -17,6 +19,7 @@ class RunningSummary extends StatefulWidget {
   final int calories;
   final int steps;
   final List<LatLng> routePoints;
+  final List<dynamic>? routeData;
   final List<Marker> markers;
   final List<Polyline> polylines;
   final Color primaryGreen;
@@ -37,7 +40,8 @@ class RunningSummary extends StatefulWidget {
     required this.primaryGreen,
     required this.onBackToHome,
     required this.duration,
-    this.userName = "User", // Default to "User" if not provided
+    this.routeData,
+    this.userName = "User",
   });
 
   @override
@@ -52,10 +56,35 @@ class _RunningSummaryState extends State<RunningSummary> {
   bool _isLoading = true;
   String? _profileImageUrl; // Add profile image URL
 
+  List<LatLng> routePoints = [];
+
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+
+    // ✅ Pastikan routePoints diisi dari routeData kalau routePoints kosong
+    if (widget.routePoints.isEmpty && widget.routeData != null) {
+      final rawRoute = widget.routeData!;
+      try {
+        routePoints = (rawRoute)
+            .map((e) => LatLng(
+                  (e['lat'] ?? e['latitude']).toDouble(),
+                  (e['lng'] ?? e['longitude']).toDouble(),
+                ))
+            .toList();
+
+        print(
+            '🟢 Parsed routePoints from routeData: ${routePoints.length} points');
+      } catch (e) {
+        print('❌ Failed to parse routeData: $e');
+        routePoints = []; // fallback kosong
+      }
+    } else {
+      routePoints = List.from(widget.routePoints);
+      print('🟢 Using provided routePoints: ${routePoints.length} points');
+    }
+
+    _loadUserData(); // Tetap load user info
   }
 
   // Load user data if needed
@@ -96,21 +125,21 @@ class _RunningSummaryState extends State<RunningSummary> {
   }
 
   LatLng _calculateMapCenter() {
-    if (widget.routePoints.isEmpty) {
-      return const LatLng(-7.767, 110.378); // Default center
+    if (routePoints.isEmpty) {
+      return const LatLng(-7.767, 110.378); // fallback ke Jogja
     }
 
     double latSum = 0;
     double lngSum = 0;
 
-    for (var point in widget.routePoints) {
+    for (var point in routePoints) {
       latSum += point.latitude;
       lngSum += point.longitude;
     }
 
     return LatLng(
-      latSum / widget.routePoints.length,
-      lngSum / widget.routePoints.length,
+      latSum / routePoints.length,
+      lngSum / routePoints.length,
     );
   }
 
@@ -241,7 +270,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                             mapController: _mapController,
                             options: MapOptions(
                               initialCenter: _calculateMapCenter(),
-                              initialZoom: 14,
+                              initialZoom: 15,
                               interactionOptions: const InteractionOptions(
                                 enableMultiFingerGestureRace: true,
                               ),
@@ -333,6 +362,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                               ),
 
                               // User info with profile image
+                              Column(
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
@@ -661,19 +691,18 @@ class _RunningSummaryState extends State<RunningSummary> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => ShareScreen(
-                          distance: widget.distance,
-                          formattedDuration: widget.formattedDuration,
-                          formattedPace: widget.formattedPace,
-                          calories: widget.calories,
-                          steps: widget.steps,
-                          activityType: 'Outdoor Running',
-                          workoutDate: _currentDateTime,
-                          userName: _userName,
-                          routePoints: widget.routePoints,
-                          polylines: widget.polylines,
-                          markers: widget.markers,
-                          profileImageUrl: _profileImageUrl
-                        ),
+                            distance: widget.distance,
+                            formattedDuration: widget.formattedDuration,
+                            formattedPace: widget.formattedPace,
+                            calories: widget.calories,
+                            steps: widget.steps,
+                            activityType: 'Outdoor Running',
+                            workoutDate: _currentDateTime,
+                            userName: _userName,
+                            routePoints: widget.routePoints,
+                            polylines: widget.polylines,
+                            markers: widget.markers,
+                            profileImageUrl: _profileImageUrl),
                       ),
                     );
                   },

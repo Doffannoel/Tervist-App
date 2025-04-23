@@ -3,6 +3,7 @@ from django.db import models
 from authentication.models import CustomUser
 from django.utils import timezone
 from decimal import Decimal
+import json
 
 class NutritionalTarget(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
@@ -176,6 +177,7 @@ class RunningActivity(models.Model):
     calories_burned = models.IntegerField()  # Calories burned during the activity
     steps = models.IntegerField()  # Total steps during the activity
     date = models.DateField(default=timezone.now)  # Date of the activity
+    route_data = models.TextField(null=True, blank=True)  # Simpan JSON string
 
     def calculate_pace(self):
         """ Calculate the pace in minutes per kilometer """

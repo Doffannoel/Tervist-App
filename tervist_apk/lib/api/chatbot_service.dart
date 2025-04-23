@@ -8,8 +8,7 @@ class ChatbotService {
   static const _chatKey = 'tervy_messages_context';
 
   // ⚠️ PENTING: Ganti dengan API key terbaru dari OpenRouter
-  static const _apiKey =
-      'API Key Disini';
+  static const _apiKey = 'API Key Disini';
 
   static Future<String> getChatResponse(
     String message,
@@ -58,7 +57,7 @@ class ChatbotService {
       {
         'role': 'system',
         'content':
-            'Kamu adalah Tervy, asisten nutrisi cerdas dalam Bahasa Indonesia. Berikan informasi nutrisi secara akurat dan ringkas. Untuk setiap makanan, berikan estimasi kalori, protein, lemak, dan karbohidrat.'
+            'Kamu adalah Tervy, asisten nutrisi cerdas dalam Bahasa Indonesia. Berikan informasi nutrisi secara akurat dan ringkas. Untuk setiap makanan, berikan estimasi kalori, protein, lemak, dan karbohidrat dalam pembulatan bilangan bulat.'
       },
       ...history,
       {'role': 'user', 'content': message},
