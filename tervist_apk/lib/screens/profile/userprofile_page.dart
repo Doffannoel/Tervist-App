@@ -329,7 +329,7 @@ class _WeeklyChartState extends State<WeeklyChart> {
         time += item['time_minutes'];
       }
 
-      setState(() {
+       setState(() {
         spots = tempSpots;
         labels = tempLabels;
         totalDistance = distance;
