@@ -700,7 +700,7 @@ class _HomePageState extends State<HomePage>
         Stack(
           alignment: Alignment.center,
           children: [
-            // Background circle (light gray)
+            // Background circle (gray)
             SizedBox(
               height: 180,
               width: 180,
@@ -712,68 +712,88 @@ class _HomePageState extends State<HomePage>
               ),
             ),
 
-            // Segment 1 - Dark Blue (425E8E) - First 25%
+            // Segment 1 - Animated
             SizedBox(
               height: 180,
               width: 180,
-              child: CircularProgressIndicator(
-                value: segment1Progress,
-                strokeWidth: 28,
-                backgroundColor: Colors.transparent,
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(Color(0xFF425E8E)),
+              child: AnimatedBuilder(
+                animation: _progressAnimation,
+                builder: (context, child) {
+                  return CircularProgressIndicator(
+                    value: segment1Progress * _progressAnimation.value,
+                    strokeWidth: 28,
+                    backgroundColor: Colors.transparent,
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Color(0xFF425E8E)),
+                  );
+                },
               ),
             ),
 
-            // Segment 2 - Medium Blue (587DBD) - Second 25%
+            // Segment 2 - Animated
             SizedBox(
               height: 180,
               width: 180,
-              child: Transform.rotate(
-                angle: 2 * 3.14159 * 0.25, // Rotate to start at 25%
-                child: CircularProgressIndicator(
-                  value: segment2Progress,
-                  strokeWidth: 28,
-                  backgroundColor: Colors.transparent,
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(Color(0xFF587DBD)),
-                ),
+              child: AnimatedBuilder(
+                animation: _progressAnimation,
+                builder: (context, child) {
+                  return Transform.rotate(
+                    angle: 2 * pi * 0.25,
+                    child: CircularProgressIndicator(
+                      value: segment2Progress * _progressAnimation.value,
+                      strokeWidth: 28,
+                      backgroundColor: Colors.transparent,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF587DBD)),
+                    ),
+                  );
+                },
               ),
             ),
 
-            // Segment 3 - Teal (00A991) - Third 25%
+            // Segment 3 - Animated
             SizedBox(
               height: 180,
               width: 180,
-              child: Transform.rotate(
-                angle: 2 * 3.14159 * 0.50, // Rotate to start at 50%
-                child: CircularProgressIndicator(
-                  value: segment3Progress,
-                  strokeWidth: 28,
-                  backgroundColor: Colors.transparent,
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(Color(0xFF00A991)),
-                ),
+              child: AnimatedBuilder(
+                animation: _progressAnimation,
+                builder: (context, child) {
+                  return Transform.rotate(
+                    angle: 2 * pi * 0.50,
+                    child: CircularProgressIndicator(
+                      value: segment3Progress * _progressAnimation.value,
+                      strokeWidth: 28,
+                      backgroundColor: Colors.transparent,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF00A991)),
+                    ),
+                  );
+                },
               ),
             ),
 
-            // Segment 4 - Dark Green (007F6D) - Last 25%
+            // Segment 4 - Animated
             SizedBox(
               height: 180,
               width: 180,
-              child: Transform.rotate(
-                angle: 2 * 3.14159 * 0.75, // Rotate to start at 75%
-                child: CircularProgressIndicator(
-                  value: segment4Progress,
-                  strokeWidth: 28,
-                  backgroundColor: Colors.transparent,
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(Color(0xFF007F6D)),
-                ),
+              child: AnimatedBuilder(
+                animation: _progressAnimation,
+                builder: (context, child) {
+                  return Transform.rotate(
+                    angle: 2 * pi * 0.75,
+                    child: CircularProgressIndicator(
+                      value: segment4Progress * _progressAnimation.value,
+                      strokeWidth: 28,
+                      backgroundColor: Colors.transparent,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF007F6D)),
+                    ),
+                  );
+                },
               ),
             ),
 
-            // Center text
+            // Center text (tidak perlu diubah)
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

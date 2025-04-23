@@ -12,6 +12,7 @@ class RunningService {
     required int caloriesBurned,
     required int steps,
     required DateTime date,
+    required List<Map<String, double>> routeData,
   }) async {
     final token = await AuthHelper.getToken();
 
@@ -28,6 +29,7 @@ class RunningService {
         'calories_burned': caloriesBurned,
         'steps': steps,
         'date': date.toIso8601String().substring(0, 10),
+        'route_data': routeData,
       }),
     );
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -55,7 +57,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
     }
   }
 
-  Future<void> _navigateToRunningSummary(int activityId) async {
+Future<void> _navigateToRunningSummary(int activityId) async {
     setState(() {
       _isLoading = true;
     });
@@ -65,30 +67,57 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
       final activityData = await _runningService.getRunningDetail(activityId);
 
       // Extract data
-      final distance = activityData['distance_km'].toDouble();
-      final timeSeconds = activityData['time_seconds'];
-      final pace = activityData['pace'].toDouble();
-      final calories = activityData['calories_burned'];
-      final steps = activityData['steps'];
+      final distance = (activityData['distance_km'] ?? 0).toDouble();
+      final timeSeconds = activityData['time_seconds'] ?? 0;
+      final pace = (activityData['pace'] ?? 0).toDouble();
+      final calories = activityData['calories_burned'] ?? 0;
+      final steps = activityData['steps'] ?? 0;
 
       // Format duration
       final duration = Duration(seconds: timeSeconds);
       final hours = duration.inHours;
-      final minutes = (duration.inMinutes % 60);
-      final seconds = (duration.inSeconds % 60);
+      final minutes = duration.inMinutes % 60;
+      final seconds = duration.inSeconds % 60;
       final formattedDuration =
           '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 
       // Format pace (minutes per km)
-      final paceMinutes = (pace / 60).floor();
-      final paceSeconds = (pace % 60).floor();
+      final paceMinutes = pace.floor();
+      final paceSeconds = ((pace - paceMinutes) * 60).floor();
       final formattedPace =
-          '$paceMinutes:${paceSeconds.toString().padLeft(2, '0')}';
+          "$paceMinutes'${paceSeconds.toString().padLeft(2, '0')}\"";
 
-      // Since we don't have route data in history, use empty lists
-      final routePoints = <LatLng>[];
-      final markers = <Marker>[];
-      final polylines = <Polyline>[];
+      // Parse route_data (can be string or list)
+      final rawRouteData = activityData['route_data'];
+      final routeData = rawRouteData is String
+          ? jsonDecode(rawRouteData)
+          : (rawRouteData ?? []);
+
+      // Clean routePoints
+      final routePoints =
+          (routeData as List).map((e) => LatLng(e['lat'], e['lng'])).toList();
+
+      // (Optional) Generate default markers and polyline if needed
+      final markers = routePoints.isNotEmpty
+          ? [
+              Marker(
+                point: routePoints.first,
+                width: 60,
+                height: 60,
+                child: const Icon(Icons.location_on, color: Colors.green),
+              ),
+            ]
+          : [];
+
+      final polylines = routePoints.isNotEmpty
+          ? [
+              Polyline(
+                points: routePoints,
+                color: primaryGreen,
+                strokeWidth: 5,
+              )
+            ]
+          : [];
 
       setState(() {
         _isLoading = false;
@@ -104,9 +133,10 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
             formattedPace: formattedPace,
             calories: calories,
             steps: steps,
-            routePoints: routePoints,
-            markers: markers,
-            polylines: polylines,
+            routePoints: [], 
+            routeData: routeData,
+            markers: markers.cast<Marker>(),
+            polylines: polylines.cast<Polyline<Object>>(),
             primaryGreen: primaryGreen,
             onBackToHome: () => Navigator.pop(context),
             duration: duration,
@@ -119,7 +149,6 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
         _isLoading = false;
       });
 
-      // Show error snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to load activity details: $e'),
@@ -128,6 +157,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

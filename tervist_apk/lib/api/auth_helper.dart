@@ -129,4 +129,15 @@ class AuthHelper {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('profile_picture');
   }
+
+  static Future<void> refreshTokenIfNeeded() async {
+    final isLoggedInNow = await isLoggedIn();
+    if (!isLoggedInNow) {
+      print('🔄 Token dianggap expired, redirect atau ambil ulang kalau perlu');
+      // Lu bisa tambahin logic login ulang otomatis di sini
+      // Atau redirect ke login screen
+    } else {
+      print('✅ Token masih valid');
+    }
+  }
 }

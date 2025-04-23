@@ -113,24 +113,18 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
   }
 
   void stopWorkout() async {
-    _timer?.cancel();
-
-    // Stop session in MapService
-    MapService.stopSession();
-
-    // Calculate pace in minutes per km
-    double paceMinutes = 0;
-    if (distance > 0) {
-      paceMinutes = duration.inSeconds / 60 / distance;
-    }
-
-    // Verify authentication status first
     try {
-      // Check if we have a valid token
+      _timer?.cancel();
+      MapService.stopSession();
+
+      double paceMinutes = 0;
+      if (distance > 0) {
+        paceMinutes = duration.inSeconds / 60 / distance;
+      }
+
       bool isAuthenticated = await AuthHelper.isLoggedIn();
 
       if (!isAuthenticated) {
-        print('Authentication failed - user may need to log in again');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -140,75 +134,82 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
             ),
           );
         }
-        // Still proceed to save the workout but expect it might fail
+        return;
       }
 
-      // Print key values before saving
-      print('Saving running activity:');
+      final fullRoutePoints = MapService.getRouteHistory();
+
+      print('🗺️ Total Route Points: ${fullRoutePoints.length}');
+
+      // Ubah ke format JSON
+      final routeJson = fullRoutePoints
+          .map((point) => {
+                'lat': point.latitude,
+                'lng': point.longitude,
+              })
+          .toList();
+
+      if (routeJson.length < 2) {
+        print('⚠️ Rute terlalu pendek, tidak disimpan.');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Rute terlalu pendek, coba gerak lebih jauh.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+
+      print('💾 Saving running activity:');
       print('- Distance: $distance km');
       print('- Duration: ${duration.inSeconds} seconds');
       print('- Pace: $paceMinutes min/km');
       print('- Calories: $calories');
       print('- Steps: $steps');
+      print('- Route Points: ${routeJson.length}');
+      print('📦 Route JSON: $routeJson');
 
-      // Save running activity to backend
-      bool saved = await _runningService.saveRunningActivity(
+      final saved = await _runningService.saveRunningActivity(
         distanceKm: distance,
         timeSeconds: duration.inSeconds,
         pace: paceMinutes,
         caloriesBurned: calories,
         steps: steps,
         date: DateTime.now(),
+        routeData: routeJson,
       );
 
-      if (saved) {
-        print('Running activity successfully saved to backend');
-
-        // Show success message
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Aktivitas lari berhasil disimpan'),
-              backgroundColor: primaryGreen,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-      } else {
-        print('Failed to save running activity');
-
-        // Show error message
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Gagal menyimpan aktivitas lari - periksa koneksi internet'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
+      if (saved && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Aktivitas lari berhasil disimpan'),
+            backgroundColor: primaryGreen,
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
-    } catch (e) {
-      print('Error saving running activity: $e');
-
-      // Show error message
+    } catch (e, stackTrace) {
+      print('🚨 Error saving activity: $e');
+      print('Stack trace: $stackTrace');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('Gagal menyimpan aktivitas: $e'),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
           ),
         );
       }
     } finally {
-      // Always update UI state regardless of whether the save succeeded
       setState(() {
         isWorkoutActive = false;
         isPaused = false;
-        currentStep = 2; // Move to summary screen
+        currentStep = 2;
       });
+
+      MapService.stopLocationUpdates();
     }
   }
 
@@ -425,17 +426,21 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
   // Method to subscribe to location updates
   void _subscribeToLocationUpdates() {
     MapService.getLiveLocationStream().listen((newLocation) {
-      // Update map data with the new location, only if workout is active
+      print("🌍 New Location: $newLocation");
+      print("🏃 Workout Active: $isWorkoutActive");
+      print("🏃 Not Paused: ${!isPaused}");
       if (isWorkoutActive && !isPaused) {
-        _updateMapWithNewLocation();
+        // Cek apakah titik terakhir sudah cukup jauh sebelum dianggap sebagai "gerak"
+        if (routePoints.isEmpty ||
+            _calculateDistance(routePoints.last, newLocation) > 0.003) {
+          _updateMapWithNewLocation();
+        }
       }
 
-      // If follow mode is enabled, center the map on the current location
       if (_isFollowingUser) {
         _mapController?.move(newLocation, _mapController?.camera.zoom ?? 15.0);
       }
 
-      // Signal that we need an update
       _needsUpdate = true;
     });
   }
@@ -451,6 +456,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
       markers = mapData.markers;
       polylines = mapData.polylines;
     });
+    print("Tracking Route Points: ${routePoints.length}");
 
     // If in active tracking mode, center the map on the current location if following is enabled
     if (isWorkoutActive && currentStep == 1 && _isFollowingUser) {
@@ -727,6 +733,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
           polylines: polylines,
           primaryGreen: primaryGreen,
           duration: duration,
+
           onBackToHome: () {
             setState(() {
               currentStep = 0; // Back to initial screen
@@ -797,14 +804,18 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const RunningHistoryScreen(),
+                              builder: (context) =>
+                                  const RunningHistoryScreen(),
                             ),
                           );
                         },
-                        splashColor: primaryGreen.withOpacity(0.1), // Add splash effect
-                        borderRadius: BorderRadius.circular(8), // Round the splash effect
+                        splashColor:
+                            primaryGreen.withOpacity(0.1), // Add splash effect
+                        borderRadius:
+                            BorderRadius.circular(8), // Round the splash effect
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 4.0, horizontal: 8.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1005,7 +1016,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
                       ),
 
                       // Follow Me Button
-Positioned(
+                      Positioned(
                         right: 10,
                         bottom: 10,
                         child: FollowMeButton(
