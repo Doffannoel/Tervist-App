@@ -43,6 +43,43 @@ class CaloriesBurnedAdmin(admin.ModelAdmin):
     list_filter = ('date', 'user')
     autocomplete_fields = ['user']  # mencegah user kosong
 
+
+class RunningActivityForm(forms.ModelForm):
+    hours = forms.IntegerField(label='Jam', required=False, min_value=0, initial=0)
+    minutes = forms.IntegerField(label='Menit', required=False, min_value=0, initial=0)
+    seconds = forms.IntegerField(label='Detik', required=False, min_value=0, initial=0)
+
+    class Meta:
+        model = RunningActivity
+        fields = ['user', 'date', 'distance_km', 'steps', 'route_data']  # ✅ Tambahkan 'route_data'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        hours = cleaned_data.get('hours') or 0
+        minutes = cleaned_data.get('minutes') or 0
+        seconds = cleaned_data.get('seconds') or 0
+        total_seconds = hours * 3600 + minutes * 60 + seconds
+        cleaned_data['time_seconds'] = total_seconds
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.time_seconds = self.cleaned_data['time_seconds']
+
+        if instance.distance_km > 0:
+            instance.pace = (instance.time_seconds / 60) / instance.distance_km
+        else:
+            instance.pace = 0
+
+        weight = instance.user.weight or 60
+        MET = 5.0
+        calories = (float(weight) * MET * instance.time_seconds) / 60
+        instance.calories_burned = round(calories)
+
+        if commit:
+            instance.save()
+        return instance
+
 class RunningActivityForm(forms.ModelForm):
     hours = forms.IntegerField(label='Jam', required=False, min_value=0, initial=0)
     minutes = forms.IntegerField(label='Menit', required=False, min_value=0, initial=0)
@@ -101,6 +138,7 @@ class RunningActivityAdmin(admin.ModelAdmin):
     list_filter = ('user', 'date')
     search_fields = ('user__username',)
     autocomplete_fields = ['user']
+    fields = ['user', 'date', 'distance_km', 'steps', 'route_data']  # ✅ Biar bisa edit route_data manual
 
     @admin.display(description='Time (hh:mm:ss)')
     def formatted_time(self, obj):
@@ -113,7 +151,8 @@ class RunningActivityAdmin(admin.ModelAdmin):
     @admin.display(description='Pace (min/km)')
     def pace_min_per_km(self, obj):
         return round(obj.pace_min_per_km, 2)
-
+    
+    
 @admin.register(CyclingActivity)
 class CyclingActivityAdmin(admin.ModelAdmin):
     list_display = (
