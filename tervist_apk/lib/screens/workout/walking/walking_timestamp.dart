@@ -61,6 +61,39 @@ class _walkingTimestampState extends State<walkingTimestamp> {
     });
   }
 
+  String standardizedPaceDisplay(String originalPace) {
+    // Parse the original pace format (e.g., "10'30\"")
+    List<String> parts = originalPace.split("'");
+    if (parts.length != 2) return originalPace;
+
+    String minutesPart = parts[0];
+    String secondsPart = parts[1].replaceAll("\"", "");
+
+    try {
+      int minutes = int.parse(minutesPart);
+      int seconds = int.parse(secondsPart);
+
+      // Convert to total seconds
+      int totalSeconds = (minutes * 60) + seconds;
+
+      // Standard walking pace is 11 min/km = 660 seconds
+      // Apply a small variation based on the original pace
+      double variation =
+          (totalSeconds / 660.0 - 1.0) * 0.2; // 20% of the difference
+      int standardizedSeconds =
+          660 + (variation * 660).round(); // Using 660 seconds for 11 min/km
+
+      // Convert back to min:sec format
+      int standardMinutes = standardizedSeconds ~/ 60;
+      int standardSecs = standardizedSeconds % 60;
+
+      return "$standardMinutes'${standardSecs.toString().padLeft(2, '0')}\"";
+    } catch (e) {
+      // If parsing fails, return the original
+      return originalPace;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
