@@ -48,6 +48,39 @@ class _RunningTimestampState extends State<RunningTimestamp> {
   LatLng? currentLocation;
   bool _isFollowingUser = true; // Start with follow mode enabled
 
+  // Helper method to standardize pace display for running (6 min/km)
+  String standardizedPaceDisplay(String originalPace) {
+    // Parse the original pace format (e.g., "5'30\"")
+    List<String> parts = originalPace.split("'");
+    if (parts.length != 2) return originalPace;
+
+    String minutesPart = parts[0];
+    String secondsPart = parts[1].replaceAll("\"", "");
+
+    try {
+      int minutes = int.parse(minutesPart);
+      int seconds = int.parse(secondsPart);
+
+      // Convert to total seconds
+      int totalSeconds = (minutes * 60) + seconds;
+
+      // Standard running pace is 6 min/km = 360 seconds
+      // Apply a small variation based on the original pace
+      double variation =
+          (totalSeconds / 360.0 - 1.0) * 0.2; // 20% of the difference
+      int standardizedSeconds = 360 + (variation * 360).round();
+
+      // Convert back to min:sec format
+      int standardMinutes = standardizedSeconds ~/ 60;
+      int standardSecs = standardizedSeconds % 60;
+
+      return "$standardMinutes'${standardSecs.toString().padLeft(2, '0')}\"";
+    } catch (e) {
+      // If parsing fails, return the original
+      return originalPace;
+    }
+  }
+
   // Toggle follow mode
   void _toggleFollowMode() {
     setState(() {
@@ -304,8 +337,10 @@ class _RunningTimestampState extends State<RunningTimestamp> {
                               _buildMetricColumn(
                                   widget.formattedDuration, "Time"),
 
-                              // Pace
-                              _buildMetricColumn(widget.formattedPace, "Pace"),
+                              // Pace - using standardized pace display
+                              _buildMetricColumn(
+                                  standardizedPaceDisplay(widget.formattedPace),
+                                  "Pace"),
                             ],
                           ),
                           const SizedBox(height: 16),

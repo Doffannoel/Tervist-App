@@ -10,7 +10,7 @@ import '../share_screen.dart';
 import '/api/auth_helper.dart'; // Import for user data
 import 'package:intl/intl.dart'; // Import for date formatting
 import '../pace_statistics_widget.dart'; // Import widget pace statistics
-import 'package:cached_network_image/cached_network_image.dart'; 
+import 'package:cached_network_image/cached_network_image.dart';
 
 class RunningSummary extends StatefulWidget {
   final double distance;
@@ -57,6 +57,39 @@ class _RunningSummaryState extends State<RunningSummary> {
   String? _profileImageUrl; // Add profile image URL
 
   List<LatLng> routePoints = [];
+
+  // Helper method to standardize pace display for running (6 min/km)
+  String standardizedPaceDisplay(String originalPace) {
+    // Parse the original pace format (e.g., "5'30\"")
+    List<String> parts = originalPace.split("'");
+    if (parts.length != 2) return originalPace;
+
+    String minutesPart = parts[0];
+    String secondsPart = parts[1].replaceAll("\"", "");
+
+    try {
+      int minutes = int.parse(minutesPart);
+      int seconds = int.parse(secondsPart);
+
+      // Convert to total seconds
+      int totalSeconds = (minutes * 60) + seconds;
+
+      // Standard running pace is 6 min/km = 360 seconds
+      // Apply a small variation based on the original pace
+      double variation =
+          (totalSeconds / 360.0 - 1.0) * 0.2; // 20% of the difference
+      int standardizedSeconds = 360 + (variation * 360).round();
+
+      // Convert back to min:sec format
+      int standardMinutes = standardizedSeconds ~/ 60;
+      int standardSecs = standardizedSeconds % 60;
+
+      return "$standardMinutes'${standardSecs.toString().padLeft(2, '0')}\"";
+    } catch (e) {
+      // If parsing fails, return the original
+      return originalPace;
+    }
+  }
 
   @override
   void initState() {
@@ -160,31 +193,32 @@ class _RunningSummaryState extends State<RunningSummary> {
     if (widget.distance <= 0) {
       return []; // Empty list for zero distance
     }
-    
+
     // Base pace for running activity (km/h)
+    // For running 6 min/km = 10 km/h base speed
     double basePace = 10.0;
-    
+
     // Determine number of kilometers to display (up to 7 max)
     int totalKm = widget.distance < 1 ? 1 : widget.distance.floor();
     totalKm = math.min(totalKm, 7); // Max 7 km for visualization
-    
+
     // Random generator
     final random = math.Random();
-    
+
     List<Map<String, dynamic>> paceData = [];
-    
+
     // Generate random pace data for each kilometer
     for (int i = 1; i <= totalKm; i++) {
-      // Random variation of ±30% from base pace
-      double randomVariation = 0.7 + (0.6 * random.nextDouble());
+      // Random variation of ±20% from base pace (more consistent for running)
+      double randomVariation = 0.8 + (0.4 * random.nextDouble());
       double adjustedPace = basePace * randomVariation;
-      
+
       paceData.add({
         'km': i,
         'pace': adjustedPace.round(),
       });
     }
-    
+
     return paceData;
   }
 
@@ -362,7 +396,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                               ),
 
                               // User info with profile image
-                              
+
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
@@ -483,12 +517,13 @@ class _RunningSummaryState extends State<RunningSummary> {
                                 ],
                               ),
 
-                              // Pace column
+                              // Pace column - using standardized pace
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    widget.formattedPace,
+                                    standardizedPaceDisplay(
+                                        widget.formattedPace),
                                     style: GoogleFonts.poppins(
                                       fontSize: 24,
                                       fontWeight: FontWeight.w600,
@@ -693,7 +728,8 @@ class _RunningSummaryState extends State<RunningSummary> {
                         builder: (context) => ShareScreen(
                             distance: widget.distance,
                             formattedDuration: widget.formattedDuration,
-                            formattedPace: widget.formattedPace,
+                            formattedPace: standardizedPaceDisplay(
+                                widget.formattedPace), // Use standardized pace
                             calories: widget.calories,
                             steps: widget.steps,
                             activityType: 'Outdoor Running',
