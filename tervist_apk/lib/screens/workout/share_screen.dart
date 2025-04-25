@@ -369,27 +369,13 @@ class _ShareScreenState extends State<ShareScreen> {
                   ],
                 ),
 
-                // Tervist logo overlay at top left
+                // Tervist logo overlay at top left - CHANGED TO USE IMAGE ASSET
                 Positioned(
                   top: 16,
                   left: 16,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.favorite,
-                        color: Colors.black,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Tervist',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
+                  child: Image.asset(
+                    'assets/images/logotervist.png',
+                    height: 24,
                   ),
                 ),
               ],
@@ -715,28 +701,13 @@ class _ShareScreenState extends State<ShareScreen> {
               ),
             ),
 
-            // Tervist logo at top right
+            // Tervist logo at top right - CHANGED TO USE IMAGE ASSET
             Positioned(
               top: 15,
               right: 15,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.favorite,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    'Tervist',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+              child: Image.asset(
+                'assets/images/logotervist.png',
+                height: 20,
               ),
             ),
 
