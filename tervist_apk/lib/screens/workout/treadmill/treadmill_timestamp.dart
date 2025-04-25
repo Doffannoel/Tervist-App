@@ -45,12 +45,12 @@ class _TreadmillTimestampState extends State<TreadmillTimestamp> {
           children: [
             // Top actions bar with share button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(width: 40), // Empty space for balance
-
                 ],
               ),
             ),
@@ -88,31 +88,36 @@ class _TreadmillTimestampState extends State<TreadmillTimestamp> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        
+
                         // Time and Pace - wide spacing
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildMetricColumnCentered(widget.formattedDuration, 'Time'),
-                            _buildMetricColumnCentered(widget.formattedPace, 'Pace'),
+                            _buildMetricColumnCentered(
+                                widget.formattedDuration, 'Time'),
+                            _buildMetricColumnCentered(
+                                widget.formattedPace, 'Pace'),
                           ],
                         ),
                         const SizedBox(height: 24),
-                        
+
                         // Calories and Steps
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildMetricColumnCentered('${widget.calories}', 'Kcal'),
-                            _buildMetricColumnCentered('${widget.steps}', 'Steps'),
+                            _buildMetricColumnCentered(
+                                '${widget.calories}', 'Kcal'),
+                            _buildMetricColumnCentered(
+                                '${widget.steps}', 'Steps'),
                           ],
                         ),
                         const SizedBox(height: 24),
-                        
+
                         // Steps per minute - left aligned but with centered metrics
                         Row(
                           children: [
-                            _buildMetricColumnCentered('${widget.stepsPerMinute}', 'SPM'),
+                            _buildMetricColumnCentered(
+                                '${widget.stepsPerMinute}', 'SPM'),
                             const Spacer(),
                           ],
                         ),
@@ -175,8 +180,6 @@ class _TreadmillTimestampState extends State<TreadmillTimestamp> {
                 ),
               ),
             ),
-            
-
           ],
         ),
       ),
