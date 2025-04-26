@@ -456,7 +456,8 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
     }
 
     // Steps calculation (about 100 steps per minute for walking, less than running)
-    final stepsPerSecond = 95.0 / 60.0; // Adjusted to 95 steps per minute for walking
+    final stepsPerSecond =
+        95.0 / 60.0; // Adjusted to 95 steps per minute for walking
     final newStepsCount = steps + stepsPerSecond.round();
 
     // Calculate calories (using a simple approximation)
@@ -545,7 +546,6 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
     return "$paceWholeMinutes'${paceSeconds.toString().padLeft(2, '0')}\"";
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -561,7 +561,7 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
       case 0:
         return _buildInitialScreen();
       case 1:
-        return walkingTimestamp(
+        return WalkingTimestamp(
           distance: distance,
           formattedDuration: formattedDuration,
           formattedPace: formattedPace,
@@ -634,7 +634,8 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
                         radius: 20,
                         backgroundImage: _profileImageUrl != null
                             ? NetworkImage(_profileImageUrl!)
-                            : const AssetImage('assets/images/profilepicture.png')
+                            : const AssetImage(
+                                    'assets/images/profilepicture.png')
                                 as ImageProvider,
                         backgroundColor: Colors.grey[300],
                       ),
