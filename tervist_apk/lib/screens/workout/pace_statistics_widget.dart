@@ -151,7 +151,7 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
     final maxPaceIndex = _findMaxPaceIndex();
 
     return Card(
-      elevation: 4,
+      elevation: 0, // Removed shadow by setting elevation to 0
       color: const Color(0xFFFFFFFF), // Set the background to pure white
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
