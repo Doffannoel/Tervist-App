@@ -3,8 +3,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../map_service.dart';
-import '../follow_me_button.dart'; // Import the follow me button
-import 'dart:async'; // ⬅️ ini yang dibutuhkan untuk StreamSubscription
+import '../follow_me_button.dart';
+import 'dart:async';
 
 class RunningTimestamp extends StatefulWidget {
   final double distance;
@@ -40,15 +40,20 @@ class RunningTimestamp extends StatefulWidget {
   State<RunningTimestamp> createState() => _RunningTimestampState();
 }
 
-class _RunningTimestampState extends State<RunningTimestamp> {
+class _RunningTimestampState extends State<RunningTimestamp>
+    with SingleTickerProviderStateMixin {
   final MapController _mapController = MapController();
   List<LatLng> currentRoutePoints = [];
   List<Marker> currentMarkers = [];
   List<Polyline> currentPolylines = [];
   LatLng? currentLocation;
-  bool _isFollowingUser = true; // Start with follow mode enabled
+  bool _isFollowingUser = true;
+  bool _isExpanded = false;
 
-  // Helper method to standardize pace display for running (6 min/km)
+  late AnimationController _animationController;
+  late Animation<double> _slideAnimation;
+
+  // Helper method to standardize pace display for running
   String standardizedPaceDisplay(String originalPace) {
     // Parse the original pace format (e.g., "5'30\"")
     List<String> parts = originalPace.split("'");
@@ -110,6 +115,20 @@ class _RunningTimestampState extends State<RunningTimestamp> {
       currentLocation = currentRoutePoints.last;
     }
 
+    // Initialize animation controller
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _slideAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
     // Start listening to location updates
     _subscribeToLocationUpdates();
   }
@@ -143,8 +162,8 @@ class _RunningTimestampState extends State<RunningTimestamp> {
 
   @override
   void dispose() {
-    _locationSubscription.cancel(); // Batalkan stream saat dispose
-    // No need to stop location updates here, as it's managed by the parent RunningTrackerScreen
+    _locationSubscription.cancel();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -245,24 +264,14 @@ class _RunningTimestampState extends State<RunningTimestamp> {
             ],
           ),
 
-          // Follow Me Button using the custom widget
+          // Top overlay with basic run info
           Positioned(
-            right: 16,
-            bottom: 200, // Position above your bottom panel
-            child: FollowMeButton(
-              isFollowing: _isFollowingUser,
-              onPressed: _toggleFollowMode,
-              activeColor: widget.primaryGreen,
-            ),
-          ),
-
-          // Top overlay with basic info
-          Positioned(
-            top: 40,
-            left: 16,
-            right: 16,
+            top: 70,
+            left: 0,
+            right: 0,
             child: Container(
-              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -296,135 +305,59 @@ class _RunningTimestampState extends State<RunningTimestamp> {
             ),
           ),
 
-          // Bottom overlay with metrics
+          // Bottom overlay with metrics - this transitions from default view to detailed view
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -3),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                  if (_isExpanded) {
+                    _animationController.forward();
+                  } else {
+                    _animationController.reverse();
+                  }
+                });
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
                   ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, -3),
+                    ),
+                  ],
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        children: [
-                          // Main metrics row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Distance
-                              _buildMetricColumn(
-                                  widget.distance.toStringAsFixed(2), "Km"),
-
-                              // Time
-                              _buildMetricColumn(
-                                  widget.formattedDuration, "Time"),
-
-                              // Pace - using standardized pace display
-                              _buildMetricColumn(
-                                  standardizedPaceDisplay(widget.formattedPace),
-                                  "Pace"),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // Calories
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.local_fire_department,
-                                    color: Colors.orange,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "${widget.calories}",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "kcal",
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          // Controls with image assets
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (!widget.isPaused)
-                                // Pause button
-                                InkWell(
-                                  onTap: widget.onPause,
-                                  child: Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      color: widget.primaryGreen,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.pause,
-                                      color: Colors.white,
-                                      size: 30,
-                                    ),
-                                  ),
-                                )
-                              else
-                                // Play and Stop buttons
-                                Row(
-                                  children: [
-                                    InkWell(
-                                      onTap: widget.onResume,
-                                      child: Image.asset(
-                                        'assets/images/buttonplay.png',
-                                        width: 60,
-                                        height: 60,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 20),
-                                    InkWell(
-                                      onTap: widget.onStop,
-                                      child: Image.asset(
-                                        'assets/images/buttonstop.png',
-                                        width: 60,
-                                        height: 60,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        ],
+                    // Small drag indicator at the top
+                    Container(
+                      margin: const EdgeInsets.only(top: 8, bottom: 8),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
                       ),
+                    ),
+
+                    // Content based on expanded state
+                    AnimatedCrossFade(
+                      firstChild: _buildSimpleView(),
+                      secondChild: _buildExpandedView(),
+                      crossFadeState: _isExpanded
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 300),
                     ),
                   ],
                 ),
@@ -436,24 +369,234 @@ class _RunningTimestampState extends State<RunningTimestamp> {
     );
   }
 
-  Widget _buildMetricColumn(String value, String label) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+  // Simple view as shown in the left image (Workout page - 2)
+  Widget _buildSimpleView() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.distance.toStringAsFixed(2),
+                    style: GoogleFonts.poppins(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    "Km",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.formattedDuration,
+                    style: GoogleFonts.poppins(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    "Time",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: Colors.grey[600],
+          // Dark indicator line at bottom
+          Container(
+            margin: const EdgeInsets.only(top: 16),
+            width: 40,
+            height: 3,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(1.5),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  // Expanded view as shown in Image 2
+  Widget _buildExpandedView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Distance row
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    widget.distance.toStringAsFixed(2),
+                    style: GoogleFonts.poppins(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      "Km",
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Time and Pace side by side
+          Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.formattedDuration,
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    "Time",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 64),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.formattedPace,
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    "Pace",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Calories
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "${widget.calories}",
+                style: GoogleFonts.poppins(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                "Kcal",
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Play and Stop buttons - centered
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Play button
+              InkWell(
+                onTap: widget.onResume,
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: widget.primaryGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              // Stop button
+              InkWell(
+                onTap: widget.onStop,
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: Colors.orange,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.stop,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Black indicator bar at bottom
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 20),
+              width: 100,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
