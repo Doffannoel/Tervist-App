@@ -75,7 +75,6 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
     required double weightKg,
     required double durationSeconds,
     double met = 7.0, // Updated MET value for running (from 5.0)
-    double met = 7.0, // Updated MET value for running (from 5.0)
   }) {
     if (durationSeconds <= 0 || weightKg <= 0) return 1;
 
@@ -610,13 +609,13 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
     // Steps calculation (about 180 steps per minute for running at 6 min/km pace)
     final stepsPerSecond = 180.0 / 60.0; // Updated from 160.0 / 60.0
     // Steps calculation (about 180 steps per minute for running at 6 min/km pace)
-    final stepsPerSecond = 180.0 / 60.0; // Updated from 160.0 / 60.0
+
     final newStepsCount = steps + stepsPerSecond.round();
 
     // Calories calculation for running at 6 min/km pace (approx 700 calories per hour)
     final caloriesPerSecond = 700.0 / 3600.0; // Updated from 600.0 / 3600.0
     // Calories calculation for running at 6 min/km pace (approx 700 calories per hour)
-    final caloriesPerSecond = 700.0 / 3600.0; // Updated from 600.0 / 3600.0
+
     final newCalories = (newDuration.inSeconds * caloriesPerSecond).round();
 
     // Update performance data for pace graph
