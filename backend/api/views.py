@@ -2,7 +2,7 @@ from collections import defaultdict
 import json, ast
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, permissions, status, filters
+from rest_framework import viewsets, permissions, status, filters, serializers
 from datetime import datetime, timedelta
 from django.db.models import Sum, Min
 from rest_framework.response import Response
@@ -446,6 +446,11 @@ class DashboardView(viewsets.ViewSet):
 
         # Get nutritional target data
         nutritional_target = NutritionalTarget.objects.filter(user=user).first()
+        # ✅ Kalau belum dihitung, panggil calculate_targets()
+        if nutritional_target and (nutritional_target.steps_goal == 0 or nutritional_target.calories_burned_goal == 0):
+            print("⚡ Auto recalculating steps goal and calories burned goal...")
+            nutritional_target.calculate_targets()
+
         nutritional_target_data = NutritionalTargetSerializer(nutritional_target).data if nutritional_target else {}
         print(f"Nutritional target: {nutritional_target_data}")
 
@@ -804,61 +809,159 @@ class WalkingActivityView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        if self.request.user.is_authenticated:
-            user = self.request.user
-            distance = serializer.validated_data['distance_km']
-            time = serializer.validated_data['time_seconds']
-            steps = serializer.validated_data['steps']
-            
-            # Hitung kalori yang dibakar
-            calories_burned = self.calculate_calories_burned(distance, time, steps)
+        """
+        Custom create method with extensive validations
+        """
+        # Ensure user is authenticated
+        if not self.request.user.is_authenticated:
+            raise serializers.ValidationError("User must be authenticated")
 
-            walking_activity = serializer.save(
-                user=user,
-                calories_burned=calories_burned
-            )
+        # Validate input data
+        distance = serializer.validated_data.get('distance_km', 0)
+        time_seconds = serializer.validated_data.get('time_seconds', 0)
+        steps = serializer.validated_data.get('steps', 0)
+        
+        # Comprehensive data validation
+        self.validate_walking_activity(distance, time_seconds, steps)
 
-            # Update langkah dan kalori terbakar
-            self.update_daily_steps(user, steps)
-            self.update_calories_burned(user, calories_burned)
+        # Calculate pace
+        pace = self.calculate_pace(distance, time_seconds)
 
-        else:
-            serializer.save()
+        # Calculate calories burned
+        calories_burned = self.calculate_calories_burned(
+            distance, 
+            time_seconds, 
+            steps
+        )
 
-    def calculate_calories_burned(self, distance, time, steps):
-        MET = 3.5  # MET untuk berjalan (lebih rendah dari berlari)
-        weight = getattr(self.request.user, 'weight', 60) or 60  # default 60 kg
-        weight = float(weight)
-        time_minutes = float(time) / 60.0
+        # Save walking activity
+        walking_activity = serializer.save(
+            user=self.request.user,
+            pace=pace,
+            calories_burned=calories_burned
+        )
 
-        if time <= 0 or weight <= 0:
-            return 1
+        # Update daily steps and calories
+        self.update_daily_steps(self.request.user, steps)
+        self.update_calories_burned(self.request.user, calories_burned)
 
-        # Rumus perhitungan kalori standar
-        calories = ((MET * weight * 3.5) / 200) * time_minutes
-        return round(calories)
+        return walking_activity
+
+    def validate_walking_activity(self, distance, time_seconds, steps):
+        """
+        Comprehensive validation for walking activity
+        """
+        # Distance validation
+        if distance < 0:
+            raise serializers.ValidationError("Distance cannot be negative")
+        if distance > 50:  # Reasonable max walking distance per session
+            raise serializers.ValidationError("Distance is unrealistically high")
+
+        # Time validation
+        if time_seconds < 0:
+            raise serializers.ValidationError("Time cannot be negative")
+        if time_seconds > 3600:  # Max 1 hour walking session
+            raise serializers.ValidationError("Walking duration is too long")
+
+        # Steps validation
+        if steps < 0:
+            raise serializers.ValidationError("Steps cannot be negative")
+        if steps > 20000:  # Reasonable max steps per session
+            raise serializers.ValidationError("Step count is unrealistically high")
+
+    def calculate_pace(self, distance, time_seconds):
+        """
+        Calculate walking pace (minutes per kilometer)
+        """
+        if distance <= 0 or time_seconds <= 0:
+            return 0
+        
+        # Convert to minutes per km
+        pace = (time_seconds / 60) / distance if distance > 0 else 0
+        return round(pace, 2)
+
+    def calculate_calories_burned(self, distance, time_seconds, steps):
+        """
+        Calculate calories burned during walking
+        Uses MET (Metabolic Equivalent of Task) method
+        """
+        try:
+            # Get user's weight, default to 60 kg if not available
+            weight = getattr(self.request.user, 'weight', 60) or 60
+            weight = float(weight)
+
+            # MET values for walking vary by speed
+            if distance <= 0 or time_seconds <= 0:
+                return 0
+
+            # Calculate walking speed (km/h)
+            speed = (distance / time_seconds) * 3600 if time_seconds > 0 else 0
+
+            # Determine MET based on walking speed
+            if speed < 2.0:
+                met = 2.0  # Very slow walking
+            elif speed < 3.0:
+                met = 2.8  # Slow walking
+            elif speed < 4.0:
+                met = 3.5  # Moderate walking
+            elif speed < 5.0:
+                met = 4.3  # Brisk walking
+            else:
+                met = 5.0  # Very brisk walking
+
+            # Calories calculation formula
+            time_hours = time_seconds / 3600
+            calories = met * weight * time_hours
+
+            return round(calories)
+
+        except Exception as e:
+            # Log the error for debugging
+            print(f"Calories calculation error: {e}")
+            return 0
 
     def update_daily_steps(self, user, steps):
+        """
+        Update daily steps for the user
+        """
         today = get_today_local()
-        daily_steps, created = DailySteps.objects.get_or_create(user=user, date=today)
+        daily_steps, created = DailySteps.objects.get_or_create(
+            user=user, 
+            date=today
+        )
         
-        if created:
-            daily_steps.steps = steps
-        else:
-            daily_steps.steps += steps
-
+        daily_steps.steps += steps
         daily_steps.save()
 
     def update_calories_burned(self, user, calories_burned):
+        """
+        Update daily calories burned for the user
+        """
         today = get_today_local()
-        calories_obj, created = CaloriesBurned.objects.get_or_create(user=user, date=today)
+        calories_obj, created = CaloriesBurned.objects.get_or_create(
+            user=user, 
+            date=today
+        )
         
-        if created:
-            calories_obj.total_calories = calories_burned
-        else:
-            calories_obj.total_calories += calories_burned
-
+        # Add to existing calories
+        calories_obj.total_calories = (
+            calories_obj.total_calories or 0
+        ) + calories_burned
         calories_obj.save()
+
+    def get_queryset(self):
+        """
+        Ensure users can only see their own walking activities
+        """
+        return WalkingActivity.objects.filter(user=self.request.user)
+
+    def list(self, request):
+        """
+        Custom list method to return only recent activities
+        """
+        queryset = self.get_queryset().order_by('-date')[:50]
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 class RunningHistoryViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -934,5 +1037,135 @@ class RunningHistoryViewSet(viewsets.ViewSet):
         except RunningActivity.DoesNotExist:
             return Response(
                 {"error": "Running activity not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+class WalkingHistoryViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def list(self, request):
+        """Get summary of all walking activities"""
+        user = request.user
+        
+        # Get all walking activities for this user
+        activities = WalkingActivity.objects.filter(user=user).order_by('-date')
+        
+        if not activities.exists():
+            return Response({
+                "message": "No walking activities found",
+                "start_date": datetime.now().strftime('%Y-%m-%d'),
+                "total_workouts": 0,
+                "total_time_seconds": 0,
+                "total_distance": 0.0,
+                "total_calories": 0,
+                "records": []
+            }, status=status.HTTP_200_OK)
+        
+        # Calculate summary statistics
+        total_workouts = activities.count()
+        total_time_seconds = activities.aggregate(Sum('time_seconds'))['time_seconds__sum'] or 0
+        total_distance = activities.aggregate(Sum('distance_km'))['distance_km__sum'] or 0.0
+        total_calories = activities.aggregate(Sum('calories_burned'))['calories_burned__sum'] or 0
+        
+        # Get the first activity date (when the user started)
+        start_date = activities.aggregate(Min('date'))['date__min']
+        
+        # Prepare records for the list
+        records = []
+        for activity in activities:
+            records.append({
+                'id': activity.id,
+                'distance': round(activity.distance_km, 2),
+                'date': activity.date.strftime('%Y-%m-%d'),
+            })
+        
+        return Response({
+            "start_date": start_date.strftime('%Y-%m-%d'),
+            "total_workouts": total_workouts,
+            "total_time_seconds": total_time_seconds,
+            "total_distance": total_distance,
+            "total_calories": total_calories,
+            "records": records
+        }, status=status.HTTP_200_OK)
+
+class CyclingHistoryViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def list(self, request):
+        """Get summary of all cycling activities"""
+        user = request.user
+        
+        # Get all cycling activities for this user
+        activities = CyclingActivity.objects.filter(user=user).order_by('-date')
+        
+        if not activities.exists():
+            return Response({
+                "message": "No cycling activities found",
+                "start_date": datetime.now().strftime('%Y-%m-%d'),
+                "total_workouts": 0,
+                "total_time_seconds": 0,
+                "total_distance": 0,
+                "total_calories": 0,
+                "avg_speed": 0,
+                "records": []
+            }, status=status.HTTP_200_OK)
+        
+        # Calculate summary statistics
+        total_workouts = activities.count()
+        total_time_seconds = sum(activity.duration.total_seconds() for activity in activities)
+        total_distance = activities.aggregate(Sum('distance_km'))['distance_km__sum'] or 0
+        total_distance = round(total_distance, 2)  # Round to 2 decimal places
+        total_calories = activities.aggregate(Sum('calories_burned'))['calories_burned__sum'] or 0
+        
+        # Calculate average speed
+        avg_speed = (total_distance / total_time_seconds * 3600) if total_time_seconds > 0 else 0
+        avg_speed = round(avg_speed, 2)
+        
+        # Get the first activity date (when the user started)
+        start_date = activities.aggregate(Min('date'))['date__min']
+        
+        # Prepare records for the list
+        records = []
+        for activity in activities:
+            records.append({
+                'id': activity.id,
+                'distance': round(activity.distance_km, 2),  # Round to 2 decimal places
+                'date': activity.date.strftime('%Y-%m-%d'),
+            })
+        
+        return Response({
+            "start_date": start_date.strftime('%Y-%m-%d'),
+            "total_workouts": total_workouts,
+            "total_time_seconds": total_time_seconds,
+            "total_distance": total_distance,
+            "total_calories": total_calories,
+            "avg_speed": avg_speed,
+            "records": records
+        }, status=status.HTTP_200_OK)
+    
+    def retrieve(self, request, pk=None):
+        """Get detailed information for a specific cycling activity"""
+        user = request.user
+        
+        try:
+            # Get the specific cycling activity
+            activity = CyclingActivity.objects.get(id=pk, user=user)
+            
+            # Create response data
+            response_data = {
+                "id": activity.id,
+                "distance_km": round(activity.distance_km, 2),
+                "duration_seconds": activity.duration.total_seconds(),
+                "avg_speed_kmh": round(float(activity.avg_speed_kmh), 2),
+                "max_speed_kmh": round(float(activity.max_speed_kmh), 2),
+                "calories_burned": round(float(activity.calories_burned), 2) if activity.calories_burned else 0,
+                "elevation_gain_m": activity.elevation_gain_m,
+                "date": activity.date.strftime('%Y-%m-%d'),
+            }
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+        except CyclingActivity.DoesNotExist:
+            return Response(
+                {"error": "Cycling activity not found"}, 
                 status=status.HTTP_404_NOT_FOUND
             )

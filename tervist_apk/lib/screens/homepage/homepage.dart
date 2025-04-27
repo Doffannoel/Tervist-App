@@ -183,6 +183,13 @@ class _HomePageState extends State<HomePage>
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
+        print('Decoded dashboard data: $data');
+
+        // ✨ Tambahin ini supaya nutritional_target digabung ke root
+        if (data['nutritional_target'] != null) {
+          data.addAll(data['nutritional_target']);
+        }
+
         // Debug food data
         if (data.containsKey('categorized_food')) {
           print('Food data found:');
@@ -503,7 +510,11 @@ class _HomePageState extends State<HomePage>
     }
 
     return RefreshIndicator(
-      onRefresh: _refreshData,
+      onRefresh: () async {
+        await _refreshData();
+        _animationController.reset(); // Restart animasi dari awal
+        _animationController.forward(); // Mulai animasi lagi
+      },
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -931,6 +942,7 @@ class _HomePageState extends State<HomePage>
   Widget _buildStepsCard(Map<String, dynamic> data) {
     final totalSteps = data['total_steps'] ?? 0;
     final stepsGoal = data['steps_goal'] ?? 10000;
+
     final progress = stepsGoal > 0 ? (totalSteps / stepsGoal) : 0;
     final percentProgress = (progress * 100).toInt();
 
@@ -1037,6 +1049,7 @@ class _HomePageState extends State<HomePage>
   Widget _buildCaloriesBurnedCard(Map<String, dynamic> data) {
     final totalCaloriesBurned = data['total_calories_burned'] ?? 0;
     final caloriesBurnedGoal = data['calories_burned_goal'] ?? 1000;
+
     final progress =
         caloriesBurnedGoal > 0 ? (totalCaloriesBurned / caloriesBurnedGoal) : 0;
     final percentProgress = (progress * 100).toInt();

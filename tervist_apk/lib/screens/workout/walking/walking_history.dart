@@ -6,26 +6,27 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:tervist_apk/api/running_service.dart';
-import 'package:tervist_apk/models/running_history_model.dart';
-import 'package:tervist_apk/screens/workout/running/running_summary.dart';
+import 'package:tervist_apk/models/walking_history_model.dart';
+import 'package:tervist_apk/screens/workout/walking/walking_history_service.dart';
+import 'package:tervist_apk/screens/workout/walking/walking_summary.dart';
 
-class RunningHistoryScreen extends StatefulWidget {
-  const RunningHistoryScreen({super.key});
+class WalkingHistoryScreen extends StatefulWidget {
+  const WalkingHistoryScreen({super.key});
 
   @override
-  State<RunningHistoryScreen> createState() => _RunningHistoryScreenState();
+  State<WalkingHistoryScreen> createState() => _WalkingHistoryScreenState();
 }
 
-class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
+class _WalkingHistoryScreenState extends State<WalkingHistoryScreen> {
   final Color primaryGreen = const Color(0xFF4CB9A0);
   final Color lightMintGreen = const Color(0xFFF1F7F6);
 
-  final RunningService _runningService = RunningService();
+  final WalkingHistoryService _walkingService = WalkingHistoryService();
 
   // State variables
   bool _isLoading = true;
   String _errorMessage = '';
-  RunningHistoryModel? _historyData;
+  WalkingHistoryModel? _historyData;
   String _userName = "User";
   String? _profileImageUrl;
 
@@ -38,10 +39,10 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
   Future<void> _loadData() async {
     try {
       // First get user profile
-      final userProfile = await _runningService.getUserProfile();
+      final userProfile = await _walkingService.getUserProfile();
 
-      // Then get running history
-      final historyData = await _runningService.getRunningHistory();
+      // Then get walking history
+      final historyData = await _walkingService.getWalkingHistory();
 
       setState(() {
         _userName = userProfile['username'] ?? 'User';
@@ -57,14 +58,15 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
     }
   }
 
-  Future<void> _navigateToRunningSummary(int activityId) async {
+  Future<void> _navigateToWalkingSummary(int activityId) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
       // Fetch the detailed activity data
-      final activityData = await _runningService.getRunningDetail(activityId);
+      final activityData =
+          await _walkingService.getWalkingActivityDetail(activityId);
 
       // Extract data
       final distance = (activityData['distance_km'] ?? 0).toDouble();
@@ -87,38 +89,6 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
       final formattedPace =
           "$paceMinutes'${paceSeconds.toString().padLeft(2, '0')}\"";
 
-      // Parse route_data (can be string or list)
-      final rawRouteData = activityData['route_data'];
-      final routeData = rawRouteData is String
-          ? jsonDecode(rawRouteData)
-          : (rawRouteData ?? []);
-
-      // Clean routePoints
-      final routePoints =
-          (routeData as List).map((e) => LatLng(e['lat'], e['lng'])).toList();
-
-      // (Optional) Generate default markers and polyline if needed
-      final markers = routePoints.isNotEmpty
-          ? [
-              Marker(
-                point: routePoints.first,
-                width: 60,
-                height: 60,
-                child: const Icon(Icons.location_on, color: Colors.green),
-              ),
-            ]
-          : [];
-
-      final polylines = routePoints.isNotEmpty
-          ? [
-              Polyline(
-                points: routePoints,
-                color: primaryGreen,
-                strokeWidth: 5,
-              )
-            ]
-          : [];
-
       setState(() {
         _isLoading = false;
       });
@@ -127,19 +97,18 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => RunningSummary(
+          builder: (context) => WalkingSummary(
             distance: distance,
             formattedDuration: formattedDuration,
             formattedPace: formattedPace,
             calories: calories,
             steps: steps,
-            routePoints: routePoints,
-            routeData: routeData,
-            markers: markers.cast<Marker>(),
-            polylines: polylines.cast<Polyline<Object>>(),
+            routePoints: const [], // No route for walking
+            markers: const [],
+            polylines: const [],
             primaryGreen: primaryGreen,
-            onBackToHome: () => Navigator.pop(context),
             duration: duration,
+            onBackToHome: () => Navigator.pop(context),
             userName: _userName,
           ),
         ),
@@ -236,7 +205,8 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
 
   Widget _buildContentView() {
     if (_historyData == null) {
-      return Center(child: Text('No data available'));
+      return Center(
+          child: Text('No data available', style: GoogleFonts.poppins()));
     }
 
     return Column(
@@ -275,7 +245,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                     ),
                   ),
                   Text(
-                    'Here\'s your running history',
+                    'Here\'s your walking history',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -467,7 +437,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
           child: _historyData!.records.isEmpty
               ? Center(
                   child: Text(
-                    'No running records yet',
+                    'No walking records yet',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       color: Colors.grey[600],
@@ -490,9 +460,9 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
     );
   }
 
-  Widget _buildRecordCard(RunningRecord record) {
+  Widget _buildRecordCard(WalkingRecord record) {
     return InkWell(
-      onTap: () => _navigateToRunningSummary(record.id),
+      onTap: () => _navigateToWalkingSummary(record.id),
       child: Card(
         elevation: 2,
         color: Colors.white,

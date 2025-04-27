@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:tervist_apk/api/auth_helper.dart';
+import 'package:tervist_apk/screens/main_navigation.dart';
 import 'login/signup_screen.dart'; // Import the SignUpPage
 
 class OnboardingScreen extends StatefulWidget {
@@ -61,37 +63,66 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          Listener(
-            onPointerDown: (_) {
-              setState(() {
-                _isManualScrolling = true;
-              });
+          RefreshIndicator(
+            onRefresh: () async {
               _timer?.cancel();
-            },
-            onPointerUp: (_) {
-              setState(() {
-                _isManualScrolling = false;
-              });
+              _pageController.jumpToPage(0);
+              _currentPage = 0;
               _restartTimer();
+
+              // ➡️ Tambahan: cek apakah sudah login
+              bool isLoggedIn = await AuthHelper.isLoggedIn();
+              if (isLoggedIn && context.mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MainNavigation()),
+                );
+              }
+
+              return Future.value();
             },
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: null,
-              physics: const BouncingScrollPhysics(),
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index % _pageCount;
-                });
-              },
-              itemBuilder: (context, index) {
-                final normalizedIndex = index % _pageCount;
-                final imagePaths = [
-                  'assets/images/onboard1.png',
-                  'assets/images/onboard2.png',
-                  'assets/images/onboard3.png',
-                ];
-                return OnboardingPage(imagePath: imagePaths[normalizedIndex]);
-              },
+            child: SingleChildScrollView(
+              physics:
+                  const AlwaysScrollableScrollPhysics(), // ⬅️ WAJIB: supaya bisa refresh walaupun gak ada scroll
+              child: SizedBox(
+                height: MediaQuery.of(context)
+                    .size
+                    .height, // ⬅️ Pastikan tingginya penuh
+                child: Listener(
+                  onPointerDown: (_) {
+                    setState(() {
+                      _isManualScrolling = true;
+                    });
+                    _timer?.cancel();
+                  },
+                  onPointerUp: (_) {
+                    setState(() {
+                      _isManualScrolling = false;
+                    });
+                    _restartTimer();
+                  },
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _pageCount,
+                    physics: const BouncingScrollPhysics(),
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index % _pageCount;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final normalizedIndex = index % _pageCount;
+                      final imagePaths = [
+                        'assets/images/onboard1.png',
+                        'assets/images/onboard2.png',
+                        'assets/images/onboard3.png',
+                      ];
+                      return OnboardingPage(
+                          imagePath: imagePaths[normalizedIndex]);
+                    },
+                  ),
+                ),
+              ),
             ),
           ),
           Positioned.fill(

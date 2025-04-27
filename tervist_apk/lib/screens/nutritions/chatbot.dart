@@ -147,7 +147,7 @@ class _TervyChatScreenState extends State<TervyChatScreen>
           color: Colors.transparent,
           child: Container(
             width: 350,
-            height: 460,
+            height: 420,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -171,19 +171,6 @@ class _TervyChatScreenState extends State<TervyChatScreen>
                 _buildFAQItem('3. What information should I include?',
                     "Include portion size, main ingredients, and cooking method (e.g., 'large bowl of creamy pasta with chicken and mushrooms')."),
                 const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      _faqOverlay?.remove();
-                      _faqOverlay = null;
-                      setState(() {
-                        _isFAQActive = false;
-                      });
-                    },
-                    child: Text("Close", style: GoogleFonts.poppins()),
-                  ),
-                )
               ],
             ),
           ),

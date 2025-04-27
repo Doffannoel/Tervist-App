@@ -5,27 +5,27 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:tervist_apk/api/running_service.dart';
-import 'package:tervist_apk/models/running_history_model.dart';
-import 'package:tervist_apk/screens/workout/running/running_summary.dart';
+import 'package:tervist_apk/screens/workout/cycling/cycling_history_service.dart';
+import 'package:tervist_apk/models/cycling_history_model.dart';
+import 'package:tervist_apk/screens/workout/cycling/cycling_summary.dart';
 
-class RunningHistoryScreen extends StatefulWidget {
-  const RunningHistoryScreen({super.key});
+class CyclingHistoryScreen extends StatefulWidget {
+  const CyclingHistoryScreen({super.key});
 
   @override
-  State<RunningHistoryScreen> createState() => _RunningHistoryScreenState();
+  State<CyclingHistoryScreen> createState() => _CyclingHistoryScreenState();
 }
 
-class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
+class _CyclingHistoryScreenState extends State<CyclingHistoryScreen> {
   final Color primaryGreen = const Color(0xFF4CB9A0);
   final Color lightMintGreen = const Color(0xFFF1F7F6);
 
-  final RunningService _runningService = RunningService();
+  final CyclingHistoryService _cyclingService = CyclingHistoryService();
 
   // State variables
   bool _isLoading = true;
   String _errorMessage = '';
-  RunningHistoryModel? _historyData;
+  CyclingHistoryModel? _historyData;
   String _userName = "User";
   String? _profileImageUrl;
 
@@ -38,10 +38,10 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
   Future<void> _loadData() async {
     try {
       // First get user profile
-      final userProfile = await _runningService.getUserProfile();
+      final userProfile = await _cyclingService.getUserProfile();
 
-      // Then get running history
-      final historyData = await _runningService.getRunningHistory();
+      // Then get cycling history
+      final historyData = await _cyclingService.getCyclingHistory();
 
       setState(() {
         _userName = userProfile['username'] ?? 'User';
@@ -57,67 +57,33 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
     }
   }
 
-  Future<void> _navigateToRunningSummary(int activityId) async {
+  Future<void> _navigateToCyclingSummary(int activityId) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
       // Fetch the detailed activity data
-      final activityData = await _runningService.getRunningDetail(activityId);
+      final activityData = await _cyclingService.getCyclingActivityDetail(activityId);
 
       // Extract data
       final distance = (activityData['distance_km'] ?? 0).toDouble();
-      final timeSeconds = activityData['time_seconds'] ?? 0;
-      final pace = (activityData['pace'] ?? 0).toDouble();
-      final calories = activityData['calories_burned'] ?? 0;
-      final steps = activityData['steps'] ?? 0;
+      final durationSeconds = (activityData['duration_seconds'] ?? 0).toInt();
+      final avgSpeed = (activityData['avg_speed_kmh'] ?? 0).toDouble();
+      final maxSpeed = (activityData['max_speed_kmh'] ?? 0).toDouble();
+      final calories = (activityData['calories_burned'] ?? 0).toInt();
+      final elevationGain = activityData['elevation_gain_m'] ?? 0;
 
       // Format duration
-      final duration = Duration(seconds: timeSeconds);
+      final duration = Duration(seconds: durationSeconds);
       final hours = duration.inHours;
       final minutes = duration.inMinutes % 60;
       final seconds = duration.inSeconds % 60;
       final formattedDuration =
           '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 
-      // Format pace (minutes per km)
-      final paceMinutes = pace.floor();
-      final paceSeconds = ((pace - paceMinutes) * 60).floor();
-      final formattedPace =
-          "$paceMinutes'${paceSeconds.toString().padLeft(2, '0')}\"";
-
-      // Parse route_data (can be string or list)
-      final rawRouteData = activityData['route_data'];
-      final routeData = rawRouteData is String
-          ? jsonDecode(rawRouteData)
-          : (rawRouteData ?? []);
-
-      // Clean routePoints
-      final routePoints =
-          (routeData as List).map((e) => LatLng(e['lat'], e['lng'])).toList();
-
-      // (Optional) Generate default markers and polyline if needed
-      final markers = routePoints.isNotEmpty
-          ? [
-              Marker(
-                point: routePoints.first,
-                width: 60,
-                height: 60,
-                child: const Icon(Icons.location_on, color: Colors.green),
-              ),
-            ]
-          : [];
-
-      final polylines = routePoints.isNotEmpty
-          ? [
-              Polyline(
-                points: routePoints,
-                color: primaryGreen,
-                strokeWidth: 5,
-              )
-            ]
-          : [];
+      // Format pace (speed in km/h)
+      final formattedPace = '${avgSpeed.toStringAsFixed(1)} km/h';
 
       setState(() {
         _isLoading = false;
@@ -127,20 +93,18 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => RunningSummary(
+          builder: (context) => CyclingSummary(
             distance: distance,
             formattedDuration: formattedDuration,
             formattedPace: formattedPace,
             calories: calories,
-            steps: steps,
-            routePoints: routePoints,
-            routeData: routeData,
-            markers: markers.cast<Marker>(),
-            polylines: polylines.cast<Polyline<Object>>(),
+            steps: maxSpeed.toInt(), // Using max speed as "steps"
+            routePoints: const [], // No route data for cycling
+            markers: const [],
+            polylines: const [],
             primaryGreen: primaryGreen,
-            onBackToHome: () => Navigator.pop(context),
             duration: duration,
-            userName: _userName,
+            onBackToHome: () => Navigator.pop(context),
           ),
         ),
       );
@@ -236,7 +200,8 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
 
   Widget _buildContentView() {
     if (_historyData == null) {
-      return Center(child: Text('No data available'));
+      return Center(
+          child: Text('No data available', style: GoogleFonts.poppins()));
     }
 
     return Column(
@@ -275,7 +240,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                     ),
                   ),
                   Text(
-                    'Here\'s your running history',
+                    'Here\'s your cycling history',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -364,7 +329,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Distance and Calories in row
+                  // Distance and Average Speed in row
                   Row(
                     children: [
                       // Distance
@@ -406,13 +371,13 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                         ),
                       ),
 
-                      // Calories
+                      // Average Speed
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Calories',
+                              'Avg Speed',
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: Colors.grey[600],
@@ -423,7 +388,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                               textBaseline: TextBaseline.alphabetic,
                               children: [
                                 Text(
-                                  '${_historyData!.totalCalories}',
+                                  '${_historyData!.avgSpeed.toStringAsFixed(1)}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
@@ -431,7 +396,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Kcal',
+                                  'km/h',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     color: Colors.grey[600],
@@ -443,6 +408,30 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                         ),
                       ),
                     ],
+                  ),
+
+                  // Calories
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Calories',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${_historyData!.totalCalories} Kcal',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -467,7 +456,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
           child: _historyData!.records.isEmpty
               ? Center(
                   child: Text(
-                    'No running records yet',
+                    'No cycling records yet',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       color: Colors.grey[600],
@@ -490,9 +479,9 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
     );
   }
 
-  Widget _buildRecordCard(RunningRecord record) {
+  Widget _buildRecordCard(CyclingRecord record) {
     return InkWell(
-      onTap: () => _navigateToRunningSummary(record.id),
+      onTap: () => _navigateToCyclingSummary(record.id),
       child: Card(
         elevation: 2,
         color: Colors.white,
@@ -504,7 +493,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
-              // Clock icon in a circle
+              // Cycling icon in a circle
               Container(
                 width: 40,
                 height: 40,
@@ -514,11 +503,11 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                 ),
                 child: Center(
                   child: Image.asset(
-                    'assets/images/iconhistory.png',
+                    'assets/images/cycling_icon.png', // You'll need to add this asset
                     width: 20,
                     height: 20,
                     errorBuilder: (context, error, stackTrace) => Icon(
-                      Icons.access_time,
+                      Icons.directions_bike,
                       color: Colors.black,
                       size: 20,
                     ),
@@ -542,7 +531,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                     Row(
                       children: [
                         Text(
-                          "${record.distance}",
+                          "${record.distance.toStringAsFixed(2)}",
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,

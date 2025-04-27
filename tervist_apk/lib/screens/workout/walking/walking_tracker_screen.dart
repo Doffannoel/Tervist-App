@@ -6,6 +6,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:tervist_apk/api/api_config.dart';
 import 'package:tervist_apk/api/auth_helper.dart';
+import 'package:tervist_apk/screens/workout/cycling/cycling_history.dart';
+import 'package:tervist_apk/screens/workout/walking/walking_history.dart';
 import 'package:tervist_apk/screens/workout/walking/walking_service.dart';
 import 'walking_timestamp.dart';
 import 'walking_summary.dart';
@@ -456,30 +458,26 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
     }
 
     // Steps calculation (about 100 steps per minute for walking, less than running)
-    final stepsPerSecond = 100.0 / 60.0;
+    final stepsPerSecond =
+        95.0 / 60.0; // Adjusted to 95 steps per minute for walking
     final newStepsCount = steps + stepsPerSecond.round();
 
     // Calculate calories (using a simple approximation)
     // Walking burns less calories than running, around 300 kcal per hour
-    final caloriesPerSecond = 300.0 / 3600.0;
+    final caloriesPerSecond = 275.0 / 3600.0; // Average of 275 kcal per hour
     final newCalories = (newDuration.inSeconds * caloriesPerSecond).round();
 
     // Update steps per minute
-    stepsPerMinute = 100; // Common walking cadence
+    stepsPerMinute = 95; // Common walking cadence
 
     // Update performance data for pace graph
-    if (isWorkoutActive && currentStep == 1) {
-      // Calculate current pace
-      double currentPace = 0;
-      if (totalDistance > 0) {
-        // Pace in minutes per km
-        currentPace = newDuration.inSeconds / 60 / totalDistance;
+    double currentPace = 0;
+    if (isWorkoutActive && currentStep == 1 && totalDistance > 0) {
+      currentPace = newDuration.inSeconds / 60 / totalDistance;
+      // Normalize around the standard 11 min/km pace
+      currentPace = math.min(
+          currentPace / 11.0, 1.0); // Changed to normalize against 11 min/km
 
-        // Normalize for the graph (between 0-1)
-        currentPace = math.min(currentPace / 10, 1.0);
-      }
-
-      // Shift performance data array and add new value
       for (int i = 0; i < performanceData.length - 1; i++) {
         performanceData[i] = performanceData[i + 1];
       }
@@ -535,10 +533,17 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
     // Convert total duration to minutes and divide by distance
     double paceMinutes = duration.inMinutes + (duration.inSeconds % 60) / 60;
     double pacePerKm = paceMinutes / distance;
+    double standardizedPace = 11.0;
+    double paceVariation = (pacePerKm / standardizedPace - 1.0) * 0.3;
+    double displayPace = standardizedPace * (1 + paceVariation);
 
     // Format pace as minutes and seconds
     int paceWholeMinutes = pacePerKm.floor();
     int paceSeconds = ((pacePerKm - paceWholeMinutes) * 60).round();
+    if (paceSeconds >= 60) {
+      paceWholeMinutes += 1;
+      paceSeconds -= 60;
+    }
 
     return "$paceWholeMinutes'${paceSeconds.toString().padLeft(2, '0')}\"";
   }
@@ -631,7 +636,8 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
                         radius: 20,
                         backgroundImage: _profileImageUrl != null
                             ? NetworkImage(_profileImageUrl!)
-                            : const AssetImage('assets/images/profilepicture.png')
+                            : const AssetImage(
+                                    'assets/images/profilepicture.png')
                                 as ImageProvider,
                         backgroundColor: Colors.grey[300],
                       ),
@@ -640,43 +646,56 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
                 ),
 
                 // Distance and weather
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Distance section
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Distance label with icon
-                          Row(
-                            children: [
-                              Text(
-                                'Distance >',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Distance value
-                          Text(
-                            '0.00 KM', // Always start with 0.00 in initial screen
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const WalkingHistoryScreen(),
                       ),
+                    );
+                  },
+                  splashColor:
+                      primaryGreen.withOpacity(0.1), // Add splash effect
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 10.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Distance section
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Distance label with icon
+                            Row(
+                              children: [
+                                Text(
+                                  'Distance >',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // Distance value
+                            Text(
+                              '0.00 KM', // Always start with 0.00 in initial screen
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
 
-                      // Weather information
-                      const WeatherWidget(),
-                    ],
+                        // Weather information
+                        const WeatherWidget(),
+                      ],
+                    ),
                   ),
                 ),
 

@@ -38,6 +38,8 @@ class ApiConfig {
   static Uri get calculateNutritionPreview =>
       Uri.parse('$baseUrl/api/calculate-nutrition-preview/');
   static Uri get runningHistory => Uri.parse('$baseUrl/api/running-history/');
+  static Uri get walkingHistory => Uri.parse('$baseUrl/api/walking-history/');
+  static Uri get cyclingHistory => Uri.parse('$baseUrl/api/cycling-history/');
   static Uri runningDetail(String id) =>
       Uri.parse('$baseUrl/api/running-history/$id/');
 

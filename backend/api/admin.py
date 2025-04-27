@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib import admin
-from .models import CyclingActivity, DailySteps, FoodDatabase, CaloriesBurned, FoodIntake, FoodMeasurement, NutritionalTarget, RunningActivity
+from .models import CyclingActivity, DailySteps, FoodDatabase, CaloriesBurned, FoodIntake, FoodMeasurement, NutritionalTarget, RunningActivity, WalkingActivity
 
 class FoodMeasurementInline(admin.TabularInline):
     model = FoodMeasurement
@@ -172,3 +172,17 @@ class CyclingActivityAdmin(admin.ModelAdmin):
     def get_duration_minutes(self, obj):
         return round(obj.duration.total_seconds() / 60, 1)
     
+@admin.register(WalkingActivity)
+class WalkingActivityAdmin(admin.ModelAdmin):
+    list_display = ('user', 'date', 'distance_km', 'formatted_time', 'pace', 'calories_burned', 'steps')
+    search_fields = ('user__username',)
+    list_filter = ('date', 'user')
+    autocomplete_fields = ['user']
+
+    @admin.display(description='Time (hh:mm:ss)')
+    def formatted_time(self, obj):
+        seconds = obj.time_seconds
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        secs = seconds % 60
+        return f"{hours:02}:{minutes:02}:{secs:02}"

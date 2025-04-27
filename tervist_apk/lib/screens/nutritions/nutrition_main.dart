@@ -15,10 +15,16 @@ class NutritionMainPage extends StatefulWidget {
   State<NutritionMainPage> createState() => _NutritionMainPageState();
 }
 
-class _NutritionMainPageState extends State<NutritionMainPage> {
+class _NutritionMainPageState extends State<NutritionMainPage>
+    with SingleTickerProviderStateMixin {
   // Date handling
   DateTime _selectedDate = DateTime.now();
   DateTime _startDate = DateTime(2025, 2, 16);
+  late AnimationController _animationController;
+  late Animation<double> _caloriesAnimation;
+  late Animation<double> _proteinAnimation;
+  late Animation<double> _carbsAnimation;
+  late Animation<double> _fatsAnimation;
 
   CalendarDayStatus _getDayStatus(DateTime date) {
     if (_dayStatusCache.containsKey(date)) {
@@ -99,6 +105,19 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+
+    _caloriesAnimation =
+        Tween<double>(begin: 0, end: 1).animate(_animationController);
+    _proteinAnimation =
+        Tween<double>(begin: 0, end: 1).animate(_animationController);
+    _carbsAnimation =
+        Tween<double>(begin: 0, end: 1).animate(_animationController);
+    _fatsAnimation =
+        Tween<double>(begin: 0, end: 1).animate(_animationController);
     getDailySummary();
     _fetchFoodIntake();
   }
@@ -138,6 +157,12 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
 
     _dayStatusCache.clear(); // Reset cache status hari
     setState(() {}); // Refresh UI
+    if (mounted) {
+      setState(() {});
+      _animationController.reset();
+      _animationController
+          .forward(); // ⬅️ Tambahin ini biar animasi jalan lagi habis refresh
+    }
   }
 
   // Fetch nutritional targets and consumption data
@@ -156,7 +181,8 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
       // Process response data
       setState(() {
         // Get values from API response
-        caloriesTotal = response['calorie_target']?.toInt() ?? 1236;
+        caloriesTotal =
+            (response['calorie_target']?.toDouble()?.ceil() ?? 1236);
         proteinTotal = response['protein_target']?.toInt() ?? 75;
         carbsTotal = response['carbs_target']?.toInt() ?? 156;
         fatsTotal = response['fats_target']?.toInt() ?? 34;
@@ -208,6 +234,13 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
         proteinProgress = proteinProgress > 1.0 ? 1.0 : proteinProgress;
         carbsProgress = carbsProgress > 1.0 ? 1.0 : carbsProgress;
         fatsProgress = fatsProgress > 1.0 ? 1.0 : fatsProgress;
+      });
+
+      Future.delayed(Duration(milliseconds: 100), () {
+        if (mounted) {
+          _animationController.reset();
+          _animationController.forward();
+        }
       });
     } catch (e) {
       print('Error fetching nutritional data: $e');
@@ -325,6 +358,8 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
         carbsProgress = carbsProgress > 1.0 ? 1.0 : carbsProgress;
         fatsProgress = fatsProgress > 1.0 ? 1.0 : fatsProgress;
       });
+      _animationController.reset();
+      _animationController.forward();
     } catch (e) {
       print('Error fetching food intake: $e');
     }
@@ -399,9 +434,7 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                         builder: (context) => FoodDatabasePage(),
                       ),
                     ).then((result) {
-                      if (result == true) {
-                        _refreshData(); // ini yang aku maksud
-                      }
+                      _refreshData(); // ini yang aku maksud
                     });
                   },
                   child: Container(
@@ -746,13 +779,21 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
                                 SizedBox(
                                   width: 60,
                                   height: 60,
-                                  child: CircularProgressIndicator(
-                                    value: caloriesProgress,
-                                    strokeWidth: 8,
-                                    backgroundColor:
-                                        Colors.grey.withOpacity(0.2),
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.black),
+                                  child: AnimatedBuilder(
+                                    animation: _animationController,
+                                    builder: (context, child) {
+                                      return CircularProgressIndicator(
+                                        value: caloriesProgress *
+                                            _caloriesAnimation
+                                                .value, // <<<<<< pakai animasi di sini
+                                        strokeWidth: 8,
+                                        backgroundColor:
+                                            Colors.grey.withOpacity(0.2),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.black),
+                                      );
+                                    },
                                   ),
                                 ),
                                 Image.asset('assets/images/fire.png',
@@ -935,15 +976,20 @@ class _NutritionMainPageState extends State<NutritionMainPage> {
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: 50,
-                  height: 50,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 5,
-                    backgroundColor: Colors.grey.withOpacity(0.2),
-                    valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                  ),
-                ),
+                    width: 50,
+                    height: 50,
+                    child: AnimatedBuilder(
+                      animation: _animationController,
+                      builder: (context, child) {
+                        return CircularProgressIndicator(
+                          value: progress * _animationController.value,
+                          strokeWidth: 5,
+                          backgroundColor: Colors.grey.withOpacity(0.2),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(progressColor),
+                        );
+                      },
+                    )),
                 Image.asset(imagePath, height: 20),
               ],
             ),

@@ -74,7 +74,7 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
   double _calculateCalories({
     required double weightKg,
     required double durationSeconds,
-    double met = 5.0,
+    double met = 7.0, // Updated MET value for running (from 5.0)
   }) {
     if (durationSeconds <= 0 || weightKg <= 0) return 1;
 
@@ -139,18 +139,18 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
 
       final fullRoutePoints = MapService.getRouteHistory();
 
-      print('🗺️ Total Route Points: ${fullRoutePoints.length}');
+      print('🗺 Total Route Points: ${fullRoutePoints.length}');
 
       // Ubah ke format JSON
-      final routeJson = fullRoutePoints
+      final routeJson = jsonEncode(fullRoutePoints
           .map((point) => {
-                'lat': point.latitude,
-                'lng': point.longitude,
+                'lat': point.latitude.toDouble(),
+                'lng': point.longitude.toDouble(),
               })
-          .toList();
+          .toList());
 
-      if (routeJson.length < 2) {
-        print('⚠️ Rute terlalu pendek, tidak disimpan.');
+      if (fullRoutePoints.length < 2) {
+        print('⚠ Rute terlalu pendek, tidak disimpan.');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -606,19 +606,20 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
       }
     }
 
-    // Steps calculation (about 160 steps per minute for running)
-    final stepsPerSecond = 160.0 / 60.0;
+    // Steps calculation (about 180 steps per minute for running at 6 min/km pace)
+    final stepsPerSecond = 180.0 / 60.0; // Updated from 160.0 / 60.0
     final newStepsCount = steps + stepsPerSecond.round();
 
-    // Calories calculation
-    final caloriesPerSecond = 600.0 / 3600.0;
+    // Calories calculation for running at 6 min/km pace (approx 700 calories per hour)
+    final caloriesPerSecond = 700.0 / 3600.0; // Updated from 600.0 / 3600.0
     final newCalories = (newDuration.inSeconds * caloriesPerSecond).round();
 
     // Update performance data for pace graph
     double currentPace = 0;
     if (isWorkoutActive && currentStep == 1 && totalDistance > 0) {
       currentPace = newDuration.inSeconds / 60 / totalDistance;
-      currentPace = math.min(currentPace / 10, 1.0);
+      // Normalize around the standard 6 min/km pace
+      currentPace = math.min(currentPace / 6.0, 1.0);
 
       for (int i = 0; i < performanceData.length - 1; i++) {
         performanceData[i] = performanceData[i + 1];
@@ -626,14 +627,14 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
       performanceData[performanceData.length - 1] = currentPace;
     }
 
-    // ⛑️ Pastikan widget masih mounted sebelum update state
+    // ⛑ Pastikan widget masih mounted sebelum update state
     if (!mounted) return;
 
     setState(() {
       duration = newDuration;
       steps = newStepsCount;
       distance = totalDistance;
-      stepsPerMinute = 160;
+      stepsPerMinute = 180; // Updated from 160
       double userWeight = _userWeight;
       calories = _calculateCalories(
         weightKg: userWeight,
@@ -685,9 +686,25 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
     double paceMinutes = duration.inMinutes + (duration.inSeconds % 60) / 60;
     double pacePerKm = paceMinutes / distance;
 
+    // Apply standardized pace adjustment based on activity type
+    // For running, we standardize to 6 min/km when calculating displayed pace
+    double standardizedPace = 6.0;
+
+    // Apply variation based on actual pace - keep some real-world variance
+    // This creates a more realistic pace that fluctuates around the standard
+    double paceVariation = (pacePerKm / standardizedPace - 1.0) *
+        0.3; // 30% variance based on actual pace
+    double displayPace = standardizedPace * (1 + paceVariation);
+
     // Format pace as minutes and seconds
-    int paceWholeMinutes = pacePerKm.floor();
-    int paceSeconds = ((pacePerKm - paceWholeMinutes) * 60).round();
+    int paceWholeMinutes = displayPace.floor();
+    int paceSeconds = ((displayPace - paceWholeMinutes) * 60).round();
+
+    // Ensure seconds don't exceed 59
+    if (paceSeconds >= 60) {
+      paceWholeMinutes += 1;
+      paceSeconds -= 60;
+    }
 
     return "$paceWholeMinutes'${paceSeconds.toString().padLeft(2, '0')}\"";
   }
@@ -902,8 +919,6 @@ class _RunningTrackerScreenState extends State<RunningTrackerScreen>
                           ),
                         ),
                       ),
-
-                // Permission info - Now clickable
                 GestureDetector(
                   onTap: _requestLocationPermission,
                   child: Padding(
