@@ -563,7 +563,7 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
       case 0:
         return _buildInitialScreen();
       case 1:
-        return walkingTimestamp(
+        return WalkingTimestamp(
           distance: distance,
           formattedDuration: formattedDuration,
           formattedPace: formattedPace,

@@ -5,6 +5,7 @@ import 'share_screen_treadmill.dart';
 import '/api/auth_helper.dart'; // Import for user data
 import 'package:cached_network_image/cached_network_image.dart'; // Import for cached network images
 import 'package:intl/intl.dart'; // For date formatting
+import 'TreadmillPaceStatisticsWidget.dart'; // Import the pace statistics widget
 
 class TreadmillSummary extends StatefulWidget {
   final double distance;
@@ -14,8 +15,7 @@ class TreadmillSummary extends StatefulWidget {
   final int steps;
   final Color primaryGreen;
   final VoidCallback onBackToHome;
-  final String
-      userName; // We'll keep this but also load from AuthHelper if needed
+  final String userName;
 
   // Constructor
   const TreadmillSummary({
@@ -123,59 +123,8 @@ class _TreadmillSummaryState extends State<TreadmillSummary> {
     }
   }
 
-  // Helper method to build bar with label
-  Widget _buildBarWithLabel(String timeLabel, String kmLabel, double height) {
-    return Column(
-      children: [
-        // Time label at top
-        Text(
-          timeLabel,
-          style: GoogleFonts.poppins(
-            fontSize: 10,
-            color: Colors.grey,
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Bar
-        Container(
-          width: 20,
-          height: height * 0.7, // Scale height
-          decoration: BoxDecoration(
-            color: widget.primaryGreen,
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Km label at bottom
-        Text(
-          kmLabel,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Generate random chart data for each build
-    final random = math.Random();
-    final chartBars = <Map<String, dynamic>>[];
-    for (int i = 1; i <= 5; i++) {
-      final barHeight = 60 + random.nextInt(80); // Random height between 60-140
-      final barPaceMinutes =
-          10 + random.nextInt(11); // Random minutes between 10-20
-      final barPaceSeconds = random.nextInt(60); // Random seconds between 0-59
-      chartBars.add({
-        'km': i,
-        'height': barHeight,
-        'pace':
-            "$barPaceMinutes'${barPaceSeconds < 10 ? '0' : ''}$barPaceSeconds\""
-      });
-    }
-
     // Format the distance with comma as decimal separator
     final distanceFormatted =
         widget.distance.toStringAsFixed(2).replaceAll('.', ',');
@@ -462,7 +411,7 @@ class _TreadmillSummaryState extends State<TreadmillSummary> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Calories title with icon - FIXED OVERFLOW
+                            // Calories title with icon
                             Row(
                               children: [
                                 Icon(
@@ -527,7 +476,7 @@ class _TreadmillSummaryState extends State<TreadmillSummary> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Steps title with icon - FIXED POTENTIAL OVERFLOW
+                            // Steps title with icon
                             Row(
                               children: [
                                 Icon(
@@ -568,71 +517,13 @@ class _TreadmillSummaryState extends State<TreadmillSummary> {
                 ],
               ),
 
-              // Performance chart - set to pure white (#FFFFFF)
-              Card(
-                elevation: 2,
-                color: const Color(0xFFFFFFFF),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                margin: const EdgeInsets.only(bottom: 24),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Chart with labels
-                      SizedBox(
-                        height: 180,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: List.generate(
-                            chartBars.length,
-                            (index) => _buildBarWithLabel(
-                              chartBars[index]['pace'],
-                              chartBars[index]['km'].toString(),
-                              chartBars[index]['height'].toDouble(),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Pace indicator at bottom right - UPDATED to match image
-                      Container(
-                        alignment: Alignment.bottomRight,
-                        margin: const EdgeInsets.only(top: 8),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // Running icon
-                            SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: const Icon(
-                                Icons.directions_run,
-                                color: Colors.black,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            // Pace text - making it bolder and larger to match the image
-                            Text(
-                              'Pace',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              // Add the TreadmillPaceStatisticsWidget here
+              TreadmillPaceStatisticsWidget(
+                primaryColor: widget.primaryGreen,
+                barCount: 5,
               ),
+
+              const SizedBox(height: 24),
             ],
           ),
         ),

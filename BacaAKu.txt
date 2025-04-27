@@ -19,3 +19,5 @@ Please enable Developer Mode in your system settings. Run
   start ms-settings:developers
 to open settings.
 3.flutter pub outdated
+
+py.exe manage.py runserver 0.0.0.0:8000

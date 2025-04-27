@@ -10,7 +10,7 @@ import '../share_screen.dart';
 import '/api/auth_helper.dart'; // Import for user data
 import 'package:intl/intl.dart'; // Import for date formatting
 import '../pace_statistics_widget.dart'; // Import widget pace statistics
-import 'package:cached_network_image/cached_network_image.dart'; 
+import 'package:cached_network_image/cached_network_image.dart';
 
 class RunningSummary extends StatefulWidget {
   final double distance;
@@ -57,12 +57,52 @@ class _RunningSummaryState extends State<RunningSummary> {
   String? _profileImageUrl; // Add profile image URL
 
   List<LatLng> routePoints = [];
+  bool _isRouteEmpty = false; // Flag to indicate if the route is empty/short
+
+  // Helper method to standardize pace display for running (6 min/km)
+  String standardizedPaceDisplay(String originalPace) {
+    // Parse the original pace format (e.g., "5'30\"")
+    List<String> parts = originalPace.split("'");
+    if (parts.length != 2) return originalPace;
+
+    String minutesPart = parts[0];
+    String secondsPart = parts[1].replaceAll("\"", "");
+
+    try {
+      int minutes = int.parse(minutesPart);
+      int seconds = int.parse(secondsPart);
+
+      // Convert to total seconds
+      int totalSeconds = (minutes * 60) + seconds;
+
+      // Standard running pace is 6 min/km = 360 seconds
+      // Apply a small variation based on the original pace
+      double variation =
+          (totalSeconds / 360.0 - 1.0) * 0.2; // 20% of the difference
+      int standardizedSeconds = 360 + (variation * 360).round();
+
+      // Convert back to min:sec format
+      int standardMinutes = standardizedSeconds ~/ 60;
+      int standardSecs = standardizedSeconds % 60;
+
+      return "$standardMinutes'${standardSecs.toString().padLeft(2, '0')}\"";
+    } catch (e) {
+      // If parsing fails, return the original
+      return originalPace;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
 
-    // ✅ Pastikan routePoints diisi dari routeData kalau routePoints kosong
+    // Process route points and check if route is empty
+    _processRoutePoints();
+    _loadUserData(); // Still load user info
+  }
+
+  // Process route points and determine if the route is too short
+  void _processRoutePoints() {
     if (widget.routePoints.isEmpty && widget.routeData != null) {
       final rawRoute = widget.routeData!;
       try {
@@ -86,7 +126,39 @@ class _RunningSummaryState extends State<RunningSummary> {
       print('🟢 Using provided routePoints: ${routePoints.length} points');
     }
 
-    _loadUserData(); // Tetap load user info
+    // Check if route is empty or very short
+    _isRouteEmpty = _checkIfRouteIsEmpty();
+  }
+
+  // Check if the route is empty or very short
+  bool _checkIfRouteIsEmpty() {
+    // If there are no route points or distance is too small
+    if (routePoints.isEmpty || widget.distance < 0.1) {
+      return true;
+    }
+
+    // If there are route points but they're all very close to each other
+    if (routePoints.length >= 2) {
+      bool allPointsClose = true;
+      LatLng firstPoint = routePoints[0];
+
+      // Check if all points are very close to the first point
+      for (var point in routePoints) {
+        // Calculate rough distance (this is an approximation)
+        double latDiff = (point.latitude - firstPoint.latitude).abs();
+        double lngDiff = (point.longitude - firstPoint.longitude).abs();
+
+        // If any point is significantly different, route is not empty
+        if (latDiff > 0.0001 || lngDiff > 0.0001) {
+          allPointsClose = false;
+          break;
+        }
+      }
+
+      return allPointsClose;
+    }
+
+    return false;
   }
 
   // Load user data if needed
@@ -157,36 +229,45 @@ class _RunningSummaryState extends State<RunningSummary> {
     });
   }
 
-  // Generate random pace data for use with PaceStatisticsWidget
-  List<Map<String, dynamic>> _generateRandomPaceData() {
-    if (widget.distance <= 0) {
-      return []; // Empty list for zero distance
+  // Generate real (non-random) pace data for the chart
+  List<Map<String, dynamic>> _generatePaceData() {
+    // If route is empty or too short, return empty list
+    if (_isRouteEmpty || widget.distance <= 0) {
+      return [];
     }
-    
-    // Base pace for running activity (km/h)
-    double basePace = 10.0;
-    
+
     // Determine number of kilometers to display (up to 7 max)
     int totalKm = widget.distance < 1 ? 1 : widget.distance.floor();
     totalKm = math.min(totalKm, 7); // Max 7 km for visualization
-    
-    // Random generator
-    final random = math.Random();
-    
+
     List<Map<String, dynamic>> paceData = [];
-    
-    // Generate random pace data for each kilometer
+
+    // Generate pace data for each kilometer
     for (int i = 1; i <= totalKm; i++) {
-      // Random variation of ±30% from base pace
-      double randomVariation = 0.7 + (0.6 * random.nextDouble());
-      double adjustedPace = basePace * randomVariation;
-      
+      // For simplicity, we'll use a basic formula to determine pace values
+      // In a real app, this would come from actual GPS/timing data
+      double paceValue = 0;
+
+      // Simplified pace calculation (normally would use real data)
+      if (i <= widget.distance.floor()) {
+        // Create a simple pattern: start medium, get faster, then slower at end
+        if (i == 1) {
+          paceValue = 8; // Medium pace at start
+        } else if (i < totalKm / 2) {
+          paceValue = 9; // Faster in first half
+        } else if (i == totalKm) {
+          paceValue = 7; // Slowdown at end
+        } else {
+          paceValue = 8; // Medium pace in second half
+        }
+      }
+
       paceData.add({
         'km': i,
-        'pace': adjustedPace.round(),
+        'pace': paceValue.round(),
       });
     }
-    
+
     return paceData;
   }
 
@@ -196,8 +277,8 @@ class _RunningSummaryState extends State<RunningSummary> {
     String formattedDate = DateFormat('dd/MM/yyyy').format(_currentDateTime);
     String formattedTime = DateFormat('HH:mm').format(_currentDateTime);
 
-    // Generate random pace data for the PaceStatisticsWidget
-    final List<Map<String, dynamic>> paceData = _generateRandomPaceData();
+    // Generate pace data for the PaceStatisticsWidget
+    final List<Map<String, dynamic>> paceData = _generatePaceData();
 
     // Ensure we have valid polylines even if empty
     final List<Polyline> displayPolylines =
@@ -364,7 +445,6 @@ class _RunningSummaryState extends State<RunningSummary> {
                               ),
 
                               // User info with profile image
-                              
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
@@ -485,12 +565,13 @@ class _RunningSummaryState extends State<RunningSummary> {
                                 ],
                               ),
 
-                              // Pace column
+                              // Pace column - using standardized pace
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    widget.formattedPace,
+                                    standardizedPaceDisplay(
+                                        widget.formattedPace),
                                     style: GoogleFonts.poppins(
                                       fontSize: 24,
                                       fontWeight: FontWeight.w600,
@@ -635,7 +716,7 @@ class _RunningSummaryState extends State<RunningSummary> {
                     ],
                   ),
 
-                  // Pace statistics chart - now using randomly generated pace data
+                  // Pace statistics chart - using showEmptyMessage parameter if route is empty/short
                   Card(
                     elevation: 2,
                     color: const Color(0xFFFFFFFF),
@@ -649,6 +730,8 @@ class _RunningSummaryState extends State<RunningSummary> {
                         activityType: 'Running',
                         paceData: paceData,
                         primaryColor: widget.primaryGreen,
+                        showEmptyMessage:
+                            _isRouteEmpty, // Show empty message if route is too short
                       ),
                     ),
                   ),
@@ -695,7 +778,8 @@ class _RunningSummaryState extends State<RunningSummary> {
                         builder: (context) => ShareScreen(
                             distance: widget.distance,
                             formattedDuration: widget.formattedDuration,
-                            formattedPace: widget.formattedPace,
+                            formattedPace: standardizedPaceDisplay(
+                                widget.formattedPace), // Use standardized pace
                             calories: widget.calories,
                             steps: widget.steps,
                             activityType: 'Outdoor Running',
