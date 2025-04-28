@@ -339,7 +339,7 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen>
         avgSpeedKmh: avgSpeed,
         maxSpeedKmh: maxSpeed,
         // Opsional: tambahkan elevation gain jika memungkinkan
-        elevationGainM: 0,
+        elevationGainM: 0, duration: duration,
       );
 
       if (saved && context.mounted) {

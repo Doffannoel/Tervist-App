@@ -51,18 +51,33 @@ class CyclingRecord {
   final int id;
   final double distance;
   final DateTime date;
+  final int timeSeconds;
+  final double avgSpeed;
+  final double maxSpeed;
+  final int calories;
+  final List<dynamic> routeData; // 🔥 Tambahan ini
 
   CyclingRecord({
     required this.id,
     required this.distance,
     required this.date,
+    required this.timeSeconds,
+    required this.avgSpeed,
+    required this.maxSpeed,
+    required this.calories,
+    required this.routeData,
   });
 
   factory CyclingRecord.fromJson(Map<String, dynamic> json) {
     return CyclingRecord(
       id: json['id'],
-      distance: json['distance'].toDouble(),
+      distance: (json['distance'] ?? 0.0).toDouble(),
       date: DateTime.parse(json['date']),
+      timeSeconds: json['duration_seconds'] ?? 0,
+      avgSpeed: (json['avg_speed_kmh'] ?? 0.0).toDouble(),
+      maxSpeed: (json['max_speed_kmh'] ?? 0.0).toDouble(),
+      calories: json['calories_burned'] ?? 0, // 🔥 Pastikan ada field calories
+      routeData: json['route_data'] ?? [], // 🔥 Pastikan ada route_data
     );
   }
 }

@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:tervist_apk/screens/workout/cycling/cycling_history_service.dart';
 import 'package:tervist_apk/models/cycling_history_model.dart';
 import 'package:tervist_apk/screens/workout/cycling/cycling_summary.dart';
+import 'package:tervist_apk/screens/workout/map_service.dart';
 
 class CyclingHistoryScreen extends StatefulWidget {
   const CyclingHistoryScreen({super.key});
@@ -57,25 +58,49 @@ class _CyclingHistoryScreenState extends State<CyclingHistoryScreen> {
     }
   }
 
-  Future<void> _navigateToCyclingSummary(int activityId) async {
+  Future<void> _navigateToCyclingSummary(CyclingRecord record) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Fetch the detailed activity data
-      final activityData = await _cyclingService.getCyclingActivityDetail(activityId);
+      // Ambil data langsung dari record yang sudah ada
+      final distance = record.distance;
+      final timeSeconds = record.timeSeconds;
+      final avgSpeed = record.avgSpeed;
+      final maxSpeed = record.maxSpeed;
+      final calories = record.calories;
+      List<dynamic> routeData = record.routeData;
 
-      // Extract data
-      final distance = (activityData['distance_km'] ?? 0).toDouble();
-      final durationSeconds = (activityData['duration_seconds'] ?? 0).toInt();
-      final avgSpeed = (activityData['avg_speed_kmh'] ?? 0).toDouble();
-      final maxSpeed = (activityData['max_speed_kmh'] ?? 0).toDouble();
-      final calories = (activityData['calories_burned'] ?? 0).toInt();
-      final elevationGain = activityData['elevation_gain_m'] ?? 0;
+      // Log route data information for debugging
+      print('📊 RouteData type: ${routeData.runtimeType}');
+      print('📊 RouteData is List, length: ${routeData.length}');
 
-      // Format duration
-      final duration = Duration(seconds: durationSeconds);
+      // If routeData is empty, try to fetch detailed activity data
+      if (routeData.isEmpty) {
+        try {
+          print('🔍 RouteData is empty, fetching detailed activity data...');
+          final detailedData =
+              await _cyclingService.getCyclingActivityDetail(record.id);
+          print(
+              '🔍 Detailed data received: ${detailedData.containsKey('route_data')}');
+
+          if (detailedData.containsKey('route_data')) {
+            var fetchedRouteData = detailedData['route_data'];
+            if (fetchedRouteData is String) {
+              routeData = json.decode(fetchedRouteData);
+            } else if (fetchedRouteData is List) {
+              routeData = fetchedRouteData;
+            }
+            print('🔍 Fetched route data length: ${routeData.length}');
+          }
+        } catch (e) {
+          print('❌ Failed to fetch detailed activity data: $e');
+        }
+      }
+
+      // Format durasi
+      final duration = Duration(seconds: timeSeconds);
       final hours = duration.inHours;
       final minutes = duration.inMinutes % 60;
       final seconds = duration.inSeconds % 60;
@@ -85,11 +110,138 @@ class _CyclingHistoryScreenState extends State<CyclingHistoryScreen> {
       // Format pace (speed in km/h)
       final formattedPace = '${avgSpeed.toStringAsFixed(1)} km/h';
 
+      // If route data is still empty after fetching, create fallback route data
+      if (routeData.isEmpty) {
+        print(
+            '⚠️ Still no route data, creating fallback route data near user location...');
+        // Get user's current location as a fallback
+        final currentLocation = await MapService.getCurrentLocationAsync();
+        if (currentLocation != null) {
+          // Create a small route around the current location
+          routeData = [
+            {
+              "latitude": currentLocation.latitude,
+              "longitude": currentLocation.longitude
+            },
+            {
+              "latitude": currentLocation.latitude + 0.001,
+              "longitude": currentLocation.longitude + 0.001
+            },
+            {
+              "latitude": currentLocation.latitude + 0.001,
+              "longitude": currentLocation.longitude - 0.001
+            },
+          ];
+          print(
+              '🔍 Created fallback route data with ${routeData.length} points');
+        }
+      }
+
+      // Process route points
+      List<LatLng> routePoints = [];
+      if (routeData.isNotEmpty) {
+        try {
+          routePoints = routeData
+              .map<LatLng>((point) {
+                if (point is Map) {
+                  final double? lat =
+                      (point['lat'] ?? point['latitude'])?.toDouble();
+                  final double? lng =
+                      (point['lng'] ?? point['longitude'])?.toDouble();
+
+                  if (lat != null && lng != null) {
+                    return LatLng(lat, lng);
+                  }
+                }
+                throw Exception('Invalid route point data');
+              })
+              .where((point) => point != null)
+              .cast<LatLng>()
+              .toList();
+
+          print('🧭 Processed route points count: ${routePoints.length}');
+          if (routePoints.isNotEmpty) {
+            print(
+                '🧭 First point: ${routePoints.first.latitude}, ${routePoints.first.longitude}');
+            print(
+                '🧭 Last point: ${routePoints.last.latitude}, ${routePoints.last.longitude}');
+          }
+        } catch (e) {
+          print('❌ Error processing route data: $e');
+        }
+      }
+
+      // Create a polyline from route points
+      List<Polyline> polylines = [];
+      if (routePoints.isNotEmpty) {
+        polylines = [
+          Polyline(
+            points: routePoints,
+            color: primaryGreen,
+            strokeWidth: 4.0,
+          ),
+        ];
+        print('🟢 Created polyline with ${routePoints.length} points');
+      } else {
+        print('⚠️ No route points available to create polylines');
+      }
+
+      // Create markers for start and end
+      List<Marker> markers = [];
+      if (routePoints.isNotEmpty) {
+        // Start marker
+        markers.add(
+          Marker(
+            point: routePoints.first,
+            width: 60,
+            height: 60,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.play_arrow,
+                  color: Colors.blue,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // End marker
+        markers.add(
+          Marker(
+            point: routePoints.last,
+            width: 60,
+            height: 60,
+            child: Container(
+              decoration: BoxDecoration(
+                color: primaryGreen.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.flag,
+                  color: primaryGreen,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        );
+        print('🟢 Created start and end markers');
+      } else {
+        print('⚠️ No route points available to create markers');
+      }
+
       setState(() {
         _isLoading = false;
       });
 
-      // Navigate to the summary screen
+      // Navigasi ke halaman summary with polylines and markers
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -98,10 +250,10 @@ class _CyclingHistoryScreenState extends State<CyclingHistoryScreen> {
             formattedDuration: formattedDuration,
             formattedPace: formattedPace,
             calories: calories,
-            steps: maxSpeed.toInt(), // Using max speed as "steps"
-            routePoints: const [], // No route data for cycling
-            markers: const [],
-            polylines: const [],
+            steps: maxSpeed.toInt(), // Gunakan maxSpeed sebagai "steps"
+            routePoints: routePoints, // Kirim route data yang valid
+            markers: markers, // Pass the created markers
+            polylines: polylines, // Pass the created polylines
             primaryGreen: primaryGreen,
             duration: duration,
             onBackToHome: () => Navigator.pop(context),
@@ -388,7 +540,7 @@ class _CyclingHistoryScreenState extends State<CyclingHistoryScreen> {
                               textBaseline: TextBaseline.alphabetic,
                               children: [
                                 Text(
-                                  '${_historyData!.avgSpeed.toStringAsFixed(1)}',
+                                  _historyData!.avgSpeed.toStringAsFixed(1),
                                   style: GoogleFonts.poppins(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
@@ -481,7 +633,7 @@ class _CyclingHistoryScreenState extends State<CyclingHistoryScreen> {
 
   Widget _buildRecordCard(CyclingRecord record) {
     return InkWell(
-      onTap: () => _navigateToCyclingSummary(record.id),
+      onTap: () => _navigateToCyclingSummary(record),
       child: Card(
         elevation: 2,
         color: Colors.white,
@@ -531,7 +683,7 @@ class _CyclingHistoryScreenState extends State<CyclingHistoryScreen> {
                     Row(
                       children: [
                         Text(
-                          "${record.distance.toStringAsFixed(2)}",
+                          record.distance.toStringAsFixed(2),
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,

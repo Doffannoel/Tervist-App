@@ -590,8 +590,25 @@ class CyclingActivityViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        if not self.request.user.is_authenticated:
+            raise serializers.ValidationError("User must be authenticated")
 
+        route_data_raw = self.request.data.get('route_data', '[]')
+        try:
+            if isinstance(route_data_raw, str):
+                route_data_parsed = json.loads(route_data_raw)
+            else:
+                route_data_parsed = route_data_raw
+        except Exception as e:
+            print("❌ Failed to parse route_data:", e)
+            route_data_parsed = []
+
+        route_data_str = json.dumps(route_data_parsed)
+
+        serializer.save(
+            user=self.request.user,
+            route_data=route_data_str
+        )
 
 class WeeklyNutritionSummaryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -809,43 +826,43 @@ class WalkingActivityView(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        """
-        Custom create method with extensive validations
-        """
-        # Ensure user is authenticated
         if not self.request.user.is_authenticated:
             raise serializers.ValidationError("User must be authenticated")
 
-        # Validate input data
         distance = serializer.validated_data.get('distance_km', 0)
         time_seconds = serializer.validated_data.get('time_seconds', 0)
         steps = serializer.validated_data.get('steps', 0)
-        
-        # Comprehensive data validation
+
         self.validate_walking_activity(distance, time_seconds, steps)
 
-        # Calculate pace
         pace = self.calculate_pace(distance, time_seconds)
+        calories_burned = self.calculate_calories_burned(distance, time_seconds, steps)
 
-        # Calculate calories burned
-        calories_burned = self.calculate_calories_burned(
-            distance, 
-            time_seconds, 
-            steps
-        )
+        # 🔥 Ambil route_data dari request
+        route_data_raw = self.request.data.get('route_data', '[]')
+        try:
+            if isinstance(route_data_raw, str):
+                route_data_parsed = json.loads(route_data_raw)
+            else:
+                route_data_parsed = route_data_raw
+        except Exception as e:
+            print("❌ Failed to parse route_data:", e)
+            route_data_parsed = []
 
-        # Save walking activity
+        route_data_str = json.dumps(route_data_parsed)
+
         walking_activity = serializer.save(
             user=self.request.user,
             pace=pace,
-            calories_burned=calories_burned
+            calories_burned=calories_burned,
+            route_data=route_data_str  # 🔥 simpan
         )
 
-        # Update daily steps and calories
         self.update_daily_steps(self.request.user, steps)
         self.update_calories_burned(self.request.user, calories_burned)
 
         return walking_activity
+
 
     def validate_walking_activity(self, distance, time_seconds, steps):
         """
@@ -1044,12 +1061,10 @@ class WalkingHistoryViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     def list(self, request):
-        """Get summary of all walking activities"""
         user = request.user
-        
-        # Get all walking activities for this user
+
         activities = WalkingActivity.objects.filter(user=user).order_by('-date')
-        
+
         if not activities.exists():
             return Response({
                 "message": "No walking activities found",
@@ -1060,25 +1075,22 @@ class WalkingHistoryViewSet(viewsets.ViewSet):
                 "total_calories": 0,
                 "records": []
             }, status=status.HTTP_200_OK)
-        
-        # Calculate summary statistics
+
         total_workouts = activities.count()
         total_time_seconds = activities.aggregate(Sum('time_seconds'))['time_seconds__sum'] or 0
         total_distance = activities.aggregate(Sum('distance_km'))['distance_km__sum'] or 0.0
         total_calories = activities.aggregate(Sum('calories_burned'))['calories_burned__sum'] or 0
-        
-        # Get the first activity date (when the user started)
         start_date = activities.aggregate(Min('date'))['date__min']
-        
-        # Prepare records for the list
+
         records = []
         for activity in activities:
             records.append({
                 'id': activity.id,
                 'distance': round(activity.distance_km, 2),
                 'date': activity.date.strftime('%Y-%m-%d'),
+                'route_data': json.loads(activity.route_data) if activity.route_data else [],
             })
-        
+
         return Response({
             "start_date": start_date.strftime('%Y-%m-%d'),
             "total_workouts": total_workouts,
@@ -1087,7 +1099,8 @@ class WalkingHistoryViewSet(viewsets.ViewSet):
             "total_calories": total_calories,
             "records": records
         }, status=status.HTTP_200_OK)
-
+    
+    
 class CyclingHistoryViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
@@ -1118,7 +1131,11 @@ class CyclingHistoryViewSet(viewsets.ViewSet):
         total_calories = activities.aggregate(Sum('calories_burned'))['calories_burned__sum'] or 0
         
         # Calculate average speed
-        avg_speed = (total_distance / total_time_seconds * 3600) if total_time_seconds > 0 else 0
+        if total_time_seconds > 0:
+            # Convert total_distance to float for the calculation
+            avg_speed = float(total_distance) / total_time_seconds * 3600
+        else:
+            avg_speed = 0
         avg_speed = round(avg_speed, 2)
         
         # Get the first activity date (when the user started)
@@ -1127,10 +1144,23 @@ class CyclingHistoryViewSet(viewsets.ViewSet):
         # Prepare records for the list
         records = []
         for activity in activities:
+            # Parse route_data from string to list
+            route_data = []
+            if activity.route_data:
+                try:
+                    route_data = json.loads(activity.route_data)
+                except Exception as e:
+                    print(f"Error parsing route_data for activity {activity.id}: {e}")
+            
             records.append({
                 'id': activity.id,
                 'distance': round(activity.distance_km, 2),  # Round to 2 decimal places
                 'date': activity.date.strftime('%Y-%m-%d'),
+                'duration_seconds': int(activity.duration.total_seconds()),
+                'avg_speed_kmh': float(activity.avg_speed_kmh),
+                'max_speed_kmh': float(activity.max_speed_kmh),
+                'calories_burned': int(activity.calories_burned or 0),
+                'route_data': route_data,  # Include route_data in each record
             })
         
         return Response({
@@ -1151,6 +1181,14 @@ class CyclingHistoryViewSet(viewsets.ViewSet):
             # Get the specific cycling activity
             activity = CyclingActivity.objects.get(id=pk, user=user)
             
+            # Parse route_data from string to list
+            route_data = []
+            if activity.route_data:
+                try:
+                    route_data = json.loads(activity.route_data)
+                except Exception as e:
+                    print(f"Error parsing route_data for activity {activity.id}: {e}")
+            
             # Create response data
             response_data = {
                 "id": activity.id,
@@ -1161,6 +1199,7 @@ class CyclingHistoryViewSet(viewsets.ViewSet):
                 "calories_burned": round(float(activity.calories_burned), 2) if activity.calories_burned else 0,
                 "elevation_gain_m": activity.elevation_gain_m,
                 "date": activity.date.strftime('%Y-%m-%d'),
+                "route_data": route_data,  # Include route_data in the response
             }
             
             return Response(response_data, status=status.HTTP_200_OK)

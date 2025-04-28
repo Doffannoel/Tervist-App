@@ -49,18 +49,33 @@ class WalkingRecord {
   final int id;
   final double distance;
   final DateTime date;
+  final int timeSeconds;
+  final int steps;
+  final int calories;
+  final double pace;
+  final List<dynamic> routeData; // 🔥 Tambahan routeData
 
   WalkingRecord({
     required this.id,
     required this.distance,
     required this.date,
+    required this.timeSeconds,
+    required this.steps,
+    required this.calories,
+    required this.pace,
+    required this.routeData, // 🔥 Tambahkan di constructor
   });
 
   factory WalkingRecord.fromJson(Map<String, dynamic> json) {
     return WalkingRecord(
       id: json['id'],
-      distance: json['distance'].toDouble(),
+      distance: (json['distance'] ?? 0.0).toDouble(),
       date: DateTime.parse(json['date']),
+      timeSeconds: json['time_seconds'] ?? 0,
+      steps: json['steps'] ?? 0,
+      calories: json['calories_burned'] ?? 0,
+      pace: (json['pace'] ?? 0.0).toDouble(),
+      routeData: json['route_data'] ?? [], // 🔥 Tambahan di fromJson
     );
   }
 }

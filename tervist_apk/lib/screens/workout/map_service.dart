@@ -27,12 +27,26 @@ class MapService {
   // Untuk live location tracking
   static LatLng _currentLocation = defaultCenter;
   static final List<LatLng> _routeHistory = [];
+
+  // Untuk menyimpan data rute setelah sesi berakhir
+  static final List<LatLng> _savedRouteHistory = [];
+
+  // Untuk markers dan polylines
+  static List<Marker> _currentMarkers = [];
+  static List<Polyline> _currentPolylines = [];
+  static List<Marker> _savedMarkers = [];
+  static List<Polyline> _savedPolylines = [];
+
   static StreamController<LatLng>? _locationController;
   static bool _isTracking = false;
   static bool _isSessionActive =
       false; // Flag to track if session is active (after GO)
   static bool _isPaused = false; // Flag to track if tracking is paused
   static StreamSubscription<LocationData>? _locationSubscription;
+
+  // Tambahkan property untuk menyimpan lokasi terakhir yang valid
+  static LatLng _lastValidLocation = defaultCenter;
+  static bool _hasValidLocation = false;
 
   /// Inisialisasi location service
   static Future<void> initLocationService() async {
@@ -56,18 +70,23 @@ class MapService {
 
       // Coba dapatkan lokasi saat ini
       final locationData = await _location.getLocation();
-      final currentLocation = LatLng(
-          locationData.latitude ?? defaultCenter.latitude,
-          locationData.longitude ?? defaultCenter.longitude);
 
-      // Gunakan lokasi saat ini atau fallback ke default
-      _currentLocation = currentLocation;
+      if (locationData.latitude != null && locationData.longitude != null) {
+        final currentLocation =
+            LatLng(locationData.latitude!, locationData.longitude!);
+
+        // Gunakan lokasi saat ini
+        _currentLocation = currentLocation;
+        _lastValidLocation =
+            currentLocation; // Simpan sebagai lokasi valid terakhir
+        _hasValidLocation = true;
+      }
 
       // Buat list dengan minimal satu point untuk menghindari empty bounds error
       final List<LatLng> initialPoints = [_currentLocation];
 
       // Create markers
-      final List<Marker> markers = [
+      _currentMarkers = [
         Marker(
           point: _currentLocation,
           width: 80,
@@ -89,7 +108,7 @@ class MapService {
       ];
 
       // Polyline kosong sebelum GO button ditekan
-      final List<Polyline> polylines = [
+      _currentPolylines = [
         Polyline(
           points:
               initialPoints, // Gunakan initialPoints untuk menghindari bounds error
@@ -101,8 +120,8 @@ class MapService {
       return MapData(
         routePoints:
             initialPoints, // Gunakan initialPoints dengan current location
-        markers: markers,
-        polylines: polylines,
+        markers: _currentMarkers,
+        polylines: _currentPolylines,
       );
     } catch (e) {
       print('Error getting initial location: $e');
@@ -120,7 +139,7 @@ class MapService {
     final List<LatLng> initialPoints = [defaultCenter];
 
     // Create markers
-    final List<Marker> markers = [
+    _currentMarkers = [
       Marker(
         point: defaultCenter,
         width: 80,
@@ -142,7 +161,7 @@ class MapService {
     ];
 
     // Polyline dengan satu point untuk menghindari bounds error
-    final List<Polyline> polylines = [
+    _currentPolylines = [
       Polyline(
         points:
             initialPoints, // Gunakan initialPoints untuk menghindari bounds error
@@ -153,8 +172,8 @@ class MapService {
 
     return MapData(
       routePoints: initialPoints,
-      markers: markers,
-      polylines: polylines,
+      markers: _currentMarkers,
+      polylines: _currentPolylines,
     );
   }
 
@@ -190,6 +209,10 @@ class MapService {
         _currentLocation =
             LatLng(locationData.latitude!, locationData.longitude!);
 
+        // Simpan lokasi valid terakhir
+        _lastValidLocation = _currentLocation;
+        _hasValidLocation = true;
+
         // 🚦 Cek apakah session aktif dan belum dipause
         if (_isSessionActive && !_isPaused) {
           bool shouldAddPoint = false;
@@ -209,6 +232,9 @@ class MapService {
           if (shouldAddPoint) {
             print("✅ Menambahkan titik ke route: $_currentLocation");
             _routeHistory.add(_currentLocation);
+
+            // Update markers dan polylines
+            _updateMapVisuals();
           }
         }
 
@@ -216,6 +242,51 @@ class MapService {
         _locationController?.add(_currentLocation);
       }
     });
+  }
+
+  /// Update markers dan polylines berdasarkan routeHistory
+  static void _updateMapVisuals() {
+    // Update marker untuk posisi saat ini
+    _currentMarkers = [
+      Marker(
+        point: _currentLocation,
+        width: 80,
+        height: 80,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.3),
+            shape: BoxShape.circle,
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.location_on,
+              color: Colors.blue,
+              size: 30,
+            ),
+          ),
+        ),
+      ),
+    ];
+
+    // Jika ada rute, tampilkan polyline
+    if (_routeHistory.isNotEmpty) {
+      _currentPolylines = [
+        Polyline(
+          points: List.from(_routeHistory),
+          color: const Color(0xFF2AAF7F),
+          strokeWidth: 5,
+        ),
+      ];
+    } else {
+      // Polyline kosong jika tidak ada rute
+      _currentPolylines = [
+        Polyline(
+          points: [_currentLocation],
+          color: Colors.transparent,
+          strokeWidth: 0,
+        ),
+      ];
+    }
   }
 
   // Helper to calculate distance between points
@@ -250,64 +321,97 @@ class MapService {
 
   /// Get current location
   static LatLng getCurrentLocation() {
+    // Jika memiliki lokasi valid, kembalikan itu
+    if (_hasValidLocation) {
+      return _lastValidLocation;
+    }
+
+    // Jika sedang tracking dan ada rute, gunakan titik terakhir dari rute
+    if (_isSessionActive && _routeHistory.isNotEmpty) {
+      return _routeHistory.last;
+    }
+
+    // Jika sudah berhenti tracking tapi ada rute tersimpan, gunakan titik terakhir dari rute tersimpan
+    if (!_isSessionActive && _savedRouteHistory.isNotEmpty) {
+      return _savedRouteHistory.last;
+    }
+
+    // Fallback ke lokasi saat ini (yang mungkin defaultCenter)
     return _currentLocation;
   }
 
   /// Get entire route history
   static List<LatLng> getRouteHistory() {
+    // Jika dalam sesi aktif, kembalikan rute aktif
+    if (_isSessionActive) {
+      // Jika rute kosong tapi kita punya lokasi valid, tambahkan lokasi saat ini
+      if (_routeHistory.isEmpty && _hasValidLocation) {
+        return [_lastValidLocation];
+      }
+      return List.from(_routeHistory);
+    }
+
+    // Jika sesi sudah berakhir, kembalikan rute yang tersimpan
+    if (_savedRouteHistory.isNotEmpty) {
+      return List.from(_savedRouteHistory);
+    }
+
+    // Jika tidak ada rute tersimpan tapi kita punya lokasi valid, kembalikan lokasi itu
+    if (_hasValidLocation) {
+      return [_lastValidLocation];
+    }
+
+    // Fallback ke lokasi saat ini (mungkin defaultCenter)
+    if (_routeHistory.isEmpty) {
+      return [_currentLocation];
+    }
+
     return List.from(_routeHistory);
   }
 
   /// Stop location updates
   static void stopLocationUpdates() {
     _isTracking = false;
-    _isSessionActive = false;
-    _isPaused = false; // Reset pause state
     _locationSubscription?.cancel();
     _locationController?.close();
+
+    // Jangan reset data rute di sini - karena kita masih perlu untuk summary
   }
 
   /// Create a MapData object dari state saat ini
   static MapData getCurrentMapData() {
-    // Pastikan selalu ada minimal satu point
-    List<LatLng> currentPoints = _isSessionActive && _routeHistory.isNotEmpty
+    // Jika dalam sesi aktif, gunakan data langsung
+    if (_isSessionActive) {
+      // Jika rute kosong, pastikan minimal berisi lokasi saat ini
+      List<LatLng> currentPoints = _routeHistory.isNotEmpty
+          ? List.from(_routeHistory)
+          : [_currentLocation];
+
+      return MapData(
+        routePoints: currentPoints,
+        markers: _currentMarkers,
+        polylines: _currentPolylines,
+      );
+    }
+
+    // Jika sesi berakhir, gunakan data tersimpan
+    if (_savedRouteHistory.isNotEmpty) {
+      return MapData(
+        routePoints: List.from(_savedRouteHistory),
+        markers: _savedMarkers,
+        polylines: _savedPolylines,
+      );
+    }
+
+    // Fallback ke data saat ini jika tidak ada data tersimpan
+    List<LatLng> points = _routeHistory.isNotEmpty
         ? List.from(_routeHistory)
         : [_currentLocation];
 
-    final List<Marker> markers = [
-      Marker(
-        point: _currentLocation,
-        width: 80,
-        height: 80,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.3),
-            shape: BoxShape.circle,
-          ),
-          child: const Center(
-            child: Icon(
-              Icons.location_on,
-              color: Colors.blue,
-              size: 30,
-            ),
-          ),
-        ),
-      ),
-    ];
-
-    final List<Polyline> polylines = [
-      Polyline(
-        // Gunakan currentPoints untuk menghindari empty list
-        points: currentPoints,
-        color: _isSessionActive ? const Color(0xFF2AAF7F) : Colors.transparent,
-        strokeWidth: _isSessionActive ? 5 : 0,
-      ),
-    ];
-
     return MapData(
-      routePoints: currentPoints,
-      markers: markers,
-      polylines: polylines,
+      routePoints: points,
+      markers: _currentMarkers,
+      polylines: _currentPolylines,
     );
   }
 
@@ -321,14 +425,93 @@ class MapService {
     _isSessionActive = true;
     _isPaused = false; // Ensure not paused when starting
     _routeHistory.clear();
-    // _routeHistory.add(_currentLocation); // Add current location as first point
+
+    // Tambahkan lokasi saat ini sebagai titik pertama jika kita punya lokasi valid
+    if (_hasValidLocation) {
+      _routeHistory.add(_lastValidLocation);
+      _updateMapVisuals();
+    }
+  }
+
+  /// Tambahkan titik rute manual
+  static void addRoutePoint(LatLng point) {
+    // Cek jika point sudah ada di rute untuk menghindari duplikasi
+    bool isDuplicate = false;
+    for (var existingPoint in _routeHistory) {
+      if ((existingPoint.latitude - point.latitude).abs() < 0.000001 &&
+          (existingPoint.longitude - point.longitude).abs() < 0.000001) {
+        isDuplicate = true;
+        break;
+      }
+    }
+
+    if (!isDuplicate) {
+      _routeHistory.add(point);
+      _updateMapVisuals();
+    }
+  }
+
+  static Future<LatLng?> getCurrentLocationAsync() async {
+    try {
+      // Try to get the current location
+      LatLng currentLocation = MapService.getCurrentLocation();
+      return currentLocation;
+    } catch (e) {
+      print('❌ Error getting current location: $e');
+      // Return null if we can't get the location
+      return null;
+    }
   }
 
   /// Method untuk menghentikan session
   static void stopSession() {
+    // Simpan rute sebelum mengakhiri sesi
+    if (_routeHistory.isNotEmpty) {
+      _savedRouteHistory.clear();
+      _savedRouteHistory.addAll(_routeHistory);
+
+      // Simpan juga markers dan polylines
+      _savedMarkers = List.from(_currentMarkers);
+      _savedPolylines = List.from(_currentPolylines);
+    } else if (_hasValidLocation) {
+      // Jika rute kosong tapi kita punya lokasi valid, gunakan itu
+      _savedRouteHistory.clear();
+      _savedRouteHistory.add(_lastValidLocation);
+
+      // Buat markers dan polylines sederhana
+      _savedMarkers = [
+        Marker(
+          point: _lastValidLocation,
+          width: 80,
+          height: 80,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.location_on,
+                color: Colors.blue,
+                size: 30,
+              ),
+            ),
+          ),
+        ),
+      ];
+
+      _savedPolylines = [
+        Polyline(
+          points: [_lastValidLocation],
+          color: const Color(0xFF2AAF7F),
+          strokeWidth: 5,
+        ),
+      ];
+    }
+
+    // Set flag sesi menjadi tidak aktif
     _isSessionActive = false;
     _isPaused = false; // Reset pause state
-    // Route history dipertahankan untuk summary screen
   }
 
   /// Metode untuk memeriksa status session
@@ -339,5 +522,50 @@ class MapService {
   /// Method untuk memeriksa status pause
   static bool isPaused() {
     return _isPaused;
+  }
+
+  /// Mendapatkan lokasi tengah dari rute untuk digunakan di peta
+  static LatLng getMapCenter() {
+    // Jika sesi aktif dan ada rute, hitung center dari rute
+    if (_isSessionActive && _routeHistory.length > 1) {
+      double latSum = 0;
+      double lngSum = 0;
+
+      for (var point in _routeHistory) {
+        latSum += point.latitude;
+        lngSum += point.longitude;
+      }
+
+      return LatLng(
+        latSum / _routeHistory.length,
+        lngSum / _routeHistory.length,
+      );
+    }
+
+    // Jika sesi berakhir dan ada rute tersimpan, hitung center dari rute tersimpan
+    if (!_isSessionActive && _savedRouteHistory.length > 1) {
+      double latSum = 0;
+      double lngSum = 0;
+
+      for (var point in _savedRouteHistory) {
+        latSum += point.latitude;
+        lngSum += point.longitude;
+      }
+
+      return LatLng(
+        latSum / _savedRouteHistory.length,
+        lngSum / _savedRouteHistory.length,
+      );
+    }
+
+    // Jika tidak ada rute, gunakan lokasi saat ini
+    return getCurrentLocation();
+  }
+
+  /// Reset data rute (biasanya dipanggil saat kembali ke layar awal)
+  static void resetRouteData() {
+    _savedRouteHistory.clear();
+    _savedMarkers.clear();
+    _savedPolylines.clear();
   }
 }

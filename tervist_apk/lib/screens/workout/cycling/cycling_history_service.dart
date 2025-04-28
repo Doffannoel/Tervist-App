@@ -40,7 +40,7 @@ class CyclingHistoryService {
       }
 
       final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/api/cycling-history/$activityId/'),
+        Uri.parse('${ApiConfig.baseUrl}/api/cycling-activity/$activityId/'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -48,9 +48,12 @@ class CyclingHistoryService {
       );
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final data = json.decode(response.body);
+        print('🔍 Detailed activity data: ${data.keys}');
+        return data;
       } else {
-        throw Exception('Failed to load cycling activity details');
+        throw Exception(
+            'Failed to load cycling activity details: ${response.statusCode}');
       }
     } catch (e) {
       print('Error fetching cycling activity details: $e');

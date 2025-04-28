@@ -11,7 +11,5 @@ urlpatterns = [
     path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('social-login/', GoogleLoginView.as_view(), name='social-login'),
-    path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-
-    
+    path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),   
 ]

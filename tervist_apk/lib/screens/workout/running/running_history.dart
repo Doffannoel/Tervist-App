@@ -104,7 +104,37 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                 point: routePoints.first,
                 width: 60,
                 height: 60,
-                child: const Icon(Icons.location_on, color: Colors.green),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.play_arrow,
+                      color: Colors.blue,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+              Marker(
+                point: routePoints.last,
+                width: 60,
+                height: 60,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: primaryGreen.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.flag,
+                      color: primaryGreen,
+                      size: 24,
+                    ),
+                  ),
+                ),
               ),
             ]
           : [];

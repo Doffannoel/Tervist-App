@@ -355,9 +355,22 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
 
   void stopWorkout() async {
     _timer?.cancel();
+
+    final currentRoute = MapService.getRouteHistory();
+    final currentMapData = MapService.getCurrentMapData();
+    final lastLocation = MapService.getCurrentLocation();
+
+      if (currentRoute.isEmpty) {
+      // Jika rute kosong, tambahkan lokasi terakhir
+      MapService.addRoutePoint(lastLocation);
+    }
+
+    // Sekarang hentikan sesi tracking
     MapService.stopSession();
 
     double paceMinutes = distance > 0 ? duration.inSeconds / 60 / distance : 0;
+
+    
 
     try {
       // Dapatkan token terlebih dahulu
@@ -424,6 +437,51 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
     }
   }
 
+  void _ensureValidRouteData() {
+    // Jika rute kosong, tambahkan titik lokasi saat ini
+    if (routePoints.isEmpty) {
+      final currentLocation = MapService.getCurrentLocation();
+      setState(() {
+        routePoints = [currentLocation];
+
+        // Juga perbarui markers jika kosong
+        if (markers.isEmpty) {
+          markers = [
+            Marker(
+              point: currentLocation,
+              width: 60,
+              height: 60,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.location_on,
+                    color: Colors.blue,
+                    size: 30,
+                  ),
+                ),
+              ),
+            ),
+          ];
+        }
+
+        // Perbarui polylines jika kosong
+        if (polylines.isEmpty) {
+          polylines = [
+            Polyline(
+              points: [currentLocation],
+              color: primaryGreen,
+              strokeWidth: 4,
+            ),
+          ];
+        }
+      });
+    }
+  }
+
   void _startTimer() {
     _timer?.cancel();
 
@@ -443,40 +501,38 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
 
   // Compute new metrics off the main thread
   Future<void> _computeUpdatedMetrics() async {
-    // Update duration - one second at a time
     final newDuration = duration + const Duration(seconds: 1);
 
-    // Calculate the actual distance from the route points
     final routePoints = MapService.getRouteHistory();
     double totalDistance = 0.0;
 
     if (routePoints.length > 1) {
-      // Calculate the total distance along the route
       for (int i = 1; i < routePoints.length; i++) {
+        if (routePoints[i].latitude == routePoints[i - 1].latitude &&
+            routePoints[i].longitude == routePoints[i - 1].longitude) {
+          continue;
+        }
         totalDistance += _calculateDistance(routePoints[i - 1], routePoints[i]);
       }
     }
 
-    // Steps calculation (about 100 steps per minute for walking, less than running)
-    final stepsPerSecond =
-        95.0 / 60.0; // Adjusted to 95 steps per minute for walking
-    final newStepsCount = steps + stepsPerSecond.round();
+    // ✅ CEK apakah distance benar-benar bertambah baru update steps/calories
+    bool isMoving = totalDistance > distance;
 
-    // Calculate calories (using a simple approximation)
-    // Walking burns less calories than running, around 300 kcal per hour
-    final caloriesPerSecond = 275.0 / 3600.0; // Average of 275 kcal per hour
-    final newCalories = (newDuration.inSeconds * caloriesPerSecond).round();
+    final stepsPerSecond = 95.0 / 60.0;
+    final caloriesPerSecond = 275.0 / 3600.0;
 
-    // Update steps per minute
-    stepsPerMinute = 95; // Common walking cadence
+    if (isMoving) {
+      steps = steps + stepsPerSecond.round();
+      calories = (newDuration.inSeconds * caloriesPerSecond).round();
+      distance = totalDistance;
+    }
 
-    // Update performance data for pace graph
+    stepsPerMinute = 95;
     double currentPace = 0;
     if (isWorkoutActive && currentStep == 1 && totalDistance > 0) {
       currentPace = newDuration.inSeconds / 60 / totalDistance;
-      // Normalize around the standard 11 min/km pace
-      currentPace = math.min(
-          currentPace / 11.0, 1.0); // Changed to normalize against 11 min/km
+      currentPace = math.min(currentPace / 11.0, 1.0);
 
       for (int i = 0; i < performanceData.length - 1; i++) {
         performanceData[i] = performanceData[i + 1];
@@ -484,11 +540,7 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
       performanceData[performanceData.length - 1] = currentPace;
     }
 
-    // Apply updates all at once
     duration = newDuration;
-    steps = newStepsCount;
-    distance = totalDistance; // Use the calculated distance from route points
-    calories = newCalories;
   }
 
   // Helper method to calculate distance between two coordinates (in kilometers)
@@ -584,9 +636,9 @@ class _WalkingTrackerScreenState extends State<WalkingTrackerScreen>
           formattedPace: formattedPace,
           calories: calories,
           steps: steps,
-          routePoints: routePoints,
-          markers: markers,
-          polylines: polylines,
+          routePoints: MapService.getRouteHistory(),
+          markers: MapService.getCurrentMapData().markers,
+          polylines: MapService.getCurrentMapData().polylines,
           primaryGreen: primaryGreen,
           duration: duration,
           onBackToHome: () {

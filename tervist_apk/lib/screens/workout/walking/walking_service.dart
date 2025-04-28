@@ -1,5 +1,6 @@
 // walking_service.dart
 import 'package:http/http.dart' as http;
+import 'package:tervist_apk/screens/workout/map_service.dart';
 import 'dart:convert';
 import '/api/api_config.dart';
 import '/api/auth_helper.dart';
@@ -32,9 +33,14 @@ class WalkingService {
           'pace': pace,
           'calories_burned': caloriesBurned,
           'steps': steps,
-          'date': date
-              .toIso8601String()
-              .split('T')[0], // Hanya kirim format YYYY-MM-DD
+          'date': date.toIso8601String().split('T')[0],
+          'route_data': jsonEncode(MapService.getRouteHistory()
+              .map((e) => {
+                    'latitude': e.latitude,
+                    'longitude': e.longitude,
+                  })
+              .toList()),
+// 🔥 Tambahan route data
         }),
       );
 

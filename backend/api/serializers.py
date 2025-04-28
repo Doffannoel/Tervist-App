@@ -70,7 +70,7 @@ class WalkingActivitySerializer(serializers.ModelSerializer):
         model = WalkingActivity
         fields = [
             'id', 'user', 'distance_km', 'time_seconds', 
-            'pace', 'calories_burned', 'steps', 'date'
+            'pace', 'calories_burned', 'steps', 'date', 'route_data'
         ]
         read_only_fields = ['user', 'pace', 'calories_burned']
 
