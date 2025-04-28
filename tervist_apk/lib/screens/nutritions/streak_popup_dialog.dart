@@ -17,7 +17,6 @@ class StreakPopupDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header dengan logo
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -53,7 +52,6 @@ class StreakPopupDialog extends StatelessWidget {
             ),
             SizedBox(height: 30),
 
-            // Day streak api dengan angka 1
             Image.asset(
               'assets/images/day1strik.png',
               height: 150,
@@ -61,26 +59,24 @@ class StreakPopupDialog extends StatelessWidget {
 
             SizedBox(height: 20),
 
-            // Weekly calendar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildDayCircle('S', false),
-                  _buildDayCircle('M', true), // Active day
-                  _buildDayCircle('T', false),
-                  _buildDayCircle('W', false),
-                  _buildDayCircle('T', false),
-                  _buildDayCircle('F', false),
-                  _buildDayCircle('S', false),
+                  _buildDayCircle('S', false, 0),
+                  _buildDayCircle('M', false, 1),
+                  _buildDayCircle('T', true, 2), // Ini TUESDAY
+                  _buildDayCircle('W', false, 3),
+                  _buildDayCircle('T', false, 4), // Ini THURSDAY
+                  _buildDayCircle('F', false, 5),
+                  _buildDayCircle('S', false, 6),
                 ],
               ),
             ),
 
             SizedBox(height: 20),
 
-            // Motivational text
             Text(
               "You're on fire! Every day matters for hitting your goal!",
               textAlign: TextAlign.center,
@@ -99,11 +95,6 @@ class StreakPopupDialog extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // Navigator ke nutrition_main.dart jika diperlukan
-                  // Navigator.pushReplacement(
-                  //   context,
-                  //   MaterialPageRoute(builder: (context) => NutritionMainPage()),
-                  // );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
@@ -127,18 +118,19 @@ class StreakPopupDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildDayCircle(String day, bool isActive) {
+  Widget _buildDayCircle(String day, bool isActive, int index) {
     return Column(
       children: [
         Text(
           day,
           style: TextStyle(
-            color: day == 'M' ? Colors.orange : Colors.grey[700],
+            color:
+                index == 2 ? Colors.orange : Colors.grey[700], // hanya TUESDAY
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
         ),
-        SizedBox(height: 5),
+        const SizedBox(height: 5),
         Container(
           width: 25,
           height: 25,
@@ -147,7 +139,7 @@ class StreakPopupDialog extends StatelessWidget {
             color: isActive ? Colors.orange : Colors.grey[300],
           ),
           child: isActive
-              ? Icon(Icons.check, color: Colors.white, size: 15)
+              ? const Icon(Icons.check, color: Colors.white, size: 15)
               : null,
         ),
       ],

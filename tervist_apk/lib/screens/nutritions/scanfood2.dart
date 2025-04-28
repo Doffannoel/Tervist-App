@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tervist_apk/screens/nutritions/ScanNowPopupPage.dart'; //
 
 class ScanFood2Page extends StatelessWidget {
   const ScanFood2Page({super.key});
@@ -276,8 +277,12 @@ class ScanFood2Page extends StatelessWidget {
                         const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     child: ElevatedButton(
                       onPressed: () {
-                        // Action for next button - if needed
-                        Navigator.pop(context);
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return const ScanNowPopupPage();
+                          },
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
@@ -287,7 +292,7 @@ class ScanFood2Page extends StatelessWidget {
                         minimumSize: Size(double.infinity, 56),
                       ),
                       child: Text(
-                        'Done',
+                        'Scan now',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
