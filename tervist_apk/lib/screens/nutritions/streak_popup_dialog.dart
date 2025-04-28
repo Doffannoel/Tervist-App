@@ -68,8 +68,8 @@ class StreakPopupDialog extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _buildDayCircle('S', false),
-                  _buildDayCircle('M', true), // Active day
-                  _buildDayCircle('T', false),
+                  _buildDayCircle('M', false), // Active day
+                  _buildDayCircle('T', true),
                   _buildDayCircle('W', false),
                   _buildDayCircle('T', false),
                   _buildDayCircle('F', false),
@@ -133,7 +133,7 @@ class StreakPopupDialog extends StatelessWidget {
         Text(
           day,
           style: TextStyle(
-            color: day == 'M' ? Colors.orange : Colors.grey[700],
+            color: day == 'T' ? Colors.orange : Colors.grey[700],
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
