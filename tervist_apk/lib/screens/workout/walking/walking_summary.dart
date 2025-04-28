@@ -736,6 +736,8 @@ class _WalkingSummaryState extends State<WalkingSummary> {
                         primaryColor: widget.primaryGreen,
                         showEmptyMessage:
                             _isRouteEmpty, // Show empty message if route is too short
+                        totalDistance:
+                            widget.distance, // Added totalDistance parameter
                       ),
                     ),
                   ),

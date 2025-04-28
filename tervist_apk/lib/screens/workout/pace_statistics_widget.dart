@@ -6,15 +6,15 @@ class PaceStatisticsWidget extends StatefulWidget {
   final String activityType; // 'Running', 'Treadmill', 'Cycling', 'Walking'
   final List<Map<String, dynamic>>? paceData; // Data for the pace statistics
   final Color primaryColor;
-  final bool showEmptyMessage; // New parameter to control empty state message
-  final int barCount; // Number of bars to display
+  final bool showEmptyMessage; // Parameter to control empty state message
+  final double totalDistance; // Add totalDistance parameter to control bars
 
   const PaceStatisticsWidget({
     Key? key,
     required this.activityType,
     this.paceData,
     this.showEmptyMessage = false, // Default to false
-    this.barCount = 5, // Default to 5 bars
+    required this.totalDistance, // Required parameter
     this.primaryColor = const Color(0xFF4CAF9F), // Teal green color
   }) : super(key: key);
 
@@ -24,6 +24,8 @@ class PaceStatisticsWidget extends StatefulWidget {
 
 class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
   late List<Map<String, dynamic>> _effectivePaceData;
+  bool _hasValidData = false;
+  late int _barCount;
 
   @override
   void initState() {
@@ -35,19 +37,34 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
   void didUpdateWidget(PaceStatisticsWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.paceData != widget.paceData ||
-        oldWidget.barCount != widget.barCount ||
+        oldWidget.totalDistance != widget.totalDistance ||
         oldWidget.showEmptyMessage != widget.showEmptyMessage) {
       _initializePaceData();
     }
   }
 
   void _initializePaceData() {
-    if (widget.paceData != null && widget.paceData!.isNotEmpty) {
-      // Use provided data but ensure we have exactly barCount items
-      _effectivePaceData = _ensureBarCount(widget.paceData!, widget.barCount);
+    // Calculate bar count based on the total distance (rounded up)
+    _barCount = widget.totalDistance.ceil();
+
+    // Ensure at least 1 bar is shown
+    _barCount = max(1, _barCount);
+
+    // Check if we have valid input data with non-zero values
+    bool hasNonZeroData = widget.paceData != null &&
+        widget.paceData!.isNotEmpty &&
+        widget.paceData!.any((item) =>
+            item['pace'] != null &&
+            (item['pace'] is num ? item['pace'] > 0 : true));
+
+    _hasValidData = hasNonZeroData;
+
+    if (hasNonZeroData) {
+      // Use provided data but ensure we have appropriate number of items
+      _effectivePaceData = _ensureBarCount(widget.paceData!, _barCount);
     } else {
       // Generate default empty data
-      _effectivePaceData = _generateDefaultPaceData(widget.barCount);
+      _effectivePaceData = _generateDefaultPaceData(_barCount);
     }
   }
 
@@ -61,12 +78,31 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
       final result = List<Map<String, dynamic>>.from(data);
       for (int i = data.length + 1; i <= count; i++) {
         // Add new items with sequential km values
-        result.add({'km': i, 'pace': 0});
+        // Convert to double first, then round to avoid type inference issues
+        final lastPace = data.last['pace'];
+        double scaledPace = 0;
+
+        if (lastPace is int) {
+          scaledPace = (lastPace * 0.8);
+        } else if (lastPace is double) {
+          scaledPace = (lastPace * 0.8);
+        } else {
+          // Try parsing as numeric if it's a string
+          scaledPace = double.tryParse(lastPace.toString()) != null
+              ? double.parse(lastPace.toString()) * 0.8
+              : 8.0; // Default fallback
+        }
+
+        result.add({'km': i, 'pace': max(1, scaledPace.round())});
       }
       return result;
     } else {
-      // We have too many items, truncate
-      return data.sublist(0, count);
+      // We have too many items, take only up to the bar count
+      // First, make sure data is sorted by km
+      data.sort((a, b) => (a['km'] as num).compareTo(b['km'] as num));
+
+      // Just return the first 'count' items
+      return data.take(count).toList();
     }
   }
 
@@ -75,14 +111,16 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
     // For the single bar case
     if (count == 1) {
       return [
-        {'km': 1, 'pace': 0}
+        {'km': 1, 'pace': 8} // Default to non-zero value
       ];
     }
 
-    // Generate default fixed data for multiple bars
+    // Generate default data for multiple bars
     final List<Map<String, dynamic>> data = [];
     for (int i = 1; i <= count; i++) {
-      data.add({'km': i, 'pace': 0});
+      // Generate a pattern of pace values instead of all zeros
+      int paceValue = i == 1 ? 8 : 6 + (i % 3); // Vary between 6-8
+      data.add({'km': i, 'pace': paceValue});
     }
 
     return data;
@@ -96,8 +134,8 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
     }
 
     final parts = paceTime.replaceAll('"', '').split("'");
-    final minutes = int.parse(parts[0]);
-    final seconds = int.parse(parts[1]);
+    final minutes = int.tryParse(parts[0]) ?? 0;
+    final seconds = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
     return minutes * 60 + seconds;
   }
 
@@ -119,7 +157,8 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
       for (int i = 1; i < _effectivePaceData.length; i++) {
         final currentValue =
             _paceTimeToSeconds(_effectivePaceData[i]['pace'].toString());
-        if (currentValue < minValue) {
+        if (currentValue < minValue && currentValue > 0) {
+          // Ignore zero values
           minValue = currentValue;
           maxIndex = i;
         }
@@ -144,7 +183,7 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
   Widget build(BuildContext context) {
     // Always ensure we have pace data
     if (_effectivePaceData.isEmpty) {
-      _effectivePaceData = _generateDefaultPaceData(widget.barCount);
+      _effectivePaceData = _generateDefaultPaceData(_barCount);
     }
 
     // Find the index of the maximum pace
@@ -204,6 +243,9 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
                           final pace = item['pace'];
                           final isMax = index == maxPaceIndex;
 
+                          // Make sure pace is not zero (default to 1 if it is)
+                          final effectivePace = pace == 0 ? 1 : pace;
+
                           // Calculate height percentage for the bar
                           double heightPercentage;
 
@@ -217,44 +259,63 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
                             final allValues = _effectivePaceData
                                 .map((item) =>
                                     _paceTimeToSeconds(item['pace'].toString()))
+                                .where((value) => value > 0) // Filter out zeros
                                 .toList();
 
-                            final maxSeconds = allValues.reduce(max);
-                            final minSeconds = allValues.reduce(min);
-                            final range = maxSeconds - minSeconds;
+                            if (allValues.isEmpty) {
+                              heightPercentage = isMax ? 1.0 : 0.5;
+                            } else {
+                              final maxSeconds = allValues.reduce(max);
+                              final minSeconds = allValues.reduce(min);
+                              final range = maxSeconds - minSeconds;
 
-                            final currentSeconds =
-                                _paceTimeToSeconds(pace.toString());
-                            // Invert relationship so faster pace (lower time) gets taller bar
-                            heightPercentage = range > 0
-                                ? 0.2 +
-                                    0.3 *
-                                        ((maxSeconds - currentSeconds) / range)
-                                : 1.0;
+                              final currentSeconds =
+                                  _paceTimeToSeconds(effectivePace.toString());
+                              // Invert relationship so faster pace (lower time) gets taller bar
+                              heightPercentage = range > 0
+                                  ? 0.2 +
+                                      0.3 *
+                                          ((maxSeconds - currentSeconds) /
+                                              range)
+                                  : isMax
+                                      ? 1.0
+                                      : 0.5;
+                            }
                           } else {
                             // For regular numeric pace, higher value means faster pace
                             // Convert all values to numeric to be safe
                             final allValues = _effectivePaceData
                                 .map((item) =>
                                     double.tryParse(item['pace'].toString()) ??
-                                    0.0)
+                                    1.0) // Use 1.0 as fallback
+                                .where((value) => value > 0) // Filter out zeros
                                 .toList();
 
-                            final maxPaceValue = allValues.reduce(max);
-                            final minPaceValue = allValues.reduce(min);
-                            final range = maxPaceValue - minPaceValue;
+                            if (allValues.isEmpty) {
+                              heightPercentage = isMax ? 1.0 : 0.5;
+                            } else {
+                              final maxPaceValue = allValues.reduce(max);
+                              final minPaceValue = allValues.reduce(min);
+                              final range = maxPaceValue - minPaceValue;
 
-                            final currentValue =
-                                double.tryParse(pace.toString()) ?? 0.0;
+                              final currentValue =
+                                  double.tryParse(effectivePace.toString()) ??
+                                      1.0;
 
-                            heightPercentage = range > 0
-                                ? 0.3 +
-                                    0.7 *
-                                        ((currentValue - minPaceValue) / range)
-                                : isMax
-                                    ? 1.0
-                                    : 0.3; // If all values are the same, max gets full height
+                              heightPercentage = range > 0
+                                  ? 0.3 +
+                                      0.7 *
+                                          ((currentValue - minPaceValue) /
+                                              range)
+                                  : isMax
+                                      ? 1.0
+                                      : 0.5; // If all values are the same, max gets full height
+                            }
                           }
+
+                          // Constrain height percentage to reasonable values
+                          heightPercentage =
+                              max(0.1, min(1.0, heightPercentage));
 
                           return Expanded(
                             child: Padding(
@@ -265,7 +326,7 @@ class _PaceStatisticsWidgetState extends State<PaceStatisticsWidget> {
                                 children: [
                                   // Pace value
                                   Text(
-                                    pace.toString(),
+                                    effectivePace.toString(),
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
