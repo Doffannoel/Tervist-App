@@ -7,19 +7,20 @@ class ScanNowPopupPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        // Ketika tap luar gambar, langsung ke NutritionMainPage
+      onTap: () async {
+        Navigator.of(context).pop();
+        await Future.delayed(Duration(milliseconds: 100));
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const NutritionMainPage()),
-          (route) => false, // Hapus semua route sebelumnya
+          (route) => false,
         );
       },
       child: Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: EdgeInsets.zero,
         child: GestureDetector(
-          onTap: () {}, // Tap di gambar -> tidak menutup
+          onTap: () {},
           child: Container(
             width: double.infinity,
             height: double.infinity,
