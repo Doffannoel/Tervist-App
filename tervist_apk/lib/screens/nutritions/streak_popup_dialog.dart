@@ -17,7 +17,6 @@ class StreakPopupDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header dengan logo
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -53,7 +52,6 @@ class StreakPopupDialog extends StatelessWidget {
             ),
             SizedBox(height: 30),
 
-            // Day streak api dengan angka 1
             Image.asset(
               'assets/images/day1strik.png',
               height: 150,
@@ -61,7 +59,6 @@ class StreakPopupDialog extends StatelessWidget {
 
             SizedBox(height: 20),
 
-            // Weekly calendar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Row(
@@ -80,7 +77,6 @@ class StreakPopupDialog extends StatelessWidget {
 
             SizedBox(height: 20),
 
-            // Motivational text
             Text(
               "You're on fire! Every day matters for hitting your goal!",
               textAlign: TextAlign.center,
@@ -99,11 +95,6 @@ class StreakPopupDialog extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // Navigator ke nutrition_main.dart jika diperlukan
-                  // Navigator.pushReplacement(
-                  //   context,
-                  //   MaterialPageRoute(builder: (context) => NutritionMainPage()),
-                  // );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
