@@ -161,7 +161,7 @@ class _NutritionMainPageState extends State<NutritionMainPage>
       setState(() {});
       _animationController.reset();
       _animationController
-          .forward(); // ⬅️ Tambahin ini biar animasi jalan lagi habis refresh
+          .forward(); // Tambahin ini biar animasi jalan lagi habis refresh
     }
   }
 
@@ -632,10 +632,8 @@ class _NutritionMainPageState extends State<NutritionMainPage>
                                         date.month == _selectedDate.month &&
                                         date.year == _selectedDate.year;
 
-                                // Get status for this date using our helper method
                                 final status = _getDayStatus(date);
 
-                                // Determine border properties based on status
                                 Color borderColor;
                                 bool isDashed;
                                 double borderWidth;
@@ -682,7 +680,6 @@ class _NutritionMainPageState extends State<NutritionMainPage>
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      // Use DottedBorder for dashed borders, Container for solid
                                       isDashed
                                           ? DottedBorder(
                                               borderType: BorderType.Circle,
@@ -805,7 +802,6 @@ class _NutritionMainPageState extends State<NutritionMainPage>
                       ),
                       const SizedBox(height: 24),
 
-                      // Macronutrients row with progress
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment
@@ -848,7 +844,6 @@ class _NutritionMainPageState extends State<NutritionMainPage>
                       Expanded(
                         child: _recentlyLoggedFood.isEmpty
                             ? ListView(
-                                // Gunakan ListView untuk memungkinkan scroll bahkan saat kosong
                                 physics: const AlwaysScrollableScrollPhysics(),
                                 children: [
                                   Container(
@@ -904,9 +899,7 @@ class _NutritionMainPageState extends State<NutritionMainPage>
                             : ListView.builder(
                                 shrinkWrap: true,
                                 physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.only(
-                                    bottom:
-                                        20), // Tambahkan padding bawah untuk jarak footer
+                                padding: const EdgeInsets.only(bottom: 20),
                                 itemCount: _recentlyLoggedFood.length,
                                 itemBuilder: (context, index) {
                                   final food = _recentlyLoggedFood[index];
@@ -1087,7 +1080,6 @@ class _NutritionMainPageState extends State<NutritionMainPage>
     );
   }
 
-  // Build nutrient info pill for food items
   Widget _buildNutrientInfo(String label, String value, Color color) {
     return Row(
       children: [
