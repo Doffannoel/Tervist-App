@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CyclingActivityViewSet, CyclingStatsView, FoodDatabaseViewSet, NutritionalTargetView, FoodIntakeView, CaloriesBurnedView, DashboardView, ReminderViewSet, RunningActivityView, RunningHistoryViewSet, RunningStatsView, UserProfileViewSet, WalkingActivityView, WeeklyNutritionSummaryView, MonthlySummaryView, calculate_nutrition_preview
+from .views import CyclingActivityViewSet, CyclingHistoryViewSet, CyclingStatsView, FoodDatabaseViewSet, NutritionalTargetView, FoodIntakeView, CaloriesBurnedView, DashboardView, ReminderViewSet, RunningActivityView, RunningHistoryViewSet, RunningStatsView, UserProfileViewSet, WalkingActivityView, WalkingHistoryViewSet, WeeklyNutritionSummaryView, MonthlySummaryView, calculate_nutrition_preview
 
 # Membuat router untuk viewsets
 router = DefaultRouter()
@@ -18,6 +18,8 @@ router.register(r'cycling-stats', CyclingStatsView, basename='cycling-stats')
 router.register(r'profile-update', UserProfileViewSet, basename='profile-update')
 router.register(r'reminders', ReminderViewSet, basename='reminders')
 router.register(r'running-history', RunningHistoryViewSet, basename='running-history')
+router.register(r'walking-history', WalkingHistoryViewSet, basename='walking-history')
+router.register(r'cycling-history', CyclingHistoryViewSet, basename='cycling-history')
 
 
 

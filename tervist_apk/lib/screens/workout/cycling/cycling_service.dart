@@ -1,16 +1,26 @@
 import 'package:http/http.dart' as http;
+import 'package:tervist_apk/screens/workout/map_service.dart';
 import 'dart:convert';
 import '/api/api_config.dart';
 import '/api/auth_helper.dart';
 
 class CyclingService {
+  String _formatDuration(int seconds) {
+    final duration = Duration(seconds: seconds);
+    final hours = duration.inHours.toString().padLeft(2, '0');
+    final minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
+    final secs = (duration.inSeconds % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$secs'; // ✅ Format 'HH:MM:SS' yang Django mau
+  }
+
   Future<bool> saveCyclingActivity({
     required DateTime date,
-    required int durationSeconds,
+    required Duration duration,
     required double distanceKm,
     required double avgSpeedKmh,
     required double maxSpeedKmh,
     int elevationGainM = 0,
+    required int durationSeconds,
   }) async {
     try {
       final token = await AuthHelper.getToken();
@@ -18,6 +28,28 @@ class CyclingService {
         print('No authentication token found');
         return false;
       }
+
+      final routePoints = MapService.getRouteHistory();
+      final routeData = routePoints
+          .map((e) => {
+                'latitude': e.latitude,
+                'longitude': e.longitude,
+              })
+          .toList();
+
+      // Use your formatting function instead of direct conversion
+      final formattedDuration = _formatDuration(durationSeconds);
+
+      // Round values to meet validation requirements
+// Round values to meet validation requirements
+      final roundedDistance = double.parse(distanceKm.toStringAsFixed(2));
+      final roundedAvgSpeed =
+          double.parse(avgSpeedKmh.toStringAsFixed(1)); // Changed from 2 to 1
+      final roundedMaxSpeed =
+          double.parse(maxSpeedKmh.toStringAsFixed(1)); // Changed from 2 to 1
+
+      // Create the route data string
+      final routeDataString = json.encode(routeData);
 
       final response = await http.post(
         ApiConfig.cyclingActivity,
@@ -27,21 +59,20 @@ class CyclingService {
         },
         body: jsonEncode({
           'date': date.toIso8601String().split('T')[0],
-          'duration': durationSeconds,
-          'distance_km': distanceKm,
-          'avg_speed_kmh': avgSpeedKmh,
-          'max_speed_kmh': maxSpeedKmh,
+          'duration': formattedDuration,
+          'distance_km': roundedDistance,
+          'avg_speed_kmh': roundedAvgSpeed,
+          'max_speed_kmh': roundedMaxSpeed,
           'elevation_gain_m': elevationGainM,
+          'route_data': routeDataString,
         }),
       );
 
-      if (response.statusCode == 201) {
-        print('Cycling activity saved successfully');
-        return true;
-      } else {
-        print('Failed to save cycling activity: ${response.body}');
-        return false;
+      if (response.statusCode != 201) {
+        print('Error response: ${response.body}'); // Print actual error message
       }
+
+      return response.statusCode == 201;
     } catch (e) {
       print('Error saving cycling activity: $e');
       return false;

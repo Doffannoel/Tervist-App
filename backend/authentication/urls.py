@@ -1,5 +1,7 @@
 from authentication.views import ForgotPasswordView, GoogleLoginView, LoginView, ResetPasswordView, SignUpView, ProfileView, VerifyOTPView
 from django.urls import path
+from rest_framework_simplejwt.views import TokenRefreshView
+
 
 urlpatterns = [
     path('signup/', SignUpView.as_view(), name='signup'),  # Endpoint untuk Sign Up
@@ -9,6 +11,5 @@ urlpatterns = [
     path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('social-login/', GoogleLoginView.as_view(), name='social-login'),
-
-    
+    path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),   
 ]

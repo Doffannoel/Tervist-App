@@ -5,27 +5,28 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:tervist_apk/api/running_service.dart';
-import 'package:tervist_apk/models/running_history_model.dart';
-import 'package:tervist_apk/screens/workout/running/running_summary.dart';
+import 'package:tervist_apk/screens/workout/cycling/cycling_history_service.dart';
+import 'package:tervist_apk/models/cycling_history_model.dart';
+import 'package:tervist_apk/screens/workout/cycling/cycling_summary.dart';
+import 'package:tervist_apk/screens/workout/map_service.dart';
 
-class RunningHistoryScreen extends StatefulWidget {
-  const RunningHistoryScreen({super.key});
+class CyclingHistoryScreen extends StatefulWidget {
+  const CyclingHistoryScreen({super.key});
 
   @override
-  State<RunningHistoryScreen> createState() => _RunningHistoryScreenState();
+  State<CyclingHistoryScreen> createState() => _CyclingHistoryScreenState();
 }
 
-class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
+class _CyclingHistoryScreenState extends State<CyclingHistoryScreen> {
   final Color primaryGreen = const Color(0xFF4CB9A0);
   final Color lightMintGreen = const Color(0xFFF1F7F6);
 
-  final RunningService _runningService = RunningService();
+  final CyclingHistoryService _cyclingService = CyclingHistoryService();
 
   // State variables
   bool _isLoading = true;
   String _errorMessage = '';
-  RunningHistoryModel? _historyData;
+  CyclingHistoryModel? _historyData;
   String _userName = "User";
   String? _profileImageUrl;
 
@@ -38,10 +39,10 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
   Future<void> _loadData() async {
     try {
       // First get user profile
-      final userProfile = await _runningService.getUserProfile();
+      final userProfile = await _cyclingService.getUserProfile();
 
-      // Then get running history
-      final historyData = await _runningService.getRunningHistory();
+      // Then get cycling history
+      final historyData = await _cyclingService.getCyclingHistory();
 
       setState(() {
         _userName = userProfile['username'] ?? 'User';
@@ -57,23 +58,48 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
     }
   }
 
-  Future<void> _navigateToRunningSummary(int activityId) async {
+  Future<void> _navigateToCyclingSummary(CyclingRecord record) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Fetch the detailed activity data
-      final activityData = await _runningService.getRunningDetail(activityId);
+      // Ambil data langsung dari record yang sudah ada
+      final distance = record.distance;
+      final timeSeconds = record.timeSeconds;
+      final avgSpeed = record.avgSpeed;
+      final maxSpeed = record.maxSpeed;
+      final calories = record.calories;
+      List<dynamic> routeData = record.routeData;
 
-      // Extract data
-      final distance = (activityData['distance_km'] ?? 0).toDouble();
-      final timeSeconds = activityData['time_seconds'] ?? 0;
-      final pace = (activityData['pace'] ?? 0).toDouble();
-      final calories = activityData['calories_burned'] ?? 0;
-      final steps = activityData['steps'] ?? 0;
+      // Log route data information for debugging
+      print('📊 RouteData type: ${routeData.runtimeType}');
+      print('📊 RouteData is List, length: ${routeData.length}');
 
-      // Format duration
+      // If routeData is empty, try to fetch detailed activity data
+      if (routeData.isEmpty) {
+        try {
+          print('🔍 RouteData is empty, fetching detailed activity data...');
+          final detailedData =
+              await _cyclingService.getCyclingActivityDetail(record.id);
+          print(
+              '🔍 Detailed data received: ${detailedData.containsKey('route_data')}');
+
+          if (detailedData.containsKey('route_data')) {
+            var fetchedRouteData = detailedData['route_data'];
+            if (fetchedRouteData is String) {
+              routeData = json.decode(fetchedRouteData);
+            } else if (fetchedRouteData is List) {
+              routeData = fetchedRouteData;
+            }
+            print('🔍 Fetched route data length: ${routeData.length}');
+          }
+        } catch (e) {
+          print('❌ Failed to fetch detailed activity data: $e');
+        }
+      }
+
+      // Format durasi
       final duration = Duration(seconds: timeSeconds);
       final hours = duration.inHours;
       final minutes = duration.inMinutes % 60;
@@ -81,96 +107,156 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
       final formattedDuration =
           '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 
-      // Format pace (minutes per km)
-      final paceMinutes = pace.floor();
-      final paceSeconds = ((pace - paceMinutes) * 60).floor();
-      final formattedPace =
-          "$paceMinutes'${paceSeconds.toString().padLeft(2, '0')}\"";
+      // Format pace (speed in km/h)
+      final formattedPace = '${avgSpeed.toStringAsFixed(1)} km/h';
 
-      // Parse route_data (can be string or list)
-      final rawRouteData = activityData['route_data'];
-      final routeData = rawRouteData is String
-          ? jsonDecode(rawRouteData)
-          : (rawRouteData ?? []);
+      // If route data is still empty after fetching, create fallback route data
+      if (routeData.isEmpty) {
+        print(
+            '⚠️ Still no route data, creating fallback route data near user location...');
+        // Get user's current location as a fallback
+        final currentLocation = await MapService.getCurrentLocationAsync();
+        if (currentLocation != null) {
+          // Create a small route around the current location
+          routeData = [
+            {
+              "latitude": currentLocation.latitude,
+              "longitude": currentLocation.longitude
+            },
+            {
+              "latitude": currentLocation.latitude + 0.001,
+              "longitude": currentLocation.longitude + 0.001
+            },
+            {
+              "latitude": currentLocation.latitude + 0.001,
+              "longitude": currentLocation.longitude - 0.001
+            },
+          ];
+          print(
+              '🔍 Created fallback route data with ${routeData.length} points');
+        }
+      }
 
-      // Clean routePoints
-      final routePoints =
-          (routeData as List).map((e) => LatLng(e['lat'], e['lng'])).toList();
+      // Process route points
+      List<LatLng> routePoints = [];
+      if (routeData.isNotEmpty) {
+        try {
+          routePoints = routeData
+              .map<LatLng>((point) {
+                if (point is Map) {
+                  final double? lat =
+                      (point['lat'] ?? point['latitude'])?.toDouble();
+                  final double? lng =
+                      (point['lng'] ?? point['longitude'])?.toDouble();
 
-      // (Optional) Generate default markers and polyline if needed
-      final markers = routePoints.isNotEmpty
-          ? [
-              Marker(
-                point: routePoints.first,
-                width: 60,
-                height: 60,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.play_arrow,
-                      color: Colors.blue,
-                      size: 24,
-                    ),
-                  ),
+                  if (lat != null && lng != null) {
+                    return LatLng(lat, lng);
+                  }
+                }
+                throw Exception('Invalid route point data');
+              })
+              .where((point) => point != null)
+              .cast<LatLng>()
+              .toList();
+
+          print('🧭 Processed route points count: ${routePoints.length}');
+          if (routePoints.isNotEmpty) {
+            print(
+                '🧭 First point: ${routePoints.first.latitude}, ${routePoints.first.longitude}');
+            print(
+                '🧭 Last point: ${routePoints.last.latitude}, ${routePoints.last.longitude}');
+          }
+        } catch (e) {
+          print('❌ Error processing route data: $e');
+        }
+      }
+
+      // Create a polyline from route points
+      List<Polyline> polylines = [];
+      if (routePoints.isNotEmpty) {
+        polylines = [
+          Polyline(
+            points: routePoints,
+            color: primaryGreen,
+            strokeWidth: 4.0,
+          ),
+        ];
+        print('🟢 Created polyline with ${routePoints.length} points');
+      } else {
+        print('⚠️ No route points available to create polylines');
+      }
+
+      // Create markers for start and end
+      List<Marker> markers = [];
+      if (routePoints.isNotEmpty) {
+        // Start marker
+        markers.add(
+          Marker(
+            point: routePoints.first,
+            width: 60,
+            height: 60,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.play_arrow,
+                  color: Colors.blue,
+                  size: 24,
                 ),
               ),
-              Marker(
-                point: routePoints.last,
-                width: 60,
-                height: 60,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: primaryGreen.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.flag,
-                      color: primaryGreen,
-                      size: 24,
-                    ),
-                  ),
+            ),
+          ),
+        );
+
+        // End marker
+        markers.add(
+          Marker(
+            point: routePoints.last,
+            width: 60,
+            height: 60,
+            child: Container(
+              decoration: BoxDecoration(
+                color: primaryGreen.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.flag,
+                  color: primaryGreen,
+                  size: 24,
                 ),
               ),
-            ]
-          : [];
-
-      final polylines = routePoints.isNotEmpty
-          ? [
-              Polyline(
-                points: routePoints,
-                color: primaryGreen,
-                strokeWidth: 5,
-              )
-            ]
-          : [];
+            ),
+          ),
+        );
+        print('🟢 Created start and end markers');
+      } else {
+        print('⚠️ No route points available to create markers');
+      }
 
       setState(() {
         _isLoading = false;
       });
 
-      // Navigate to the summary screen
+      // Navigasi ke halaman summary with polylines and markers
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => RunningSummary(
+          builder: (context) => CyclingSummary(
             distance: distance,
             formattedDuration: formattedDuration,
             formattedPace: formattedPace,
             calories: calories,
-            steps: steps,
-            routePoints: routePoints,
-            routeData: routeData,
-            markers: markers.cast<Marker>(),
-            polylines: polylines.cast<Polyline<Object>>(),
+            steps: maxSpeed.toInt(), // Gunakan maxSpeed sebagai "steps"
+            routePoints: routePoints, // Kirim route data yang valid
+            markers: markers, // Pass the created markers
+            polylines: polylines, // Pass the created polylines
             primaryGreen: primaryGreen,
-            onBackToHome: () => Navigator.pop(context),
             duration: duration,
-            userName: _userName,
+            onBackToHome: () => Navigator.pop(context),
           ),
         ),
       );
@@ -266,7 +352,8 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
 
   Widget _buildContentView() {
     if (_historyData == null) {
-      return Center(child: Text('No data available'));
+      return Center(
+          child: Text('No data available', style: GoogleFonts.poppins()));
     }
 
     return Column(
@@ -305,7 +392,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                     ),
                   ),
                   Text(
-                    'Here\'s your running history',
+                    'Here\'s your cycling history',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -394,7 +481,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Distance and Calories in row
+                  // Distance and Average Speed in row
                   Row(
                     children: [
                       // Distance
@@ -436,13 +523,13 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                         ),
                       ),
 
-                      // Calories
+                      // Average Speed
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Calories',
+                              'Avg Speed',
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: Colors.grey[600],
@@ -453,7 +540,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                               textBaseline: TextBaseline.alphabetic,
                               children: [
                                 Text(
-                                  '${_historyData!.totalCalories}',
+                                  _historyData!.avgSpeed.toStringAsFixed(1),
                                   style: GoogleFonts.poppins(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
@@ -461,7 +548,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Kcal',
+                                  'km/h',
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     color: Colors.grey[600],
@@ -473,6 +560,30 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                         ),
                       ),
                     ],
+                  ),
+
+                  // Calories
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Calories',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${_historyData!.totalCalories} Kcal',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -497,7 +608,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
           child: _historyData!.records.isEmpty
               ? Center(
                   child: Text(
-                    'No running records yet',
+                    'No cycling records yet',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       color: Colors.grey[600],
@@ -520,9 +631,9 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
     );
   }
 
-  Widget _buildRecordCard(RunningRecord record) {
+  Widget _buildRecordCard(CyclingRecord record) {
     return InkWell(
-      onTap: () => _navigateToRunningSummary(record.id),
+      onTap: () => _navigateToCyclingSummary(record),
       child: Card(
         elevation: 2,
         color: Colors.white,
@@ -534,7 +645,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
-              // Clock icon in a circle
+              // Cycling icon in a circle
               Container(
                 width: 40,
                 height: 40,
@@ -544,11 +655,11 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                 ),
                 child: Center(
                   child: Image.asset(
-                    'assets/images/iconhistory.png',
+                    'assets/images/cycling_icon.png', // You'll need to add this asset
                     width: 20,
                     height: 20,
                     errorBuilder: (context, error, stackTrace) => Icon(
-                      Icons.access_time,
+                      Icons.directions_bike,
                       color: Colors.black,
                       size: 20,
                     ),
@@ -572,7 +683,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                     Row(
                       children: [
                         Text(
-                          "${record.distance}",
+                          record.distance.toStringAsFixed(2),
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,

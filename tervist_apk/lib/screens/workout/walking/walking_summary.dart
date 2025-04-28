@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tervist_apk/screens/workout/map_service.dart';
 import 'dart:math' as math;
 import '../follow_me_button.dart';
 import '../share_screen.dart';
@@ -65,11 +66,12 @@ class _WalkingSummaryState extends State<WalkingSummary> {
   }
 
   // Process route points and determine if the route is too short
+  // Process route points and determine if the route is too short
   void _processRoutePoints() {
     if (widget.routePoints.isEmpty && widget.routeData != null) {
       final rawRoute = widget.routeData!;
       try {
-        routePoints = (rawRoute)
+        routePoints = rawRoute
             .map((e) => LatLng(
                   (e['lat'] ?? e['latitude']).toDouble(),
                   (e['lng'] ?? e['longitude']).toDouble(),
@@ -80,11 +82,21 @@ class _WalkingSummaryState extends State<WalkingSummary> {
             '🟢 Parsed routePoints from routeData: ${routePoints.length} points');
       } catch (e) {
         print('❌ Failed to parse routeData: $e');
-        routePoints = []; // fallback kosong
+        // Jangan set routePoints ke kosong, gunakan lokasi terakhir
+        final currentLocation = MapService.getCurrentLocation();
+        routePoints = [currentLocation];
+        print('🟢 Using current location as fallback');
       }
     } else {
-      routePoints = List.from(widget.routePoints);
-      print('🟢 Using provided routePoints: ${routePoints.length} points');
+      if (widget.routePoints.isEmpty) {
+        // Jika routePoints masih kosong, gunakan lokasi terakhir
+        final currentLocation = MapService.getCurrentLocation();
+        routePoints = [currentLocation];
+        print('🟢 Using current location as fallback');
+      } else {
+        routePoints = List.from(widget.routePoints);
+        print('🟢 Using provided routePoints: ${routePoints.length} points');
+      }
     }
 
     // Check if route is empty or very short
@@ -93,24 +105,23 @@ class _WalkingSummaryState extends State<WalkingSummary> {
 
   // Check if the route is empty or very short
   bool _checkIfRouteIsEmpty() {
-    // If there are no route points or distance is too small
-    if (routePoints.isEmpty || widget.distance < 0.1) {
+    if (routePoints.isEmpty) {
       return true;
     }
 
-    // If there are route points but they're all very close to each other
+    // Hanya cek apakah rute benar-benar kosong, bukan apakah jarak terlalu pendek
+    // Menghapus kondisi widget.distance < 0.1
+
     if (routePoints.length >= 2) {
       bool allPointsClose = true;
       LatLng firstPoint = routePoints[0];
 
-      // Check if all points are very close to the first point
       for (var point in routePoints) {
-        // Calculate rough distance (this is an approximation)
         double latDiff = (point.latitude - firstPoint.latitude).abs();
         double lngDiff = (point.longitude - firstPoint.longitude).abs();
 
-        // If any point is significantly different, route is not empty
-        if (latDiff > 0.0001 || lngDiff > 0.0001) {
+        // Kurangi threshold untuk lebih permisif
+        if (latDiff > 0.00001 || lngDiff > 0.00001) {
           allPointsClose = false;
           break;
         }
@@ -193,8 +204,12 @@ class _WalkingSummaryState extends State<WalkingSummary> {
   }
 
   LatLng _calculateMapCenter() {
+    // Jika tidak ada titik rute, gunakan lokasi terakhir dari MapService
     if (routePoints.isEmpty) {
-      return const LatLng(-7.767, 110.378); // Default center
+      // Coba dapatkan lokasi terbaru dari MapService daripada
+      // default ke Yogyakarta
+      final currentLocation = MapService.getCurrentLocation();
+      return currentLocation;
     }
 
     double latSum = 0;
@@ -275,24 +290,21 @@ class _WalkingSummaryState extends State<WalkingSummary> {
     final List<Map<String, dynamic>> paceData = _generatePaceData();
 
     // Ensure we have valid polylines even if empty
-    final List<Polyline> displayPolylines =
-        widget.polylines.isEmpty || widget.routePoints.isEmpty
-            ? [
-                Polyline(
-                  points: [
-                    const LatLng(-7.767, 110.378)
-                  ], // Use default point if empty
-                  color: Colors.transparent,
-                  strokeWidth: 0,
-                )
-              ]
-            : widget.polylines;
+    final List<Polyline> displayPolylines = widget.polylines.isEmpty
+        ? [
+            Polyline(
+              points: [LatLng(-7.767, 110.378)], // Use a default point if empty
+              color: Colors.transparent,
+              strokeWidth: 0,
+            )
+          ]
+        : widget.polylines;
 
     // Ensure we have valid markers even if empty
     final List<Marker> displayMarkers = widget.markers.isEmpty
         ? [
             Marker(
-              point: const LatLng(-7.767, 110.378),
+              point: LatLng(-7.767, 110.378),
               width: 80,
               height: 80,
               child: Container(
@@ -311,7 +323,6 @@ class _WalkingSummaryState extends State<WalkingSummary> {
             )
           ]
         : widget.markers;
-
     return Scaffold(
       // Keep the mint green background
       backgroundColor: const Color(0xFFF1F7F6),

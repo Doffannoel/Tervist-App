@@ -8,7 +8,7 @@ class NutritionalTargetSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = NutritionalTarget
-        fields = ['id', 'user', 'calorie_target', 'protein_target', 'carbs_target', 'fats_target']
+        fields = ['id', 'user', 'calorie_target', 'protein_target', 'carbs_target', 'fats_target','steps_goal', 'calories_burned_goal']
 
 class DailyStepsSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username')
@@ -66,12 +66,28 @@ class RunningActivitySerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'distance_km', 'time_seconds', 'pace', 'calories_burned', 'steps', 'date', 'route_data']
 
 class WalkingActivitySerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.username')
-
     class Meta:
         model = WalkingActivity
-        fields = ['id', 'user', 'distance_km', 'time_seconds', 'pace', 'calories_burned', 'steps', 'date']
-        read_only_fields = ['user']
+        fields = [
+            'id', 'user', 'distance_km', 'time_seconds', 
+            'pace', 'calories_burned', 'steps', 'date', 'route_data'
+        ]
+        read_only_fields = ['user', 'pace', 'calories_burned']
+
+    def validate_distance_km(self, value):
+        if value < 0 or value > 50:
+            raise serializers.ValidationError("Invalid walking distance")
+        return value
+
+    def validate_time_seconds(self, value):
+        if value < 0 or value > 3600:
+            raise serializers.ValidationError("Invalid walking duration")
+        return value
+
+    def validate_steps(self, value):
+        if value < 0 or value > 20000:
+            raise serializers.ValidationError("Invalid step count")
+        return value
         
 
 # NEW: Serializer untuk statistik ringkasan lari

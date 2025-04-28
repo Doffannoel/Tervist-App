@@ -8,7 +8,8 @@ class ChatbotService {
   static const _chatKey = 'tervy_messages_context';
 
   // ⚠️ PENTING: Ganti dengan API key terbaru dari OpenRouter
-  static const _apiKey = 'API Key Disini';
+  static const _apiKey =
+      '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';
 
   static Future<String> getChatResponse(
     String message,

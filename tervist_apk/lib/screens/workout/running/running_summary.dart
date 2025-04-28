@@ -112,6 +112,8 @@ class _RunningSummaryState extends State<RunningSummary> {
                   (e['lng'] ?? e['longitude']).toDouble(),
                 ))
             .toList();
+        print('Raw Route Data: $rawRoute');
+        print('Parsed Route Points: $routePoints');
 
         print(
             '🟢 Parsed routePoints from routeData: ${routePoints.length} points');

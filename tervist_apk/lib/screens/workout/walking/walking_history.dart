@@ -6,26 +6,27 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:tervist_apk/api/running_service.dart';
-import 'package:tervist_apk/models/running_history_model.dart';
-import 'package:tervist_apk/screens/workout/running/running_summary.dart';
+import 'package:tervist_apk/models/walking_history_model.dart';
+import 'package:tervist_apk/screens/workout/walking/walking_history_service.dart';
+import 'package:tervist_apk/screens/workout/walking/walking_summary.dart';
 
-class RunningHistoryScreen extends StatefulWidget {
-  const RunningHistoryScreen({super.key});
+class WalkingHistoryScreen extends StatefulWidget {
+  const WalkingHistoryScreen({super.key});
 
   @override
-  State<RunningHistoryScreen> createState() => _RunningHistoryScreenState();
+  State<WalkingHistoryScreen> createState() => _WalkingHistoryScreenState();
 }
 
-class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
+class _WalkingHistoryScreenState extends State<WalkingHistoryScreen> {
   final Color primaryGreen = const Color(0xFF4CB9A0);
   final Color lightMintGreen = const Color(0xFFF1F7F6);
 
-  final RunningService _runningService = RunningService();
+  final WalkingHistoryService _walkingService = WalkingHistoryService();
 
   // State variables
   bool _isLoading = true;
   String _errorMessage = '';
-  RunningHistoryModel? _historyData;
+  WalkingHistoryModel? _historyData;
   String _userName = "User";
   String? _profileImageUrl;
 
@@ -38,10 +39,10 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
   Future<void> _loadData() async {
     try {
       // First get user profile
-      final userProfile = await _runningService.getUserProfile();
+      final userProfile = await _walkingService.getUserProfile();
 
-      // Then get running history
-      final historyData = await _runningService.getRunningHistory();
+      // Then get walking history
+      final historyData = await _walkingService.getWalkingHistory();
 
       setState(() {
         _userName = userProfile['username'] ?? 'User';
@@ -57,23 +58,18 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
     }
   }
 
-  Future<void> _navigateToRunningSummary(int activityId) async {
-    setState(() {
-      _isLoading = true;
-    });
-
+  Future<void> _navigateToWalkingSummary(WalkingRecord record) async {
     try {
-      // Fetch the detailed activity data
-      final activityData = await _runningService.getRunningDetail(activityId);
+      setState(() {
+        _isLoading = true;
+      });
 
-      // Extract data
-      final distance = (activityData['distance_km'] ?? 0).toDouble();
-      final timeSeconds = activityData['time_seconds'] ?? 0;
-      final pace = (activityData['pace'] ?? 0).toDouble();
-      final calories = activityData['calories_burned'] ?? 0;
-      final steps = activityData['steps'] ?? 0;
+      final distance = record.distance;
+      final timeSeconds = record.timeSeconds;
+      final calories = record.calories;
+      final steps = record.steps;
+      final pace = record.pace;
 
-      // Format duration
       final duration = Duration(seconds: timeSeconds);
       final hours = duration.inHours;
       final minutes = duration.inMinutes % 60;
@@ -81,110 +77,146 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
       final formattedDuration =
           '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 
-      // Format pace (minutes per km)
       final paceMinutes = pace.floor();
       final paceSeconds = ((pace - paceMinutes) * 60).floor();
       final formattedPace =
           "$paceMinutes'${paceSeconds.toString().padLeft(2, '0')}\"";
 
-      // Parse route_data (can be string or list)
-      final rawRouteData = activityData['route_data'];
-      final routeData = rawRouteData is String
-          ? jsonDecode(rawRouteData)
-          : (rawRouteData ?? []);
+      // 1. Konversi routeData ke List<LatLng> untuk routePoints
+      List<LatLng> routePoints = [];
+      if (record.routeData.isNotEmpty) {
+        routePoints = record.routeData.map<LatLng>((data) {
+          return LatLng(data['latitude'], data['longitude']);
+        }).toList();
+      }
 
-      // Clean routePoints
-      final routePoints =
-          (routeData as List).map((e) => LatLng(e['lat'], e['lng'])).toList();
+      // 2. Buat satu Polyline dengan semua titik
+      List<Polyline> polylines = [];
+      if (routePoints.isNotEmpty) {
+        polylines = [
+          Polyline(
+            points: routePoints, // Gunakan semua titik dalam satu polyline
+            color: primaryGreen, // Gunakan warna primaryGreen
+            strokeWidth: 4,
+          ),
+        ];
+      }
 
-      // (Optional) Generate default markers and polyline if needed
-      final markers = routePoints.isNotEmpty
-          ? [
-              Marker(
-                point: routePoints.first,
-                width: 60,
-                height: 60,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.play_arrow,
-                      color: Colors.blue,
-                      size: 24,
-                    ),
-                  ),
+      // 3. Buat markers untuk titik awal dan akhir
+      List<Marker> markers = [];
+      if (routePoints.length >= 2) {
+        // Marker untuk titik awal (start)
+        markers.add(
+          Marker(
+            point: routePoints.first,
+            width: 60,
+            height: 60,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.play_arrow,
+                  color: Colors.blue,
+                  size: 24,
                 ),
               ),
-              Marker(
-                point: routePoints.last,
-                width: 60,
-                height: 60,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: primaryGreen.withOpacity(0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.flag,
-                      color: primaryGreen,
-                      size: 24,
-                    ),
-                  ),
+            ),
+          ),
+        );
+
+        // Marker untuk titik akhir (finish)
+        markers.add(
+          Marker(
+            point: routePoints.last,
+            width: 60,
+            height: 60,
+            child: Container(
+              decoration: BoxDecoration(
+                color: primaryGreen.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.flag,
+                  color: primaryGreen,
+                  size: 24,
                 ),
               ),
-            ]
-          : [];
-
-      final polylines = routePoints.isNotEmpty
-          ? [
-              Polyline(
-                points: routePoints,
-                color: primaryGreen,
-                strokeWidth: 5,
-              )
-            ]
-          : [];
+            ),
+          ),
+        );
+      } else if (routePoints.length == 1) {
+        // Jika hanya ada satu titik, buat satu marker
+        markers.add(
+          Marker(
+            point: routePoints.first,
+            width: 60,
+            height: 60,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.location_on,
+                  color: Colors.blue,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
 
       setState(() {
         _isLoading = false;
       });
 
-      // Navigate to the summary screen
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RunningSummary(
-            distance: distance,
-            formattedDuration: formattedDuration,
-            formattedPace: formattedPace,
-            calories: calories,
-            steps: steps,
-            routePoints: routePoints,
-            routeData: routeData,
-            markers: markers.cast<Marker>(),
-            polylines: polylines.cast<Polyline<Object>>(),
-            primaryGreen: primaryGreen,
-            onBackToHome: () => Navigator.pop(context),
-            duration: duration,
-            userName: _userName,
+      // Navigasi ke halaman WalkingSummary
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WalkingSummary(
+              distance: distance,
+              formattedDuration: formattedDuration,
+              formattedPace: formattedPace,
+              calories: calories,
+              steps: steps,
+              routePoints:
+                  routePoints, // Gunakan routePoints yang sudah dikonversi
+              markers: markers, // Gunakan markers yang sudah dibuat
+              polylines: polylines, // Gunakan polylines yang sudah dibuat
+              primaryGreen: primaryGreen,
+              duration: duration,
+              onBackToHome: () => Navigator.pop(context),
+              userName: _userName,
+              routeData: record.routeData, // Tetap kirim routeData asli
+            ),
           ),
-        ),
-      );
+        );
+      }
+      print('RouteData length: ${record.routeData.length}');
+      print(
+          'Sample point: ${record.routeData.isNotEmpty ? record.routeData.first : "No data"}');
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to load activity details: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      print('Error navigating to walking summary: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load walking summary: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -266,7 +298,8 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
 
   Widget _buildContentView() {
     if (_historyData == null) {
-      return Center(child: Text('No data available'));
+      return Center(
+          child: Text('No data available', style: GoogleFonts.poppins()));
     }
 
     return Column(
@@ -305,7 +338,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                     ),
                   ),
                   Text(
-                    'Here\'s your running history',
+                    'Here\'s your walking history',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       color: Colors.grey[600],
@@ -415,8 +448,9 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
                               children: [
                                 Text(
                                   _historyData!.totalDistance
-                                      .toString()
-                                      .replaceAll('.', ','),
+                                      .toStringAsFixed(2)
+                                      .replaceAll('.',
+                                          ','), // ✅ Biar 2 angka desimal aja
                                   style: GoogleFonts.poppins(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
@@ -497,7 +531,7 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
           child: _historyData!.records.isEmpty
               ? Center(
                   child: Text(
-                    'No running records yet',
+                    'No walking records yet',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       color: Colors.grey[600],
@@ -520,9 +554,9 @@ class _RunningHistoryScreenState extends State<RunningHistoryScreen> {
     );
   }
 
-  Widget _buildRecordCard(RunningRecord record) {
+  Widget _buildRecordCard(WalkingRecord record) {
     return InkWell(
-      onTap: () => _navigateToRunningSummary(record.id),
+      onTap: () => _navigateToWalkingSummary(record),
       child: Card(
         elevation: 2,
         color: Colors.white,

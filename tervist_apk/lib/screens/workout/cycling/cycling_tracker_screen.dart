@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:tervist_apk/api/api_config.dart';
 import 'package:tervist_apk/api/auth_helper.dart';
+import 'package:tervist_apk/screens/workout/cycling/cycling_history.dart';
 import 'package:tervist_apk/screens/workout/cycling/cycling_service.dart';
 import 'cycling_timestamp.dart';
 import 'cycling_summary.dart';
@@ -338,7 +339,7 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen>
         avgSpeedKmh: avgSpeed,
         maxSpeedKmh: maxSpeed,
         // Opsional: tambahkan elevation gain jika memungkinkan
-        elevationGainM: 0,
+        elevationGainM: 0, duration: duration,
       );
 
       if (saved && context.mounted) {
@@ -599,43 +600,56 @@ class _CyclingTrackerScreenState extends State<CyclingTrackerScreen>
                 ),
 
                 // Distance and weather
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Distance section
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Distance label with icon
-                          Row(
-                            children: [
-                              Text(
-                                'Distance >',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                          // Distance value
-                          Text(
-                            '0.00 KM', // Always start with 0.00 in initial screen
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CyclingHistoryScreen(),
                       ),
+                    );
+                  },
+                  splashColor:
+                      primaryGreen.withOpacity(0.1), // Add splash effect
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 10.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Distance section
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Distance label with icon
+                            Row(
+                              children: [
+                                Text(
+                                  'Distance >',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // Distance value
+                            Text(
+                              '0.00 KM', // Always start with 0.00 in initial screen
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
 
-                      // Weather information
-                      const WeatherWidget(),
-                    ],
+                        // Weather information
+                        const WeatherWidget(),
+                      ],
+                    ),
                   ),
                 ),
 

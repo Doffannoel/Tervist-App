@@ -207,6 +207,7 @@ class WalkingActivity(models.Model):
     calories_burned = models.IntegerField()
     steps = models.IntegerField()
     date = models.DateField(default=timezone.now)
+    route_data = models.TextField(null=True, blank=True)
 
 class CyclingActivity(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -216,6 +217,7 @@ class CyclingActivity(models.Model):
     avg_speed_kmh = models.DecimalField(max_digits=4, decimal_places=1)
     max_speed_kmh = models.DecimalField(max_digits=4, decimal_places=1)
     elevation_gain_m = models.PositiveIntegerField(default=0)
+    route_data = models.TextField(null=True, blank=True)
     calories_burned = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
 
     def save(self, *args, **kwargs):

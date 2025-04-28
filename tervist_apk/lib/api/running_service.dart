@@ -12,7 +12,7 @@ class RunningService {
     required int caloriesBurned,
     required int steps,
     required DateTime date,
-    required List<Map<String, double>> routeData,
+    required String routeData, // ✅ Ubah ke String
   }) async {
     final token = await AuthHelper.getToken();
 
@@ -148,6 +148,146 @@ class RunningService {
       }
     } catch (e) {
       throw Exception('Error fetching running detail: $e');
+    }
+  }
+
+  // Tambahan di RunningService.dart kamu
+  Future<double> fetchTodayDistance() async {
+    final token = await AuthHelper.getToken();
+
+    if (token == null) {
+      throw Exception('Not authenticated');
+    }
+
+    try {
+      final response = await http.get(
+        ApiConfig.runningActivity,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(Duration(seconds: ApiConfig.timeoutDuration));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+
+        double totalDistance = 0.0;
+        for (var run in data) {
+          totalDistance += (run['distance_km'] ?? 0.0);
+        }
+        return totalDistance;
+      } else {
+        throw Exception(
+            'Failed to fetch running activities: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching today\'s distance: $e');
+    }
+  }
+
+    // Walking History Methods
+  Future<dynamic> getWalkingHistory() async {
+    try {
+      final token = await AuthHelper.getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found');
+      }
+
+      final response = await http.get(
+        ApiConfig.walkingHistory,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load walking history');
+      }
+    } catch (e) {
+      print('Error fetching walking history: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getWalkingActivityDetail(int activityId) async {
+    try {
+      final token = await AuthHelper.getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found');
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/walking-history/$activityId/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load walking activity details');
+      }
+    } catch (e) {
+      print('Error fetching walking activity details: $e');
+      rethrow;
+    }
+  }
+
+  // Cycling History Methods
+  Future<dynamic> getCyclingHistory() async {
+    try {
+      final token = await AuthHelper.getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found');
+      }
+
+      final response = await http.get(
+        ApiConfig.cyclingHistory,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load cycling history');
+      }
+    } catch (e) {
+      print('Error fetching cycling history: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getCyclingActivityDetail(int activityId) async {
+    try {
+      final token = await AuthHelper.getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found');
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/cycling-history/$activityId/'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load cycling activity details');
+      }
+    } catch (e) {
+      print('Error fetching cycling activity details: $e');
+      rethrow;
     }
   }
 }

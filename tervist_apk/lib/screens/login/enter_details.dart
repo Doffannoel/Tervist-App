@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tervist_apk/api/auth_helper.dart';
+import 'package:tervist_apk/screens/main_navigation.dart';
 import 'set_target.dart';
 import '/../api/signup_data.dart'; // pastikan path-nya sesuai struktur project kamu
 
@@ -29,116 +31,137 @@ class _EnterDetailsState extends State<EnterDetails> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEBFDFA),
-      appBar: AppBar(
         backgroundColor: const Color(0xFFEBFDFA),
-        title: const Text(''),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFEBFDFA),
+          title: const Text(''),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Card(
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                elevation: 5,
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await Future.delayed(const Duration(milliseconds: 500));
+
+              bool isLoggedIn = await AuthHelper.isLoggedIn();
+              if (isLoggedIn && context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MainNavigation()),
+                  (Route<dynamic> route) =>
+                      false, // 🔥 Semua page sebelumnya dibuang
+                );
+              }
+
+              return Future.value();
+            },
+            child: SingleChildScrollView(
+              physics: AlwaysScrollableScrollPhysics(),
+              child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(30),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                  padding: const EdgeInsets.all(20),
+                  child: Card(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    elevation: 5,
+                    child: Padding(
+                      padding: const EdgeInsets.all(30),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(width: 8),
-                          Image.asset('assets/images/logotervist.png',
-                              height: 40, width: 129, fit: BoxFit.contain),
+                          Row(
+                            children: [
+                              const SizedBox(width: 8),
+                              Image.asset('assets/images/logotervist.png',
+                                  height: 40, width: 129, fit: BoxFit.contain),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          _buildProgressIndicator(),
+                          const SizedBox(height: 20),
+                          Text('Enter Details',
+                              style: GoogleFonts.poppins(
+                                  fontSize: 20, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 10),
+                          _customField("Username", usernameController,
+                              isValid: _isUsernameValid),
+                          const SizedBox(height: 10),
+                          Text('Gender',
+                              style: GoogleFonts.montserrat(
+                                  fontSize: 14,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w600)),
+                          Row(
+                            children: [
+                              Expanded(
+                                  child: _genderButton('Male', Icons.male)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                  child: _genderButton('Female', Icons.female)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                  child: _labelWithField(
+                                      "Weight", weightController,
+                                      isValid: _isWeightValid)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                  child: _labelWithField(
+                                      "Height", heightController,
+                                      isValid: _isHeightValid)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.35,
+                            child: _labelWithField("Age", ageController,
+                                isValid: _isAgeValid),
+                          ),
+                          const SizedBox(height: 10),
+                          if (_errorMessage != null)
+                            Row(
+                              children: [
+                                const Icon(Icons.error,
+                                    color: Colors.red, size: 16),
+                                const SizedBox(width: 4),
+                                Text(_errorMessage!,
+                                    style:
+                                        GoogleFonts.poppins(color: Colors.red)),
+                              ],
+                            ),
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: _handleNext,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: Text(
+                              'Next',
+                              style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16),
+                            ),
+                          )
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      _buildProgressIndicator(),
-                      const SizedBox(height: 20),
-                      Text('Enter Details',
-                          style: GoogleFonts.poppins(
-                              fontSize: 20, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      _customField("Username", usernameController,
-                          isValid: _isUsernameValid),
-                      const SizedBox(height: 10),
-                      Text('Gender',
-                          style: GoogleFonts.montserrat(
-                              fontSize: 14,
-                              color: Colors.black,
-                              fontWeight: FontWeight.w600)),
-                      Row(
-                        children: [
-                          Expanded(child: _genderButton('Male', Icons.male)),
-                          const SizedBox(width: 10),
-                          Expanded(
-                              child: _genderButton('Female', Icons.female)),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                              child: _labelWithField("Weight", weightController,
-                                  isValid: _isWeightValid)),
-                          const SizedBox(width: 10),
-                          Expanded(
-                              child: _labelWithField("Height", heightController,
-                                  isValid: _isHeightValid)),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.35,
-                        child: _labelWithField("Age", ageController,
-                            isValid: _isAgeValid),
-                      ),
-                      const SizedBox(height: 10),
-                      if (_errorMessage != null)
-                        Row(
-                          children: [
-                            const Icon(Icons.error,
-                                color: Colors.red, size: 16),
-                            const SizedBox(width: 4),
-                            Text(_errorMessage!,
-                                style: GoogleFonts.poppins(color: Colors.red)),
-                          ],
-                        ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _handleNext,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: Text(
-                          'Next',
-                          style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16),
-                        ),
-                      )
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 
   Widget _buildProgressIndicator() {
