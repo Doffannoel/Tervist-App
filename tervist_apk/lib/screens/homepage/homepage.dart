@@ -697,7 +697,7 @@ class _HomePageState extends State<HomePage>
                 border: Border.all(color: Colors.black),
               ),
               child: Text(
-                totalBudget.round().toString(),
+                totalBudget.ceil().toString(),
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -809,7 +809,7 @@ class _HomePageState extends State<HomePage>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  caloriesLeft.round().toString(),
+                  caloriesLeft.ceil().toString(),
                   style: const TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
